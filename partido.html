@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BasketKids - Gestión Partido</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+    .stat-btn {
+      width: 26px;
+      height: 26px;
+      font-size: 0.75rem;
+      padding: 0;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="header-container"></div>
+
+  <div class="container my-3">
+    <h2 id="nombrePartido">Gestión de Jugadores y Estadísticas</h2>
+
+    <div class="d-flex justify-content-center align-items-center mb-4 gap-5 fs-4 fw-bold">
+      <div>Marcador Equipo: <span id="marcadorEquipo">0</span></div>
+      <div>Marcador Rival: <span id="marcadorRival">0</span></div>
+      <div>Faltas Rival: <span id="faltasRival">0</span></div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Control de puntos y faltas rival</label>
+      <div class="d-flex gap-2 align-items-center flex-wrap">
+        <button class="btn btn-sm btn-outline-danger stat-btn" title="+1 punto rival" type="button" id="btnPuntoRival1">+1</button>
+        <button class="btn btn-sm btn-outline-danger stat-btn" title="+2 puntos rival" type="button" id="btnPuntoRival2">+2</button>
+        <button class="btn btn-sm btn-outline-danger stat-btn" title="+3 puntos rival" type="button" id="btnPuntoRival3">+3</button>
+        <button class="btn btn-sm btn-outline-danger stat-btn" title="+1 falta rival" type="button" id="btnFaltasRival">F+</button>
+      </div>
+    </div>
+
+    <button type="button" class="btn btn-info mb-3" data-bs-toggle="modal" data-bs-target="#modalConvocarJugadores">
+      Convocar Jugadores
+    </button>
+
+    <!-- Pestañas -->
+    <ul class="nav nav-tabs mb-3" id="tabsPartido" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="tab-convocados" data-bs-toggle="tab" data-bs-target="#convocados" type="button" role="tab" aria-controls="convocados" aria-selected="true">
+          Jugadores Convocados
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-pista" data-bs-toggle="tab" data-bs-target="#pista" type="button" role="tab" aria-controls="pista" aria-selected="false">
+          Jugadores en Pista
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content" id="tabsContent">
+      <div class="tab-pane fade show active" id="convocados" role="tabpanel" aria-labelledby="tab-convocados">
+        <ul id="listaJugadoresConvocados" class="list-group"></ul>
+      </div>
+      <div class="tab-pane fade" id="pista" role="tabpanel" aria-labelledby="tab-pista">
+        <ul id="listaJugadoresPista" class="list-group"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para seleccionar jugadores convocados -->
+  <div class="modal fade" id="modalConvocarJugadores" tabindex="-1" aria-labelledby="modalConvocarJugadoresLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <form id="formConvocarJugadores" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalConvocarJugadoresLabel">Seleccionar Jugadores Convocados</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <ul id="listaJugadoresEquipo" class="list-group"></ul>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar convocados</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
+
+  <script src="js/firebase-config.js"></script>
+  <script src="js/load-header.js"></script>
+  <script src="js/partido.js"></script>
+</body>
+
+</html>

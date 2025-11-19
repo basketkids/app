@@ -1,0 +1,27 @@
+body {
+  background-color: #f0f4f8;
+}
+h1, h2, h3, h4, h5 {
+  color: #1a237e;
+}
+#auth-container button {
+  min-width: 140px;
+}
+.list-group li {
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+.list-group li:hover {
+  background-color: #bbdefb;
+}
+#estatsContainer button {
+  margin-left: 0.4em;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.blink {
+  animation: blink 1s infinite;
+}

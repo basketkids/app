@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BasketKids - Gestión Competición</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body class="bg-light">
+
+  <div id="header-container"></div>
+
+  <div class="container">
+
+    <h2 id="competitionName"></h2>
+
+    <nav class="mb-4">
+      <ul class="nav nav-tabs" id="menuCompeticion">
+        <li class="nav-item"><a class="nav-link active" href="#" data-seccion="partidos">Partidos</a></li>
+        <li class="nav-item"><a class="nav-link " href="#" data-seccion="rivales">Rivales</a></li>
+      </ul>
+    </nav>
+
+    <section id="seccion-rivales" style="display:none"  >
+      <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addRivalModal">
+        Añadir Rival
+      </button>
+      <ul id="rivalesList" class="list-group"></ul>
+    </section>
+
+    <section id="seccion-partidos" class="seccion-activa" >
+      <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addPartidoModal">
+        Añadir Partido
+      </button>
+      <ul id="partidosList" class="list-group"></ul>
+    </section>
+
+  </div>
+
+  <!-- Modal añadir rival -->
+  <div class="modal fade" id="addRivalModal" tabindex="-1" aria-labelledby="addRivalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <form id="addRivalForm" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addRivalLabel">Añadir Rival</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <input id="inputNombreRival" class="form-control" placeholder="Nombre rival" required />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar rival</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal añadir partido -->
+  <div class="modal fade" id="addPartidoModal" tabindex="-1" aria-labelledby="addPartidoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <form id="addPartidoForm" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addPartidoLabel">Añadir Partido</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="datetime-local" id="inputFechaHora" class="form-control mb-3" required />
+          <select id="inputRivalSelect" class="form-select mb-3" required>
+            <option value="">Selecciona rival</option>
+          </select>
+          <div class="mb-3">
+            <label class="form-label">¿Juegas en casa?</label>
+            <select id="inputLocalVisitante" class="form-select" required>
+              <option value="local">Local</option>
+              <option value="visitante">Visitante</option>
+            </select>
+          </div>
+          <input type="text" id="inputPabellon" class="form-control" placeholder="Dirección del pavellón" required />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar partido</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Confirmar borrado -->
+  <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmDeleteLabel">Confirmar borrado</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          ¿Estás seguro de que quieres borrar este elemento? Esta acción no se puede deshacer.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="confirmDeleteBtn" class="btn btn-danger">Borrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
+
+  <script src="js/firebase-config.js"></script>
+  <script src="js/load-header.js"></script>
+  <script src="js/competicion.js"></script>
+
+</body>
+
+</html>
