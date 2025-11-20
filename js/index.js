@@ -54,7 +54,7 @@ auth.onAuthStateChanged(user => {
     if (user) {
         listarEquipos();
     } else {
-        teamsList.innerHTML = '';
+        window.location.href = 'public/';
     }
 });
 

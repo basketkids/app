@@ -1,4 +1,3 @@
-
 let uid = null;
 firebase.initializeApp(window.firebaseConfig);
 
@@ -6,7 +5,7 @@ const dbh = firebase.database();
 const authh = firebase.auth();
 
 // Carga el contenido de header.html dentro de #header-container
-fetch('header.html')
+fetch('../header.html')
   .then(response => response.text())
   .then(html => {
     document.getElementById('header-container').innerHTML = html;
@@ -28,7 +27,6 @@ fetch('header.html')
 
 
   async function construirBreadcrumbDesdeParametros() {
-    console.log("sdfsfsd");
     const cont = document.getElementById('breadcrumb-container');
     if (!cont) return;
   
@@ -38,13 +36,17 @@ fetch('header.html')
     const currentPartidoId = params.get('idPartido');
     const currrentJugadorId= params.get('idJugador');
     const breadcrumbItems = [{ nombre: 'Inicio', url: '/' }];
-  
+    if (window.location.pathname.includes('/public')) {
+      // Estás en la carpeta public
+      breadcrumbItems.push({ nombre: "partidos", url: "" });
+    }
     if (!currentTeamId) {
       // Solo inicio si no viene equipo
       cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
       return;
     }
   
+   
     // Traer nombre equipo
     const equipoSnap = await dbh.ref(`usuarios/${uid}/equipos/${currentTeamId}/nombre`).once('value');
     const nombreEquipo = equipoSnap.exists() ? equipoSnap.val() : 'Equipo desconocido';

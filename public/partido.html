@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BasketKids - Gestión Partido</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+
+    .stat-btn {
+      width: 28px;
+      height: 28px;
+      font-size: 0.8rem;
+      padding: 0;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="header-container"></div>
+
+  <div class="container my-3">
+
+    <h2 id="nombrePartido" class="mb-4">Gestión de Partido</h2>
+
+  
+
+    <!-- Marcadores + contador + control -->
+    <div id="divEstado" class="d-flex justify-content-center align-items-center gap-4 flex-wrap my-4">
+      <div></div>
+      <div class="text-center bg-primary text-white rounded px-3 py-2" style="min-width: 100px;">
+        <label for="selectCuarto" class="form-label mb-1" style="font-weight:600; font-size:1rem;cursor:pointer;">Cuarto</label>
+        <p id="numCuarto" class="text-center" style="font-weight:bold; font-size:1.5rem; max-width: 80px; margin:0 auto;" >
+          1</p>
+          
+      </div>
+
+      <div class="text-center bg-secondary text-white rounded px-3 py-2" style="min-width: 120px;">
+        <div style="font-weight: 600; font-size: 1rem; margin-bottom: 2px;">Tiempo restante</div>
+        <div id="contador" style="font-size: 2rem; font-weight: 700;">10:00</div>
+      </div>
+
+    
+
+    </div>
+
+    <div class="d-flex justify-content-center align-items-center gap-5 my-4 flex-wrap">
+
+      <div class="text-center bg-dark text-white rounded px-4 py-3" style="min-width: 140px;">
+        <div id="nombreEquipoMarcador" style="font-weight: 700; font-size: 1.2rem; margin-bottom: 0.25rem;">Equipo</div>
+        <div id="marcadorEquipo" style="font-size: 3.5rem; font-weight: 900; line-height: 1;">0</div>
+        <div id="faltasEquipo" style="font-size: 1.1rem; font-weight: 600; color: #f9a825;">F: 0</div>
+      </div>
+
+      <div class="text-center bg-danger text-white rounded px-4 py-3" style="min-width: 140px;">
+        <div id="nombreEquipoRival" style="font-weight: 700; font-size: 1.2rem; margin-bottom: 0.25rem;">Rival</div>
+        <div id="marcadorRival" style="font-size: 3.5rem; font-weight: 900; line-height: 1;">0</div>
+        <div id="faltasRival" style="font-size: 1.1rem; font-weight: 600; color: #fff176;">F: 0</div>
+      </div>
+
+    </div>
+
+    
+
+    <!-- Tabs -->
+    <div id="tablaEstadisticasContainer"></div>
+
+    
+    
+  </div>
+
+
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
+  <script src="../js/firebase-config.js"></script>
+  <script src="../js/load-header.js"></script>
+  <script src="../js/public/partido.js"></script>
+</body>
+
+</html>

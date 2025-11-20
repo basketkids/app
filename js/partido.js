@@ -60,21 +60,48 @@ auth.onAuthStateChanged(user => {
     window.location.href = 'index.html';
     return;
   }
-  cargarConvocados();
+  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/convocados`)
+    .once('value')
+    .then(snap => {
+      convocados = new Set();
+      if (snap.exists()) Object.keys(snap.val()).forEach(id => convocados.add(id));
+      
+      
+  
+      db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/plantilla`)
+      .once('value')
+      .then(snapshot => {
+        plantillaJugadores = [];
+        snapshot.forEach(child => {
+          // Obtiene el ID y datos de cada jugador
+          const jugador = { id: child.key, ...child.val() };
+          plantillaJugadores.push(jugador);
+        });
+        // Llama a la función para mostrar la plantilla en la UI (por ejemplo, en el modal de convocados)
+        renderListaJugadoresPlantilla();
 
-  cargarPlantilla();
-  cargarJugadoresEnPista();
-  cargarEstadisticas();
-  cargarMarcadorRival();
-  cargarFaltasRival();
-  cargarFaltasEquipo();
-  cargarEstadoPartido();
-  cargarNombreEquipo();
-  prepararBotonesRival();
-  prepararFormularioConvocar();
-  prepararFormularioPista();
+        renderListaJugadoresConvocados();
+        renderListaJugadoresConvocadosModal();
+        cargarJugadoresEnPista();
+        cargarEstadisticas();
+        cargarMarcadorRival();
+        cargarFaltasRival();
+        cargarFaltasEquipo();
+        cargarEstadoPartido();
+        cargarNombreEquipo();
+        prepararBotonesRival();
+        prepararFormularioConvocar();
+        prepararFormularioPista();
+        inicializarTemporizador();
+  
+      })
+      .catch(error => {
+        console.error('Error al cargar la plantilla:', error);
+        alert('No se pudo cargar la plantilla de jugadores');
+      });    
 
-  inicializarTemporizador();
+    });
+
 
   // Eventos temporizador
   botonesTemporizador();
@@ -157,8 +184,8 @@ function ajustarBotonesSegunEstado() {
 function guardarEstadoPartido(estado) {
   estadoPartido = estado;
   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/estado`)
-    .set(estado).then(()=>{
-      sincronizarPartidoGlobal(currentUser.uid,currentTeamId,currentCompeticionId,currentPartidoId);
+    .set(estado).then(() => {
+      sincronizarPartidoGlobal(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId);
     })
     .catch(err => console.error('Error guardando estado partido:', err));
 }
@@ -207,37 +234,6 @@ function pausarContador() {
   }
 }
 
-// Carga jugadores, convocados, estadisticas y render
-function cargarPlantilla() {
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/plantilla`)
-    .once('value')
-    .then(snapshot => {
-      plantillaJugadores = [];
-      snapshot.forEach(child => {
-        // Obtiene el ID y datos de cada jugador
-        const jugador = { id: child.key, ...child.val() };
-        plantillaJugadores.push(jugador);
-      });
-      // Llama a la función para mostrar la plantilla en la UI (por ejemplo, en el modal de convocados)
-      renderListaJugadoresPlantilla();
-    })
-    .catch(error => {
-      console.error('Error al cargar la plantilla:', error);
-      alert('No se pudo cargar la plantilla de jugadores');
-    });
-}
-
-function cargarConvocados() {
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/convocados`)
-    .once('value')
-    .then(snap => {
-      convocados = new Set();
-      if (snap.exists()) Object.keys(snap.val()).forEach(id => convocados.add(id));
-      renderListaJugadoresConvocados();
-      renderListaJugadoresConvocadosModal();
-    });
-}
-
 function cargarJugadoresEnPista() {
   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/jugadoresEnPista`)
     .once('value')
@@ -251,7 +247,7 @@ function cargarJugadoresEnPista() {
 function renderListaJugadoresConvocados() {
   const contenedor = document.getElementById('tablaEstadisticasContainer');
   if (!contenedor) return;
-  
+
   // Limpiamos el contenido previo
   contenedor.innerHTML = '';
 
@@ -262,7 +258,7 @@ function renderListaJugadoresConvocados() {
   // Cabecera
   const thead = document.createElement('thead');
   const headerRow = document.createElement('tr');
-  ['Nombre',  'Puntos', 'Asist.', 'Rebotes', 'Robos', 'Tapones', 'Faltas'].forEach(text => {
+  ['Nombre', 'Puntos', 'Asist.', 'Rebotes', 'Robos', 'Tapones', 'Faltas'].forEach(text => {
     const th = document.createElement('th');
     th.textContent = text;
     headerRow.appendChild(th);
@@ -272,21 +268,14 @@ function renderListaJugadoresConvocados() {
 
   // Cuerpo
   const tbody = document.createElement('tbody');
-
-  plantillaJugadores.filter(j => convocados.has(j.id)).forEach(j => {
+  plantillaJugadores.filter(i => convocados.has(i.id)).forEach(j => {
     const row = document.createElement('tr');
 
     const stats = estadisticasJugadores[j.id] || {};
-
     // Nombre columna
     const tdNombre = document.createElement('td');
-    tdNombre.textContent = j.nombre + " (#" +j.dorsal+ ")";
+    tdNombre.textContent = j.nombre + " (#" + j.dorsal + ")";
     row.appendChild(tdNombre);
-
-    // // Dorsal
-    // const tdDorsal = document.createElement('td');
-    // tdDorsal.textContent = j.dorsal || '';
-    // row.appendChild(tdDorsal);
 
     // Estadísticas
     const columnasStats = ['puntos', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas'];
@@ -326,7 +315,7 @@ function cargarFaltasRival() {
   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/faltasRival`)
     .on('value', snap => {
       faltasRival = snap.exists() ? snap.val() : 0;
-      document.getElementById('faltasRival').textContent =  `F: ${faltasRival}`;
+      document.getElementById('faltasRival').textContent = `F: ${faltasRival}`;
     });
 }
 
@@ -349,8 +338,8 @@ function prepararBotonesRival() {
 function modificarMarcadorRival(cant) {
   marcadorRival += cant;
   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/puntosRival`)
-    .set(marcadorRival).then(()=>{
-      sincronizarPartidoGlobal(currentUser.uid,currentTeamId,currentCompeticionId,currentPartidoId);
+    .set(marcadorRival).then(() => {
+      sincronizarPartidoGlobal(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId);
     });
   document.getElementById('marcadorRival').textContent = marcadorRival;
 }
@@ -358,8 +347,8 @@ function modificarMarcadorRival(cant) {
 function modificarFaltasRival(cant) {
   faltasRival += cant;
   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/faltasRival`)
-    .set(faltasRival).then(()=>{
-      sincronizarPartidoGlobal(currentUser.uid,currentTeamId,currentCompeticionId,currentPartidoId);
+    .set(faltasRival).then(() => {
+      sincronizarPartidoGlobal(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId);
     });
   document.getElementById('faltasRival').textContent = `F: ${faltasRival}`;
 }
@@ -367,8 +356,8 @@ function modificarFaltasRival(cant) {
 function modificarFaltasEquipo(cant) {
   faltasEquipo += cant;
   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/faltasEquipo`)
-    .set(faltasEquipo).then(()=>{
-      sincronizarPartidoGlobal(currentUser.uid,currentTeamId,currentCompeticionId,currentPartidoId);
+    .set(faltasEquipo).then(() => {
+      sincronizarPartidoGlobal(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId);
     });
   document.getElementById('faltasEquipo').textContent = `F: ${faltasEquipo}`;
 }
@@ -405,20 +394,44 @@ function prepararFormularioConvocar() {
     guardarConvocadosModal();
   });
 }
-
 function guardarConvocadosModal() {
   const data = {};
-  convocados.forEach(id => (data[id] = true));
+  convocados.forEach(id => {
+    console.log(plantillaJugadores)
+    const jugador = plantillaJugadores.find(j => j.id === id); // Asumiendo que tienes un objeto jugadoresInfo con datos de los jugadores
+    console.log(jugador)
+    if (jugador) {
+      data[id] = {
+        dorsal: jugador.dorsal || null,
+        nombre: jugador.nombre || ''
+      };
+    }
+  });
+
   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/convocados`)
     .set(data)
     .then(() => {
       bootstrap.Modal.getOrCreateInstance(document.getElementById('modalConvocarJugadores')).hide();
-      sincronizarPartidoGlobal(currentUser.uid,currentTeamId,currentCompeticionId,currentPartidoId);
-      
+      sincronizarPartidoGlobal(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId);
+
       renderListaJugadoresConvocados();
       renderListaJugadoresConvocadosModal();
     });
 }
+
+// function guardarConvocadosModal() {
+//   const data = {};
+//   convocados.forEach(id => (data[id] = true));
+//   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/convocados`)
+//     .set(data)
+//     .then(() => {
+//       bootstrap.Modal.getOrCreateInstance(document.getElementById('modalConvocarJugadores')).hide();
+//       sincronizarPartidoGlobal(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId);
+
+//       renderListaJugadoresConvocados();
+//       renderListaJugadoresConvocadosModal();
+//     });
+// }
 
 // **** Modal elegir jugadores en pista (de convocados) ****
 function renderListaJugadoresConvocadosModal() {
@@ -427,7 +440,7 @@ function renderListaJugadoresConvocadosModal() {
   ul.innerHTML = '';
 
   plantillaJugadores.filter(j => convocados.has(j.id)).forEach(j => {
-    
+
     const li = document.createElement('li');
     li.className = 'list-group-item';
     const label = document.createElement('label');
@@ -469,8 +482,8 @@ function guardarJugadoresEnPista() {
     .set(data)
     .then(() => {
       bootstrap.Modal.getOrCreateInstance(document.getElementById('modalElegirPista')).hide();
-      sincronizarPartidoGlobal(currentUser.uid,currentTeamId,currentCompeticionId,currentPartidoId);
-    
+      sincronizarPartidoGlobal(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId);
+
       renderListaJugadoresPista();
       renderListaJugadoresConvocadosModal();
     });
@@ -532,7 +545,7 @@ function renderListaJugadoresPista() {
 }
 
 function agregarEstadistica(jugadorId, tipo, cantidad) {
-  if (!estadisticasJugadores[jugadorId])
+  if (!estadisticasJugadores[jugadorId]) {
     estadisticasJugadores[jugadorId] = {
       puntos: 0,
       asistencias: 0,
@@ -540,15 +553,18 @@ function agregarEstadistica(jugadorId, tipo, cantidad) {
       robos: 0,
       tapones: 0,
       faltas: 0,
-    };
+    }
+
+
+  };
   estadisticasJugadores[jugadorId][tipo] += cantidad;
 
   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/estadisticasJugadores`)
     .set(estadisticasJugadores)
     .then(() => {
-      
-      sincronizarPartidoGlobal(currentUser.uid,currentTeamId,currentCompeticionId,currentPartidoId);
-  
+
+      sincronizarPartidoGlobal(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId);
+
       actualizarFaltasEquipo();
       actualizarMarcadorEquipo();
       renderListaJugadoresPista();
@@ -576,7 +592,7 @@ function actualizarFaltasEquipo() {
       const stats = estadisticasJugadores[j.id] || {};
       totalFaltas += stats.faltas || 0;
     });
-  document.getElementById('faltasEquipo').textContent = `Faltas: ${totalFaltas}`;
+  document.getElementById('faltasEquipo').textContent = `F: ${totalFaltas}`;
   // Guardar faltas equipo
   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/faltasEquipo`)
     .set(totalFaltas);
@@ -585,22 +601,22 @@ function botonesTemporizador() {
 
   // Botón empezar ya tiene event listener en el código general, pero aquí te pongo ejemplo
   btnEmpezar.addEventListener('click', () => {
-   
-    
-      guardarEstadoPartido('en curso');
-      partidoIniciado = true;
-      partidoTerminado = false;
-      parteActual = 1;
-      segundosRestantes = duracionParte;
-      actualizarDisplay();
-  
-      btnEmpezar.disabled = true;
-      btnStartPause.disabled = false;
-      btnTerminarCuarto.disabled = false;
-      btnTerminar.disabled = false;
-  
-      iniciarContador();
-  
+
+
+    guardarEstadoPartido('en curso');
+    partidoIniciado = true;
+    partidoTerminado = false;
+    parteActual = 1;
+    segundosRestantes = duracionParte;
+    actualizarDisplay();
+
+    btnEmpezar.disabled = true;
+    btnStartPause.disabled = false;
+    btnTerminarCuarto.disabled = false;
+    btnTerminar.disabled = false;
+
+    iniciarContador();
+
   });
 
   btnStartPause.addEventListener('click', () => {
