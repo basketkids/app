@@ -80,15 +80,15 @@
     <div class="d-flex justify-content-center align-items-center gap-5 my-4 flex-wrap">
 
       <div class="text-center bg-dark text-white rounded px-4 py-3" style="min-width: 140px;">
-        <div style="font-weight: 700; font-size: 1.2rem; margin-bottom: 0.25rem;">Mi Equipo</div>
+        <div id="nombreEquipoMarcador" style="font-weight: 700; font-size: 1.2rem; margin-bottom: 0.25rem;">Equipo</div>
         <div id="marcadorEquipo" style="font-size: 3.5rem; font-weight: 900; line-height: 1;">0</div>
-        <div id="faltasEquipo" style="font-size: 1.1rem; font-weight: 600; color: #f9a825;">Faltas: 0</div>
+        <div id="faltasEquipo" style="font-size: 1.1rem; font-weight: 600; color: #f9a825;">F: 0</div>
       </div>
 
       <div class="text-center bg-danger text-white rounded px-4 py-3" style="min-width: 140px;">
         <div style="font-weight: 700; font-size: 1.2rem; margin-bottom: 0.25rem;">Rival</div>
         <div id="marcadorRival" style="font-size: 3.5rem; font-weight: 900; line-height: 1;">0</div>
-        <div id="faltasRival" style="font-size: 1.1rem; font-weight: 600; color: #fff176;">Faltas: 0</div>
+        <div id="faltasRival" style="font-size: 1.1rem; font-weight: 600; color: #fff176;">F: 0</div>
       </div>
 
     </div>
@@ -118,7 +118,7 @@
       <!-- Tab: Convocados -->
       <div class="tab-pane fade show active" id="convocados" role="tabpanel" aria-labelledby="tab-convocados">
         <button type="button" class="btn btn-info mb-3" data-bs-toggle="modal" data-bs-target="#modalConvocarJugadores">Cambiar convocatoria</button>
-        <ul id="listaJugadoresConvocados" class="list-group"></ul>
+        <div id="tablaEstadisticasContainer"></div>
       </div>
       <!-- Tab: Partido -->
       <div class="tab-pane fade" id="pista" role="tabpanel" aria-labelledby="tab-pista">

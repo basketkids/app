@@ -87,7 +87,7 @@ function listarEquipos() {
 
             // Botón gestionar
             const btnGestionar = document.createElement('a');
-            btnGestionar.href = `equipo.html?id=${equipoSnap.key}`;
+            btnGestionar.href = `equipo.html?idEquipo=${equipoSnap.key}`;
             btnGestionar.classList.add('btn', 'btn-sm', 'btn-warning');
             btnGestionar.title = 'Gestionar equipo';
             btnGestionar.innerHTML = '<i class="bi bi-pencil-fill"></i>';

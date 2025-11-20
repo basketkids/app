@@ -60,16 +60,16 @@ auth.onAuthStateChanged(user => {
     window.location.href = 'index.html';
     return;
   }
+  cargarConvocados();
 
   cargarPlantilla();
-  cargarConvocados();
   cargarJugadoresEnPista();
   cargarEstadisticas();
   cargarMarcadorRival();
   cargarFaltasRival();
   cargarFaltasEquipo();
   cargarEstadoPartido();
-
+  cargarNombreEquipo();
   prepararBotonesRival();
   prepararFormularioConvocar();
   prepararFormularioPista();
@@ -84,6 +84,17 @@ auth.onAuthStateChanged(user => {
 
   configurarPartido(selectConfiguracion.value);
 });
+function cargarNombreEquipo() {
+  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/nombre`)
+    .once('value')
+    .then(snap => {
+      if (snap.exists()) {
+        const nombre = snap.val();
+        document.getElementById('nombreEquipoMarcador').textContent = nombre;
+      }
+    })
+    .catch(err => console.error('Error cargando nombre de equipo:', err));
+}
 
 function configurarPartido(opcion) {
   if (opcion === '6x8') {
@@ -236,6 +247,60 @@ function cargarJugadoresEnPista() {
       renderListaJugadoresConvocadosModal();
     });
 }
+function renderListaJugadoresConvocados() {
+  const contenedor = document.getElementById('tablaEstadisticasContainer');
+  if (!contenedor) return;
+  
+  // Limpiamos el contenido previo
+  contenedor.innerHTML = '';
+
+  // Crear tabla
+  const table = document.createElement('table');
+  table.className = 'table table-striped table-bordered table-sm';
+
+  // Cabecera
+  const thead = document.createElement('thead');
+  const headerRow = document.createElement('tr');
+  ['Nombre', 'Dorsal', 'Puntos', 'Asist.', 'Rebotes', 'Robos', 'Tapones', 'Faltas'].forEach(text => {
+    const th = document.createElement('th');
+    th.textContent = text;
+    headerRow.appendChild(th);
+  });
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+
+  // Cuerpo
+  const tbody = document.createElement('tbody');
+
+  plantillaJugadores.filter(j => convocados.has(j.id)).forEach(j => {
+    const row = document.createElement('tr');
+
+    const stats = estadisticasJugadores[j.id] || {};
+
+    // Nombre columna
+    const tdNombre = document.createElement('td');
+    tdNombre.textContent = j.nombre;
+    row.appendChild(tdNombre);
+
+    // Dorsal
+    const tdDorsal = document.createElement('td');
+    tdDorsal.textContent = j.dorsal || '';
+    row.appendChild(tdDorsal);
+
+    // Estadísticas
+    const columnasStats = ['puntos', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas'];
+    columnasStats.forEach(key => {
+      const td = document.createElement('td');
+      td.textContent = stats[key] || 0;
+      row.appendChild(td);
+    });
+
+    tbody.appendChild(row);
+  });
+
+  table.appendChild(tbody);
+  contenedor.appendChild(table);
+}
 
 function cargarEstadisticas() {
   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/estadisticasJugadores`)
@@ -260,7 +325,7 @@ function cargarFaltasRival() {
   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/faltasRival`)
     .on('value', snap => {
       faltasRival = snap.exists() ? snap.val() : 0;
-      document.getElementById('faltasRival').textContent = faltasRival;
+      document.getElementById('faltasRival').textContent =  `F: ${faltasRival}`;
     });
 }
 
@@ -268,7 +333,7 @@ function cargarFaltasEquipo() {
   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/faltasEquipo`)
     .on('value', snap => {
       faltasEquipo = snap.exists() ? snap.val() : 0;
-      document.getElementById('faltasEquipo').textContent = `Faltas: ${faltasEquipo}`;
+      document.getElementById('faltasEquipo').textContent = `F: ${faltasEquipo}`;
     });
 }
 
@@ -302,25 +367,7 @@ function modificarFaltasEquipo(cant) {
   document.getElementById('faltasEquipo').textContent = `Faltas: ${faltasEquipo}`;
 }
 
-// **** Render Convocados ****
-function renderListaJugadoresConvocados() {
-  const ul = document.getElementById('listaJugadoresConvocados');
-  ul.innerHTML = '';
-  plantillaJugadores.filter(j => convocados.has(j.id)).forEach(j => {
-    const li = document.createElement('li');
-    li.className = 'list-group-item d-flex justify-content-between align-items-center flex-wrap';
-    li.textContent = `${j.nombre} (#${j.dorsal})`;
 
-    const stats = estadisticasJugadores[j.id] || {};
-    const statsSpan = document.createElement('span');
-    statsSpan.style.fontSize = '0.85em';
-    statsSpan.style.color = '#555';
-    statsSpan.textContent = `Pts:${stats.puntos || 0}, Asis:${stats.asistencias || 0}, Reb:${stats.rebotes || 0}, Rob:${stats.robos || 0}, Tap:${stats.tapones || 0}, Falt:${stats.faltas || 0}`;
-    li.appendChild(statsSpan);
-
-    ul.appendChild(li);
-  });
-}
 
 // **** Modal convocar jugadores (lista plantilla) ****
 function renderListaJugadoresPlantilla() {
@@ -335,6 +382,7 @@ function renderListaJugadoresPlantilla() {
     checkbox.type = 'checkbox';
     checkbox.className = 'form-check-input';
     checkbox.checked = convocados.has(j.id);
+    console.log(`jugador:  ${j.nombre}`  + " ha sido convocado?" + convocados.has(j.id));
     checkbox.onchange = () => {
       if (checkbox.checked) convocados.add(j.id);
       else convocados.delete(j.id);
@@ -370,7 +418,9 @@ function renderListaJugadoresConvocadosModal() {
   const ul = document.getElementById('listaJugadoresConvocadosModal');
   if (!ul) return;
   ul.innerHTML = '';
+
   plantillaJugadores.filter(j => convocados.has(j.id)).forEach(j => {
+    
     const li = document.createElement('li');
     li.className = 'list-group-item';
     const label = document.createElement('label');
@@ -392,7 +442,7 @@ function renderListaJugadoresConvocadosModal() {
       }
     };
     label.appendChild(checkbox);
-    label.appendChild(document.createTextNode(` ${j.nombre} (#${j.dorsal})`));
+    label.appendChild(document.createTextNode(` ${j.nombre} (##${j.dorsal})`));
     li.appendChild(label);
     ul.appendChild(li);
   });

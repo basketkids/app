@@ -47,7 +47,7 @@ menuEquipo.querySelectorAll('a').forEach(link => {
 
 function loadTeamFromUrl() {
   const params = new URLSearchParams(window.location.search);
-  const id = params.get('id');
+  const id = params.get('idEquipo');
   if (!id) {
     alert('No se especificó equipo');
     window.location.href = 'index.html';
@@ -88,22 +88,41 @@ addPlayerForm.addEventListener('submit', e => {
 
 function loadPlantilla() {
   playersList.innerHTML = '';
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/plantilla`).on('value', snapshot => {
-    playersList.innerHTML = '';
+  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/plantilla`).once('value').then(snapshot => {
     if (!snapshot.exists()) return;
 
+    const jugadoresArray = [];
     snapshot.forEach(jugadorSnap => {
       const jugador = jugadorSnap.val();
       const key = jugadorSnap.key;
+      jugadoresArray.push({ key, ...jugador });
+    });
 
+    // Ordenar por dorsal numérico ascendente
+    jugadoresArray.sort((a, b) => (a.dorsal || 0) - (b.dorsal || 0));
+
+    // Renderizar la lista ordenada
+    playersList.innerHTML = '';
+    jugadoresArray.forEach(jugador => {
       const li = document.createElement('li');
-      li.classList.add('list-group-item');
+      li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
 
-      li.textContent = `${jugador.dorsal} - ${jugador.nombre}`;
+      const textoJugador = document.createElement('span');
+      textoJugador.textContent = `${jugador.dorsal} - ${jugador.nombre}`;
+
+      const boton = document.createElement('a');
+      boton.href = `jugadores.html?idJugador=${encodeURIComponent(jugador.key)}&idEquipo=${encodeURIComponent(currentTeamId)}`;
+      boton.className = 'btn btn-success btn-sm';
+      boton.title = 'Ver jugador';
+      boton.innerHTML = '<i class="bi bi-eye"></i>';
+
+      li.appendChild(textoJugador);
+      li.appendChild(boton);
       playersList.appendChild(li);
     });
   });
 }
+
 
 // Gestión competiciones
 
