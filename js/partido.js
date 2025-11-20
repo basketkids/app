@@ -129,7 +129,6 @@ function cargarEstadoPartido() {
 }
 
 function ajustarBotonesSegunEstado() {
-  console.log("Estado del partido: " + estadoPartido);
 
   if (estadoPartido === 'no empezado') {
     btnEmpezar.disabled = false;
@@ -263,7 +262,7 @@ function renderListaJugadoresConvocados() {
   // Cabecera
   const thead = document.createElement('thead');
   const headerRow = document.createElement('tr');
-  ['Nombre', 'Dorsal', 'Puntos', 'Asist.', 'Rebotes', 'Robos', 'Tapones', 'Faltas'].forEach(text => {
+  ['Nombre',  'Puntos', 'Asist.', 'Rebotes', 'Robos', 'Tapones', 'Faltas'].forEach(text => {
     const th = document.createElement('th');
     th.textContent = text;
     headerRow.appendChild(th);
@@ -281,13 +280,13 @@ function renderListaJugadoresConvocados() {
 
     // Nombre columna
     const tdNombre = document.createElement('td');
-    tdNombre.textContent = j.nombre;
+    tdNombre.textContent = j.nombre + " (#" +j.dorsal+ ")";
     row.appendChild(tdNombre);
 
-    // Dorsal
-    const tdDorsal = document.createElement('td');
-    tdDorsal.textContent = j.dorsal || '';
-    row.appendChild(tdDorsal);
+    // // Dorsal
+    // const tdDorsal = document.createElement('td');
+    // tdDorsal.textContent = j.dorsal || '';
+    // row.appendChild(tdDorsal);
 
     // Estadísticas
     const columnasStats = ['puntos', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas'];
@@ -345,7 +344,6 @@ function prepararBotonesRival() {
   document.getElementById('btnPuntoRival2').onclick = () => modificarMarcadorRival(2);
   document.getElementById('btnPuntoRival3').onclick = () => modificarMarcadorRival(3);
   document.getElementById('btnFaltasRival').onclick = () => modificarFaltasRival(1);
-  document.getElementById('btnFaltasEquipo').onclick = () => modificarFaltasEquipo(1);
 }
 
 function modificarMarcadorRival(cant) {
@@ -363,7 +361,7 @@ function modificarFaltasRival(cant) {
     .set(faltasRival).then(()=>{
       sincronizarPartidoGlobal(currentUser.uid,currentTeamId,currentCompeticionId,currentPartidoId);
     });
-  document.getElementById('faltasRival').textContent = faltasRival;
+  document.getElementById('faltasRival').textContent = `F: ${faltasRival}`;
 }
 
 function modificarFaltasEquipo(cant) {
@@ -372,7 +370,7 @@ function modificarFaltasEquipo(cant) {
     .set(faltasEquipo).then(()=>{
       sincronizarPartidoGlobal(currentUser.uid,currentTeamId,currentCompeticionId,currentPartidoId);
     });
-  document.getElementById('faltasEquipo').textContent = `Faltas: ${faltasEquipo}`;
+  document.getElementById('faltasEquipo').textContent = `F: ${faltasEquipo}`;
 }
 
 
@@ -390,7 +388,6 @@ function renderListaJugadoresPlantilla() {
     checkbox.type = 'checkbox';
     checkbox.className = 'form-check-input';
     checkbox.checked = convocados.has(j.id);
-    console.log(`jugador:  ${j.nombre}`  + " ha sido convocado?" + convocados.has(j.id));
     checkbox.onchange = () => {
       if (checkbox.checked) convocados.add(j.id);
       else convocados.delete(j.id);
