@@ -70,9 +70,11 @@ switch (partido.estado) {
     divEstado.innerHTML = '';
     divEstado.appendChild(parrafo);
     break;
-  case 'jugando':
-    // mostrar marcador
-    break;
+  case 'en curso':
+    setInterval(() => {
+        location.reload();
+      }, 30000);
+           break;
   case 'finalizado':
     parrafo.textContent = "El partido ha finalizado.";
     parrafo.classList.remove('text-primary');
@@ -85,13 +87,9 @@ switch (partido.estado) {
 }
 
 
-
-
-
 }).catch(error => {
     console.error(error);
 });
-
 
 function renderListaJugadoresConvocados(partido) {
     const contenedor = document.getElementById('tablaEstadisticasContainer');
