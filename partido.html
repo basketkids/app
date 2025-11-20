@@ -5,18 +5,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BasketKids - Gestión Partido</title>
-
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
-
   <style>
     body {
       background-color: #f8f9fa;
     }
+
     .stat-btn {
-      width: 26px;
-      height: 26px;
-      font-size: 0.75rem;
+      width: 28px;
+      height: 28px;
+      font-size: 0.8rem;
       padding: 0;
       display: inline-flex;
       justify-content: center;
@@ -30,12 +29,68 @@
   <div id="header-container"></div>
 
   <div class="container my-3">
-    <h2 id="nombrePartido">Gestión de Jugadores y Estadísticas</h2>
 
-    <div class="d-flex justify-content-center align-items-center mb-4 gap-5 fs-4 fw-bold">
-      <div>Marcador Equipo: <span id="marcadorEquipo">0</span></div>
-      <div>Marcador Rival: <span id="marcadorRival">0</span></div>
-      <div>Faltas Rival: <span id="faltasRival">0</span></div>
+    <h2 id="nombrePartido" class="mb-4">Gestión de Partido</h2>
+
+    <div class="mb-3 d-flex justify-content-center align-items-center gap-3">
+      <label for="selectConfiguracion" class="form-label fw-semibold mb-0">Configuración de partido:</label>
+      <select id="selectConfiguracion" class="form-select form-select-sm" style="max-width: 250px;">
+        <option value="6x8" selected>6 cuartos - 8 minutos</option>
+        <option value="4x10">4 cuartos - 10 minutos</option>
+      </select>
+    </div>
+
+    <!-- Marcadores + contador + control -->
+    <div class="d-flex justify-content-center align-items-center gap-4 flex-wrap my-4">
+
+      <div class="text-center bg-primary text-white rounded px-3 py-2" style="min-width: 100px;">
+        <label for="selectCuarto" class="form-label mb-1" style="font-weight:600; font-size:1rem;cursor:pointer;">Cuarto</label>
+        <select id="selectCuarto" class="form-select form-select-sm text-center" style="font-weight:bold; font-size:1.5rem; max-width: 80px; margin:0 auto;">
+          <option value="1" selected>1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+        </select>
+      </div>
+
+      <div class="text-center bg-secondary text-white rounded px-3 py-2" style="min-width: 120px;">
+        <div style="font-weight: 600; font-size: 1rem; margin-bottom: 2px;">Tiempo restante</div>
+        <div id="contador" style="font-size: 2rem; font-weight: 700;">10:00</div>
+      </div>
+
+      <div class="d-flex gap-2 align-items-center">
+        <button id="btnEmpezar" class="btn btn-success btn-sm" title="Empezar partido">
+          <i class="bi bi-play-fill"></i> Empezar
+        </button>
+        <button id="btnStartPause" class="btn btn-outline-primary btn-sm" title="Pausar / Reanudar" disabled>
+          <i class="bi bi-pause-fill"></i>
+        </button>
+        <button id="btnTerminarCuarto" class="btn btn-warning btn-sm" title="Terminar cuarto" disabled>
+          <i class="bi bi-arrow-right-square"></i> Terminar Cuarto
+        </button>
+        <button id="btnTerminar" class="btn btn-danger btn-sm" title="Terminar partido" disabled>
+          <i class="bi bi-stop-fill"></i> Terminar Partido
+        </button>
+      </div>
+
+    </div>
+
+    <div class="d-flex justify-content-center align-items-center gap-5 my-4 flex-wrap">
+
+      <div class="text-center bg-dark text-white rounded px-4 py-3" style="min-width: 140px;">
+        <div style="font-weight: 700; font-size: 1.2rem; margin-bottom: 0.25rem;">Mi Equipo</div>
+        <div id="marcadorEquipo" style="font-size: 3.5rem; font-weight: 900; line-height: 1;">0</div>
+        <div id="faltasEquipo" style="font-size: 1.1rem; font-weight: 600; color: #f9a825;">Faltas: 0</div>
+      </div>
+
+      <div class="text-center bg-danger text-white rounded px-4 py-3" style="min-width: 140px;">
+        <div style="font-weight: 700; font-size: 1.2rem; margin-bottom: 0.25rem;">Rival</div>
+        <div id="marcadorRival" style="font-size: 3.5rem; font-weight: 900; line-height: 1;">0</div>
+        <div id="faltasRival" style="font-size: 1.1rem; font-weight: 600; color: #fff176;">Faltas: 0</div>
+      </div>
+
     </div>
 
     <div class="mb-3">
@@ -45,62 +100,76 @@
         <button class="btn btn-sm btn-outline-danger stat-btn" title="+2 puntos rival" type="button" id="btnPuntoRival2">+2</button>
         <button class="btn btn-sm btn-outline-danger stat-btn" title="+3 puntos rival" type="button" id="btnPuntoRival3">+3</button>
         <button class="btn btn-sm btn-outline-danger stat-btn" title="+1 falta rival" type="button" id="btnFaltasRival">F+</button>
+        <button class="btn btn-sm btn-outline-warning stat-btn ms-3" title="+1 falta equipo" type="button" id="btnFaltasEquipo">F+</button>
       </div>
     </div>
 
-    <button type="button" class="btn btn-info mb-3" data-bs-toggle="modal" data-bs-target="#modalConvocarJugadores">
-      Convocar Jugadores
-    </button>
-
-    <!-- Pestañas -->
+    <!-- Tabs -->
     <ul class="nav nav-tabs mb-3" id="tabsPartido" role="tablist">
       <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="tab-convocados" data-bs-toggle="tab" data-bs-target="#convocados" type="button" role="tab" aria-controls="convocados" aria-selected="true">
-          Jugadores Convocados
-        </button>
+        <button class="nav-link active" id="tab-convocados" data-bs-toggle="tab" data-bs-target="#convocados" type="button" role="tab" aria-controls="convocados" aria-selected="true">Convocados</button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-pista" data-bs-toggle="tab" data-bs-target="#pista" type="button" role="tab" aria-controls="pista" aria-selected="false">
-          Jugadores en Pista
-        </button>
+        <button class="nav-link" id="tab-pista" data-bs-toggle="tab" data-bs-target="#pista" type="button" role="tab" aria-controls="pista" aria-selected="false">Partido</button>
       </li>
     </ul>
 
     <div class="tab-content" id="tabsContent">
+      <!-- Tab: Convocados -->
       <div class="tab-pane fade show active" id="convocados" role="tabpanel" aria-labelledby="tab-convocados">
+        <button type="button" class="btn btn-info mb-3" data-bs-toggle="modal" data-bs-target="#modalConvocarJugadores">Cambiar convocatoria</button>
         <ul id="listaJugadoresConvocados" class="list-group"></ul>
       </div>
+      <!-- Tab: Partido -->
       <div class="tab-pane fade" id="pista" role="tabpanel" aria-labelledby="tab-pista">
+        <button type="button" class="btn btn-warning mb-3" data-bs-toggle="modal" data-bs-target="#modalElegirPista">Cambiar jugadores en pista</button>
         <ul id="listaJugadoresPista" class="list-group"></ul>
       </div>
     </div>
   </div>
 
-  <!-- Modal para seleccionar jugadores convocados -->
+  <!-- Modal Convocar Jugadores -->
   <div class="modal fade" id="modalConvocarJugadores" tabindex="-1" aria-labelledby="modalConvocarJugadoresLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable">
       <form id="formConvocarJugadores" class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="modalConvocarJugadoresLabel">Seleccionar Jugadores Convocados</h5>
+          <h5 class="modal-title" id="modalConvocarJugadoresLabel">Seleccionar jugadores convocados</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body">
-          <ul id="listaJugadoresEquipo" class="list-group"></ul>
+          <ul id="listaJugadoresPlantilla" class="list-group"></ul>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar convocados</button>
+          <button type="submit" class="btn btn-primary">Guardar convocatoria</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Elegir Jugadores en Pista -->
+  <div class="modal fade" id="modalElegirPista" tabindex="-1" aria-labelledby="modalElegirPistaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <form id="formElegirPista" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalElegirPistaLabel">Seleccionar jugadores en pista (máximo 5)</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <ul id="listaJugadoresConvocadosModal" class="list-group"></ul>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar alineación</button>
         </div>
       </form>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
   <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
-
   <script src="js/firebase-config.js"></script>
   <script src="js/load-header.js"></script>
   <script src="js/partido.js"></script>
