@@ -158,7 +158,9 @@ function ajustarBotonesSegunEstado() {
 function guardarEstadoPartido(estado) {
   estadoPartido = estado;
   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/estado`)
-    .set(estado)
+    .set(estado).then(()=>{
+      sincronizarPartidoGlobal(currentUser.uid,currentTeamId,currentCompeticionId,currentPartidoId);
+    })
     .catch(err => console.error('Error guardando estado partido:', err));
 }
 
@@ -349,21 +351,27 @@ function prepararBotonesRival() {
 function modificarMarcadorRival(cant) {
   marcadorRival += cant;
   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/puntosRival`)
-    .set(marcadorRival);
+    .set(marcadorRival).then(()=>{
+      sincronizarPartidoGlobal(currentUser.uid,currentTeamId,currentCompeticionId,currentPartidoId);
+    });
   document.getElementById('marcadorRival').textContent = marcadorRival;
 }
 
 function modificarFaltasRival(cant) {
   faltasRival += cant;
   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/faltasRival`)
-    .set(faltasRival);
+    .set(faltasRival).then(()=>{
+      sincronizarPartidoGlobal(currentUser.uid,currentTeamId,currentCompeticionId,currentPartidoId);
+    });
   document.getElementById('faltasRival').textContent = faltasRival;
 }
 
 function modificarFaltasEquipo(cant) {
   faltasEquipo += cant;
   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/faltasEquipo`)
-    .set(faltasEquipo);
+    .set(faltasEquipo).then(()=>{
+      sincronizarPartidoGlobal(currentUser.uid,currentTeamId,currentCompeticionId,currentPartidoId);
+    });
   document.getElementById('faltasEquipo').textContent = `Faltas: ${faltasEquipo}`;
 }
 
@@ -408,6 +416,8 @@ function guardarConvocadosModal() {
     .set(data)
     .then(() => {
       bootstrap.Modal.getOrCreateInstance(document.getElementById('modalConvocarJugadores')).hide();
+      sincronizarPartidoGlobal(currentUser.uid,currentTeamId,currentCompeticionId,currentPartidoId);
+      
       renderListaJugadoresConvocados();
       renderListaJugadoresConvocadosModal();
     });
@@ -462,6 +472,8 @@ function guardarJugadoresEnPista() {
     .set(data)
     .then(() => {
       bootstrap.Modal.getOrCreateInstance(document.getElementById('modalElegirPista')).hide();
+      sincronizarPartidoGlobal(currentUser.uid,currentTeamId,currentCompeticionId,currentPartidoId);
+    
       renderListaJugadoresPista();
       renderListaJugadoresConvocadosModal();
     });
@@ -537,6 +549,9 @@ function agregarEstadistica(jugadorId, tipo, cantidad) {
   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/estadisticasJugadores`)
     .set(estadisticasJugadores)
     .then(() => {
+      
+      sincronizarPartidoGlobal(currentUser.uid,currentTeamId,currentCompeticionId,currentPartidoId);
+  
       actualizarFaltasEquipo();
       actualizarMarcadorEquipo();
       renderListaJugadoresPista();
@@ -626,5 +641,24 @@ function botonesTemporizador() {
     btnTerminar.disabled = true;
 
     alert('El partido ha finalizado.');
+  });
+}
+
+
+function sincronizarPartidoGlobal(userId, equipoId, competicionId, partidoId) {
+  console.log("sincronizar:", userId, equipoId, competicionId, partidoId);
+  const refPartido = db.ref(`usuarios/${userId}/equipos/${equipoId}/competiciones/${competicionId}/partidos/${partidoId}`);
+  const refGlobal = db.ref(`partidosGlobales/${partidoId}`);
+  return db.ref(`usuarios/${userId}/equipos/${equipoId}/nombre`).once('value').then(nombreSnap => {
+    return refPartido.once('value').then(snapshot => {
+      if (!snapshot.exists()) {
+        console.log("El partido fue eliminado, borrando de global");
+        return refGlobal.remove();
+      }
+      const p = snapshot.val();
+      return refGlobal.set(p);
+    });
+  }).catch(error => {
+    console.error('Error al sincronizar partido global:', error);
   });
 }

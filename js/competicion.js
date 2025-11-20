@@ -264,8 +264,11 @@ confirmDeleteBtn.onclick = () => {
   } else if (elementoABorrar.tipo === 'partido') {
     db.ref(`${path}/partidos/${elementoABorrar.id}`).remove()
       .then(() => {
-        elementoABorrar = null;
-        confirmDeleteModal.hide();
+        db.ref(`partidosGlobales/${elementoABorrar.id}`).remove().then(()=>{
+          elementoABorrar = null;
+          confirmDeleteModal.hide();
+        }).catch(err => alert('Error al borrar partido: ' + err.message));
+      
       }).catch(err => alert('Error al borrar partido: ' + err.message));
   }
 };
