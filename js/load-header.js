@@ -14,14 +14,12 @@ fetch('header.html')
 
 
     authh.onAuthStateChanged(user => {
-      if (!user) {
-        alert('Por favor inicia sesión');
-        window.location.href = 'index.html';
-        return;
+      if (user) {
+        uid = user.uid;
+        console.log(uid)
+        construirBreadcrumbDesdeParametros();
       }
-      uid = user.uid;
-      console.log(uid)
-      construirBreadcrumbDesdeParametros();
+    
     });
    
 

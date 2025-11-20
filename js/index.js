@@ -73,7 +73,7 @@ function listarEquipos() {
 
 
 
-            const li = document.createElement('li');
+            const li = document.createElement('s');
             li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
 
             // Contenido del equipo (nombre)
