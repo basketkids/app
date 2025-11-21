@@ -6,7 +6,7 @@ const authh = firebase.auth();
 
 // Carga el contenido de header.html dentro de #header-container
 
-fetch('./header.html')
+fetch('../header.html')
   .then(response => response.text())
   .then(html => {
     document.getElementById('header-container').innerHTML = html;
