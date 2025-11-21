@@ -158,21 +158,18 @@ function cargarEstadoPartido() {
 function ajustarBotonesSegunEstado() {
 
   if (estadoPartido === 'no empezado') {
-    btnEmpezar.disabled = false;
     btnStartPause.disabled = true;
     btnTerminarCuarto.disabled = true;
     btnTerminar.disabled = true;
     partidoIniciado = false;
     partidoTerminado = false;
   } else if (estadoPartido === 'en curso') {
-    btnEmpezar.disabled = true;
     btnStartPause.disabled = false;
     btnTerminarCuarto.disabled = false;
     btnTerminar.disabled = false;
     partidoIniciado = true;
     partidoTerminado = false;
   } else if (estadoPartido === 'finalizado') {
-    btnEmpezar.disabled = false;
     btnStartPause.disabled = true;
     btnTerminarCuarto.disabled = true;
     btnTerminar.disabled = true;
@@ -244,44 +241,81 @@ function cargarJugadoresEnPista() {
       renderListaJugadoresConvocadosModal();
     });
 }
+let ordenActual = { columna: null, ascendente: true };
+
 function renderListaJugadoresConvocados() {
   const contenedor = document.getElementById('tablaEstadisticasContainer');
   if (!contenedor) return;
 
-  // Limpiamos el contenido previo
   contenedor.innerHTML = '';
 
-  // Crear tabla
   const table = document.createElement('table');
   table.className = 'table table-striped table-bordered table-sm';
 
-  // Cabecera
   const thead = document.createElement('thead');
   const headerRow = document.createElement('tr');
-  ['Nombre', 'Puntos', 'Asist.', 'Rebotes', 'Robos', 'Tapones', 'Faltas'].forEach(text => {
+
+  const columnas = [
+    { nombre: 'Nombre', key: 'nombre' },
+    { nombre: 'Puntos', key: 'puntos' },
+    { nombre: 'Asist.', key: 'asistencias' },
+    { nombre: 'Rebotes', key: 'rebotes' },
+    { nombre: 'Robos', key: 'robos' },
+    { nombre: 'Tapones', key: 'tapones' },
+    { nombre: 'Faltas', key: 'faltas' }
+  ];
+
+  columnas.forEach(({ nombre, key }) => {
     const th = document.createElement('th');
-    th.textContent = text;
+    th.textContent = nombre;
+    th.style.cursor = 'pointer';
+    th.onclick = () => {
+      ordenarTablaPorColumna(key);
+      renderListaJugadoresConvocados();
+    };
     headerRow.appendChild(th);
   });
+
   thead.appendChild(headerRow);
   table.appendChild(thead);
 
-  // Cuerpo
   const tbody = document.createElement('tbody');
-  plantillaJugadores.filter(i => convocados.has(i.id)).forEach(j => {
+
+  let jugadores = plantillaJugadores.filter(i => convocados.has(i.id));
+
+  if (ordenActual.columna) {
+    jugadores.sort((a, b) => {
+      const statsA = estadisticasJugadores[a.id] || {};
+      const statsB = estadisticasJugadores[b.id] || {};
+
+      let valA, valB;
+
+      if (ordenActual.columna === 'nombre') {
+        valA = a.nombre.toLowerCase();
+        valB = b.nombre.toLowerCase();
+      } else {
+        valA = statsA[ordenActual.columna] || 0;
+        valB = statsB[ordenActual.columna] || 0;
+      }
+
+      if (valA < valB) return ordenActual.ascendente ? -1 : 1;
+      if (valA > valB) return ordenActual.ascendente ? 1 : -1;
+      return 0;
+    });
+  }
+
+  jugadores.forEach(j => {
     const row = document.createElement('tr');
 
-    const stats = estadisticasJugadores[j.id] || {};
-    // Nombre columna
     const tdNombre = document.createElement('td');
-    tdNombre.textContent = j.nombre + " (#" + j.dorsal + ")";
+    tdNombre.textContent = `${j.nombre} (#${j.dorsal})`;
+    tdNombre.style.fontWeight = '600';
     row.appendChild(tdNombre);
 
-    // Estadísticas
     const columnasStats = ['puntos', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas'];
     columnasStats.forEach(key => {
       const td = document.createElement('td');
-      td.textContent = stats[key] || 0;
+      td.textContent = (estadisticasJugadores[j.id] && estadisticasJugadores[j.id][key]) || 0;
       row.appendChild(td);
     });
 
@@ -290,6 +324,16 @@ function renderListaJugadoresConvocados() {
 
   table.appendChild(tbody);
   contenedor.appendChild(table);
+}
+
+function ordenarTablaPorColumna(columna) {
+  if (ordenActual.columna === columna) {
+    ordenActual.ascendente = !ordenActual.ascendente;
+  } else {
+    ordenActual.columna = columna;
+    // Si es la columna 'nombre', orden ascendente inicialmente; para las demás, descendente
+    ordenActual.ascendente = (columna === 'nombre');
+  }
 }
 
 function cargarEstadisticas() {
@@ -500,14 +544,21 @@ function renderListaJugadoresPista() {
     const nombre = document.createElement('div');
     nombre.textContent = `${j.nombre} (#${j.dorsal})`;
     nombre.style.fontWeight = '600';
-    li.appendChild(nombre);
+    const stats = estadisticasJugadores[j.id] || {};
+    const textoStats = document.createElement('small');
+    textoStats.className = 'ms-3 text-muted';
+    textoStats.textContent = `Pts:${stats.puntos || 0} A:${stats.asistencias || 0} R:${stats.rebotes || 0} S:${stats.robos || 0} T:${stats.tapones || 0} F:${stats.faltas || 0}`;
 
+    nombre.appendChild(textoStats);
+    li.appendChild(nombre);
+  
     const contStats = document.createElement('div');
     contStats.className = 'd-flex flex-wrap gap-1 mt-2';
 
     [1, 2, 3].forEach(p => {
       const btn = document.createElement('button');
       btn.className = 'btn btn-sm btn-outline-primary stat-btn';
+      
       btn.textContent = `+${p}`;
       btn.title = `Añadir ${p} punto${p > 1 ? 's' : ''}`;
       btn.type = 'button';
@@ -523,7 +574,12 @@ function renderListaJugadoresPista() {
       ['F', 'faltas'],
     ].forEach(([label, key]) => {
       const btn = document.createElement('button');
-      btn.className = 'btn btn-sm btn-outline-secondary stat-btn';
+      btn.className = 'btn btn-sm btn-outline-success stat-btn';
+
+      if(key=='faltas'){
+        btn.className = 'btn btn-sm btn-outline-danger stat-btn';
+
+      }
       btn.textContent = label;
       btn.title = `Añadir ${label}`;
       btn.type = 'button';
@@ -533,12 +589,7 @@ function renderListaJugadoresPista() {
 
     li.appendChild(contStats);
 
-    const stats = estadisticasJugadores[j.id] || {};
-    const textoStats = document.createElement('small');
-    textoStats.className = 'ms-3 text-muted';
-    textoStats.textContent = `Pts:${stats.puntos || 0} Asis:${stats.asistencias || 0} Reb:${stats.rebotes || 0} Rob:${stats.robos || 0} Tap:${stats.tapones || 0} Falt:${stats.faltas || 0}`;
-
-    li.appendChild(textoStats);
+    
 
     ul.appendChild(li);
   });
@@ -600,27 +651,23 @@ function actualizarFaltasEquipo() {
 function botonesTemporizador() {
 
   // Botón empezar ya tiene event listener en el código general, pero aquí te pongo ejemplo
-  btnEmpezar.addEventListener('click', () => {
 
-
-    guardarEstadoPartido('en curso');
-    partidoIniciado = true;
-    partidoTerminado = false;
-    parteActual = 1;
-    segundosRestantes = duracionParte;
-    actualizarDisplay();
-
-    btnEmpezar.disabled = true;
-    btnStartPause.disabled = false;
-    btnTerminarCuarto.disabled = false;
-    btnTerminar.disabled = false;
-
-    iniciarContador();
-
-  });
 
   btnStartPause.addEventListener('click', () => {
-    if (estadoPartido !== 'en curso') return;
+    if (estadoPartido !== 'en curso') {
+      guardarEstadoPartido('en curso');
+      partidoIniciado = true;
+      partidoTerminado = false;
+      parteActual = 1;
+      segundosRestantes = duracionParte;
+      actualizarDisplay();
+      btnStartPause.disabled = false;
+      btnTerminarCuarto.disabled = false;
+      btnTerminar.disabled = false;
+
+    iniciarContador();
+    return;
+    };
     if (contadorActivo) {
       pausarContador();
     } else {
@@ -648,7 +695,6 @@ function botonesTemporizador() {
     partidoIniciado = false;
     partidoTerminado = true;
 
-    btnEmpezar.disabled = false;
     btnStartPause.disabled = true;
     btnTerminarCuarto.disabled = true;
     btnTerminar.disabled = true;

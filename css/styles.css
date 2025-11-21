@@ -1,5 +1,5 @@
-body {
-  background-color: #f0f4f8;
+:root {
+  --bs-primary: #2B2B2B;
 }
 h1, h2, h3, h4, h5 {
   color: #1a237e;
@@ -45,16 +45,55 @@ h1, h2, h3, h4, h5 {
 }
 
 
-.btn{
-
-
-  min-width: 50px;
-  min-height: 50px;
-  font-size: x-large;
-}
-
 
 #marcador { font-weight: bold; font-size: 3em; }
 #tiempo-faltas { display: flex; justify-content: center; gap: 50px; margin: 20px 0; font-size: 1.5em; }
 #faltas { display: flex; gap: 30px; }
 .faltas-equipo { display: flex; align-items: center; gap: 10px; }
+.logo {max-height: 50px;}
+
+.body {
+  background-color: #F7F7F7 !important;
+}
+
+.btn-primary, 
+.bg-primary, 
+.text-primary {
+  background-color: #2B2B2B !important;
+  border-color: #2B2B2B !important;
+  color: #fff !important;
+}
+.logo {
+  display: inline-block;       /* Para que tenga tamaño */
+  width: 215px;                /* Ajusta el tamaño deseado */
+  height: 50px;                /* Ajusta el tamaño deseado */
+  background-image: url('../img/logo-t.png');  /* Ruta a tu imagen */
+  background-size: contain;    /* Para que la imagen se escale */
+  background-repeat: no-repeat;
+  background-position: center;
+  text-indent: -9999px;        /* Oculta texto si hay */
+}
+
+.stat-btn {
+  width: 34px !important;
+  height: 34px  !important;
+  font-size: 1rem;
+  padding: 0;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 4px;
+}
+
+#breadcrumb-container a {
+  color: var(--bs-primary) !important;
+}
+
+
+.btn{
+
+
+  min-width: 40px ;
+  min-height: 40px;
+  font-size: large;
+}

@@ -36,7 +36,7 @@ fetch('../header.html')
     const currentCompeticionId = params.get('idCompeticion');
     const currentPartidoId = params.get('idPartido');
     const currrentJugadorId= params.get('idJugador');
-    const breadcrumbItems = [{ nombre: 'Inicio', url: '/' }];
+    const breadcrumbItems = [{ nombre: 'Inicio', url: '../' }];
     if (window.location.pathname.includes('/public')) {
       // Estás en la carpeta public
       breadcrumbItems.push({ nombre: "partidos", url: "" });

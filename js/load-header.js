@@ -86,7 +86,7 @@ fetch('./header.html')
       if (i === items.length - 1 || !item.url) {
         html += `<li class="breadcrumb-item active" aria-current="page">${item.nombre}</li>`;
       } else {
-        html += `<li class="breadcrumb-item"><a href="${item.url}">${item.nombre}</a></li>`;
+        html += `<li class="breadcrumb-item"><a class="" href="${item.url}">${item.nombre}</a></li>`;
       }
     });
     html += '</ol></nav>';
