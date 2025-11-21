@@ -110,7 +110,7 @@ function inicializarAuth() {
     if (user) {
       loginBtn.style.display = 'none';
       logoutBtn.style.display = 'inline';
-      userInfo.textContent = `Hola, ${user.displayName || user.email}`;
+      userInfo.textContent = `${user.displayName || user.email}`;
     } else {
       loginBtn.style.display = 'inline';
       logoutBtn.style.display = 'none';
