@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -12,78 +13,84 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
 
   <link rel="stylesheet" href="css/styles.css" />
+  <link rel="icon" href="img/favicon.ico" type="image/x-icon" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#2B2B2B" />
+
 </head>
+
 <body class="bg-light">
 
-<!-- Aquí se carga la cabecera externa -->
-<div id="header-container"></div>
+  <!-- Aquí se carga la cabecera externa -->
+  <div id="header-container"></div>
 
-<div class="container">
+  <div class="container">
 
-  <h2>Equipos</h2>
+    <h2>Equipos</h2>
 
-  <!-- Botón para abrir modal Añadir Equipo -->
-  <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addTeamModal">
-    Añadir Equipo
-  </button>
+    <!-- Botón para abrir modal Añadir Equipo -->
+    <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addTeamModal">
+      Añadir Equipo
+    </button>
 
-  <ul id="teamsList" class="list-group mb-4"></ul>
-</div>
+    <ul id="teamsList" class="list-group mb-4"></ul>
+  </div>
 
-<!-- Modal para añadir equipo -->
-<div class="modal fade" id="addTeamModal" tabindex="-1" aria-labelledby="addTeamModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form id="addTeamForm">
+  <!-- Modal para añadir equipo -->
+  <div class="modal fade" id="addTeamModal" tabindex="-1" aria-labelledby="addTeamModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form id="addTeamForm">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addTeamModalLabel">Añadir nuevo equipo</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <input type="text" id="inputEquipoModal" class="form-control" placeholder="Nombre de equipo" required />
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar equipo</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal confirmación borrar equipo -->
+  <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="addTeamModalLabel">Añadir nuevo equipo</h5>
+          <h5 class="modal-title" id="confirmDeleteLabel">Confirmar borrado</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body">
-          <input type="text" id="inputEquipoModal" class="form-control" placeholder="Nombre de equipo" required />
+          ¿Estás seguro de que quieres borrar este equipo? Esta acción no se puede deshacer.
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar equipo</button>
+          <button type="button" id="confirmDeleteBtn" class="btn btn-danger">Borrar equipo</button>
         </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- Modal confirmación borrar equipo -->
-<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="confirmDeleteLabel">Confirmar borrado</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
-      <div class="modal-body">
-        ¿Estás seguro de que quieres borrar este equipo? Esta acción no se puede deshacer.
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" id="confirmDeleteBtn" class="btn btn-danger">Borrar equipo</button>
       </div>
     </div>
   </div>
-</div>
 
-<!-- Bootstrap Bundle JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Bootstrap Bundle JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
 
-<!-- Configuración y carga cabecera -->
-<script src="js/firebase-config.js"></script>
-<script src="js/load-header.js"></script>
+  <!-- Configuración y carga cabecera -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/load-header.js"></script>
 
-<!-- Lógica index -->
-<script src="js/index.js"></script>
+  <!-- Lógica index -->
+  <script src="js/index.js"></script>
 
 </body>
+
 </html>

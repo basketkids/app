@@ -27,10 +27,13 @@ db.ref(`partidosGlobales/${id}/`).get().then(snapshot => {
 
     const partido = snapshot.val();
     partido.id = snapshot.key;
+    
 
-    console.log(partido);
 
     if (partido.esLocal) {
+      document.getElementById('nombrePartido').textContent =  partido.nombreEquipo + " vs " + partido.nombreRival;
+
+
         document.getElementById('nombreEquipoMarcador').textContent = partido.nombreEquipo;
         document.getElementById('marcadorEquipo').textContent = partido.puntosEquipo;
         document.getElementById('faltasEquipo').textContent = partido.faltasEquipo;
@@ -39,6 +42,7 @@ db.ref(`partidosGlobales/${id}/`).get().then(snapshot => {
         document.getElementById('marcadorRival').textContent = partido.puntosRival;
         document.getElementById('faltasRival').textContent = partido.faltasRival;
     } else {
+      document.getElementById('nombrePartido').textContent =  partido.nombreRival + " vs " + partido.nombreEquipo;
 
         document.getElementById('nombreEquipoMarcador').textContent = partido.nombreRival;
         document.getElementById('marcadorEquipo').textContent = partido.puntosRival;
@@ -71,13 +75,18 @@ switch (partido.estado) {
     divEstado.appendChild(parrafo);
     break;
   case 'en curso':
+    parrafo.textContent = "En vivo...";
+    parrafo.classList.remove('text-primary');
+    parrafo.classList.add('text-success'); // cambio a verde
+    divEstado.innerHTML = '';
+    divEstado.appendChild(parrafo);
     setInterval(() => {
         location.reload();
       }, 30000);
            break;
   case 'finalizado':
     parrafo.textContent = "El partido ha finalizado.";
-    parrafo.classList.remove('text-primary');
+    parrafo.classList.remove('text-danger');
     parrafo.classList.add('text-success'); // cambio a verde
     divEstado.innerHTML = '';
     divEstado.appendChild(parrafo);
@@ -91,61 +100,100 @@ switch (partido.estado) {
     console.error(error);
 });
 
+let ordenActual = { columna: null, ascendente: false };
+
 function renderListaJugadoresConvocados(partido) {
-    const contenedor = document.getElementById('tablaEstadisticasContainer');
-    if (!contenedor) return;
+  const contenedor = document.getElementById('tablaEstadisticasContainer');
+  if (!contenedor) return;
 
-    // Limpiamos el contenido previo
-    contenedor.innerHTML = '';
+  contenedor.innerHTML = '';
 
-    // Crear tabla
-    const table = document.createElement('table');
-    table.className = 'table table-striped table-bordered table-sm';
+  const table = document.createElement('table');
+  table.className = 'table table-striped table-bordered table-sm';
 
-    // Cabecera
-    const thead = document.createElement('thead');
-    const headerRow = document.createElement('tr');
-    ['Nombre', 'Puntos', 'Asist.', 'Rebotes', 'Robos', 'Tapones', 'Faltas'].forEach(text => {
-        const th = document.createElement('th');
-        th.textContent = text;
-        headerRow.appendChild(th);
-    });
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
+  // Cabecera con click para ordenar
+  const thead = document.createElement('thead');
+  const headerRow = document.createElement('tr');
+  const columnas = ['Nombre', 'Pts.', 'Asist.', 'Reb.', 'Rob.', 'Tap.', 'Fal.'];
+  const clavesStats = [null, 'puntos', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas'];
 
-    // Cuerpo
-    const tbody = document.createElement('tbody');
-    console.log(partido.convocados);
-    Object.keys(partido.convocados).forEach(j => {
-        const row = document.createElement('tr');
-        const stats = partido.estadisticasJugadores[j] || {};
-        // Nombre columna
-        const tdNombre = document.createElement('td');
-        const jugadorConvocado = partido.convocados[j]; // OBJETO {nombre: ..., dorsal: ...}
-
-
-        let enpista = "";
-
-        if (partido.jugadoresEnPista && partido.jugadoresEnPista[j]) {
-          enpista = "* ";
+  columnas.forEach((texto, idx) => {
+    const th = document.createElement('th');
+    th.textContent = texto;
+    th.style.cursor = 'pointer';
+    th.onclick = () => {
+      if (idx === 0) {
+        // Nombre siempre orden ascendente
+        ordenActual = { columna: 'nombre', ascendente: true };
+      } else {
+        // Otras columnas orden descendente siempre en primer click
+        if (ordenActual.columna === clavesStats[idx] && !ordenActual.ascendente) {
+          ordenActual.ascendente = true; // si ya descendente, ahora ascendente
+        } else {
+          ordenActual = { columna: clavesStats[idx], ascendente: false };
         }
-        
-        tdNombre.textContent = enpista + jugadorConvocado.nombre + " (#" + jugadorConvocado.dorsal + ")";
-        
-        row.appendChild(tdNombre);
+      }
+      renderListaJugadoresConvocados(partido);
+    };
+    headerRow.appendChild(th);
+  });
 
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
 
-        // Estadísticas
-        const columnasStats = ['puntos', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas'];
-        columnasStats.forEach(key => {
-            const td = document.createElement('td');
-            td.textContent = stats[key] || 0;
-            row.appendChild(td);
-        });
+  const tbody = document.createElement('tbody');
 
-        tbody.appendChild(row);
+  // Obtener jugadores y ordenar según estado
+  let jugadores = Object.keys(partido.convocados);
+
+  jugadores.sort((a, b) => {
+    if (!ordenActual.columna) return 0;
+    const convA = partido.convocados[a];
+    const convB = partido.convocados[b];
+
+    if (ordenActual.columna === 'nombre') {
+      const nombreA = convA.nombre.toLowerCase();
+      const nombreB = convB.nombre.toLowerCase();
+      if (nombreA < nombreB) return ordenActual.ascendente ? -1 : 1;
+      if (nombreA > nombreB) return ordenActual.ascendente ? 1 : -1;
+      return 0;
+    } else {
+      const statsA = partido.estadisticasJugadores[a] || {};
+      const statsB = partido.estadisticasJugadores[b] || {};
+      const valA = statsA[ordenActual.columna] || 0;
+      const valB = statsB[ordenActual.columna] || 0;
+
+      if (valA < valB) return ordenActual.ascendente ? -1 : 1;
+      if (valA > valB) return ordenActual.ascendente ? 1 : -1;
+      return 0;
+    }
+  });
+
+  jugadores.forEach(j => {
+    const row = document.createElement('tr');
+    const stats = partido.estadisticasJugadores[j] || {};
+    const jugadorConvocado = partido.convocados[j]; 
+
+    let enpista = "";
+
+    if (partido.jugadoresEnPista && partido.jugadoresEnPista[j]) {
+      enpista = "* ";
+    }
+    
+    const tdNombre = document.createElement('td');
+    tdNombre.textContent = enpista + jugadorConvocado.nombre + " (#" + jugadorConvocado.dorsal + ")";
+    row.appendChild(tdNombre);
+
+    const columnasStats = ['puntos', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas'];
+    columnasStats.forEach(key => {
+      const td = document.createElement('td');
+      td.textContent = stats[key] || 0;
+      row.appendChild(td);
     });
 
-    table.appendChild(tbody);
-    contenedor.appendChild(table);
+    tbody.appendChild(row);
+  });
+
+  table.appendChild(tbody);
+  contenedor.appendChild(table);
 }
