@@ -85,11 +85,13 @@ addPlayerForm.addEventListener('submit', e => {
       bootstrap.Modal.getInstance(addPlayerForm.closest('.modal')).hide();
     });
 });
-
 function loadPlantilla() {
   playersList.innerHTML = '';
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/plantilla`).once('value').then(snapshot => {
-    if (!snapshot.exists()) return;
+  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/plantilla`).on('value', snapshot => {
+    if (!snapshot.exists()) {
+      playersList.innerHTML = '<li class="list-group-item">No hay jugadores añadidos</li>';
+      return;
+    }
 
     const jugadoresArray = [];
     snapshot.forEach(jugadorSnap => {
@@ -110,14 +112,35 @@ function loadPlantilla() {
       const textoJugador = document.createElement('span');
       textoJugador.textContent = `${jugador.dorsal} - ${jugador.nombre}`;
 
-      const boton = document.createElement('a');
-      boton.href = `jugadores.html?idJugador=${encodeURIComponent(jugador.key)}&idEquipo=${encodeURIComponent(currentTeamId)}`;
-      boton.className = 'btn btn-success btn-sm';
-      boton.title = 'Ver jugador';
-      boton.innerHTML = '<i class="bi bi-eye"></i>';
+      // Crear contenedor para botones
+      const botonesDiv = document.createElement('div');
+      botonesDiv.classList.add('d-flex', 'gap-2');
 
+      // Botón ver
+      const botonVer = document.createElement('a');
+      botonVer.href = `jugadores.html?idJugador=${encodeURIComponent(jugador.key)}&idEquipo=${encodeURIComponent(currentTeamId)}`;
+      botonVer.className = 'btn btn-success btn-sm';
+      botonVer.title = 'Ver jugador';
+      botonVer.innerHTML = '<i class="bi bi-eye"></i>';
+
+      // Botón borrar
+      const btnBorrar = document.createElement('button');
+      btnBorrar.className = 'btn btn-danger btn-sm';
+      btnBorrar.title = 'Borrar jugador';
+      btnBorrar.innerHTML = '<i class="bi bi-trash"></i>';
+      btnBorrar.addEventListener('click', () => {
+        confirmarBorradoJugador(jugador.key, jugador.nombre);
+      });
+
+      // Añadir botones al contenedor
+      botonesDiv.appendChild(botonVer);
+      botonesDiv.appendChild(btnBorrar);
+
+      // Añadir texto y contenedor botones al li
       li.appendChild(textoJugador);
-      li.appendChild(boton);
+      li.appendChild(botonesDiv);
+
+
       playersList.appendChild(li);
     });
   });
@@ -171,3 +194,26 @@ function loadCompeticiones() {
     });
   });
 }
+const confirmDeleteModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+const nombreJugadorConfirm = document.getElementById('nombreJugadorConfirm');
+const btnConfirmDelete = document.getElementById('btnConfirmDelete');
+
+let jugadorAEliminar = null;
+
+function confirmarBorradoJugador(key, nombre) {
+  jugadorAEliminar = key;
+  nombreJugadorConfirm.textContent = nombre;
+  confirmDeleteModal.show();
+}
+
+btnConfirmDelete.addEventListener('click', () => {
+  if (!jugadorAEliminar) return;
+  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/plantilla/${jugadorAEliminar}`).remove()
+    .then(() => {
+      jugadorAEliminar = null;
+      confirmDeleteModal.hide();
+    })
+    .catch(error => {
+      alert('Error al borrar jugador: ' + error.message);
+    });
+});
