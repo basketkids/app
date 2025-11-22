@@ -29,24 +29,27 @@
     
 
     <!-- Marcadores + contador + control -->
-    <div id="divEstado" class="d-flex justify-content-center align-items-center gap-4 flex-wrap my-4">
-      
-      <div class="text-center bg-primary text-white rounded px-1 py-1" style="min-width: 100px;">
-        <label for="selectCuarto" class="form-label mb-1" style="font-weight:600; font-size:1rem;cursor:pointer;">Cuarto</label>
-        <p id="numCuarto" class="text-center" style="font-weight:bold; font-size:1.5rem; max-width: 80px; margin:0 auto;" >
-          1</p>
-          
-      </div>
-
-      <div class="text-center bg-secondary text-white rounded " style="min-width: 120px;">
-        <div style="font-weight: 600; font-size: 1rem; margin-bottom: 2px;">Tiempo restante</div>
-        <div id="contador" style="font-size: 2rem; font-weight: 700;">10:00</div>
-      </div>
-
+    <div id="divEstado" class="d-flex justify-content-center text-success fw-bold fs-3 border border-success rounded p-3" style="max-width: 300px; margin: 0 auto;">
+      hola
+    </div>
     
-
+    
+    <div class="d-flex justify-content-center align-items-center gap-4 flex-wrap my-4">
+      
+     
+    <div class="text-center bg-primary text-white rounded px-1 py-1" style="min-width: 100px;">
+      <label for="selectCuarto" class="form-label mb-1" style="font-weight:600; font-size:1rem;cursor:pointer;">Cuarto</label>
+      <p id="numCuarto" class="text-center" style="font-weight:bold; font-size:1.5rem; max-width: 80px; margin:0 auto;" >
+        1</p>
+        
     </div>
 
+    <div class="text-center bg-secondary text-white rounded px-1 py-1" >
+      <div style="font-weight: 600; font-size: 1rem; margin-bottom: 2px;">Tiempo restante</div>
+      <div id="contador" style="font-size: 2rem; font-weight: 700;">10:00</div>
+    </div>
+
+  </div>
     <div class="d-flex justify-content-center align-items-center gap-5 my-4 flex-wrap">
 
       <div class="text-center bg-dark text-white rounded px-1 py-1" style="min-width: 140px;">
@@ -63,10 +66,33 @@
 
     </div>
 
-    
+    <ul class="nav nav-tabs mb-3" id="tabsPartido" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="tab-convocados" data-bs-toggle="tab" data-bs-target="#convocados"
+          type="button" role="tab" aria-controls="convocados" aria-selected="true">Convocados</button>
+      </li>
+     
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-en-vivo" data-bs-toggle="tab" data-bs-target="#en-vivo" type="button"
+          role="tab" aria-controls="en-vivo" aria-selected="false">En Vivo</button>
+      </li>
+    </ul>
+    <div class="tab-content" id="tabsContent">
+      <!-- Tab: Convocados -->
+      <div class="tab-pane fade show active" id="convocados" role="tabpanel" aria-labelledby="tab-convocados">
+        <button type="button" class="btn btn-info mb-3" data-bs-toggle="modal"
+          data-bs-target="#modalConvocarJugadores">Cambiar convocatoria</button>
+        <div id="tablaEstadisticasContainer"></div>
+      </div>
+     
+      <!-- Tab: En Vivo -->
+      <div class="tab-pane fade" id="en-vivo" role="tabpanel" aria-labelledby="tab-en-vivo">
+        <div id="listaEventosEnVivo" class="list-group mt-3"></div>
+      </div>
+    </div>
+  </div>
 
-    <!-- Tabs -->
-    <div id="tablaEstadisticasContainer"></div>
+
 
     
     
@@ -80,6 +106,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
   <script src="../js/firebase-config.js"></script>
   <script src="../js/public/load-header.js"></script>
+
+  <script src="../js/data/dataService.js"></script>
+  <script src="../js/public/partidoGlobalApp.js"></script>
   <script src="../js/public/partido.js"></script>
 
   <script>

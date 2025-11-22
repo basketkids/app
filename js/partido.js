@@ -7,15 +7,15 @@ let currentUser = null,
 
 const db = firebase.database();
 const auth = firebase.auth();
+let partido = null;
+// let plantillaJugadores = [];
+// let convocados = new Set();
+// let jugadoresEnPista = new Set();
 
-let plantillaJugadores = [];
-let convocados = new Set();
-let jugadoresEnPista = new Set();
-
-let estadisticasJugadores = {};
-let marcadorRival = 0;
-let faltasRival = 0;
-let faltasEquipo = 0;
+// let partido.estadisticasJugadores = {};
+// let marcadorRival = 0;
+// let faltasRival = 0;
+// let faltasEquipo = 0;
 
 let duracionParte = 10 * 60; // por defecto 10 minutos
 let totalPartes = 4; // por defecto 4 cuartos
@@ -25,7 +25,6 @@ let intervalo = null;
 let contadorActivo = false;
 let partidoIniciado = false;
 let partidoTerminado = false;
-let estadoPartido = "no empezado"; // "no empezado", "en curso", "finalizado"
 
 // Dom elements
 const selectConfiguracion = document.getElementById('selectConfiguracion');
@@ -37,10 +36,11 @@ const btnTerminar = document.getElementById('btnTerminar');
 
 function inicializarTemporizador() {
   actualizarDisplay();
-  btnStartPause.disabled = true;
+  btnStartPause.disabled = false;
   btnTerminarCuarto.disabled = true;
   btnTerminar.disabled = true;
 }
+
 
 auth.onAuthStateChanged(user => {
   if (!user) {
@@ -60,68 +60,90 @@ auth.onAuthStateChanged(user => {
     window.location.href = 'index.html';
     return;
   }
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/convocados`)
+
+  // Recuperar TODO el objeto partido
+  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}`)
     .once('value')
     .then(snap => {
-      convocados = new Set();
-      if (snap.exists()) Object.keys(snap.val()).forEach(id => convocados.add(id));
-      
-      
-  
-      db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/plantilla`)
-      .once('value')
-      .then(snapshot => {
-        plantillaJugadores = [];
-        snapshot.forEach(child => {
-          // Obtiene el ID y datos de cada jugador
-          const jugador = { id: child.key, ...child.val() };
-          plantillaJugadores.push(jugador);
+      if (!snap.exists()) {
+        alert('No se encontró el partido');
+        window.location.href = 'index.html';
+        return;
+      }
+
+      partido = snap.val();
+
+      // Inicializar variables globales:
+      // Convocados como Set (claves del objeto convocados)
+      partido.convocados = partido.convocados ? new Set(Object.keys(partido.convocados)) : new Set();
+
+      // Jugadores en pista como Set
+      partido.jugadoresEnPista = partido.jugadoresEnPista ? new Set(Object.keys(partido.jugadoresEnPista)) : new Set();
+
+      // Estadísticas jugadores
+      partido.estadisticasJugadores = partido.estadisticasJugadores || {};
+
+      // Cargar plantilla jugadores (única consulta aparte)
+      return db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/plantilla`)
+        .once('value')
+        .then(snapshot => {
+          plantillaJugadores = [];
+          snapshot.forEach(child => {
+            plantillaJugadores.push({ id: child.key, ...child.val() });
+          });
+
+          // Renderizar todo en la UI
+          renderListaJugadoresPlantilla();
+          renderListaJugadoresConvocados();
+          renderListaJugadoresConvocadosModal();
+          renderListaJugadoresPista();
+
+          ajustarBotonesSegunEstado();
+
+          document.getElementById('nombreEquipoMarcador').textContent = partido.nombreEquipo;
+          document.getElementById('nombreRivalMarcador').textContent = partido.nombreRival;
+          document.getElementById('faltasEquipo').textContent = partido.faltasEquipo;
+          document.getElementById('faltasRival').textContent = partido.faltasRival;
+          document.getElementById('marcadorEquipo').textContent = partido.puntosEquipo;
+          document.getElementById('marcadorRival').textContent = partido.puntosRival;
+          actualizarFaltasEquipo();
+          
+          prepararBotonesRival();
+          prepararFormularioConvocar();
+          prepararFormularioPista();
+          inicializarTemporizador();
+
+          // Configurar temporizador y eventos
+          botonesTemporizador();
+          configurarPartido(selectConfiguracion.value);
         });
-        // Llama a la función para mostrar la plantilla en la UI (por ejemplo, en el modal de convocados)
-        renderListaJugadoresPlantilla();
-
-        renderListaJugadoresConvocados();
-        renderListaJugadoresConvocadosModal();
-        cargarJugadoresEnPista();
-        cargarEstadisticas();
-        cargarMarcadorRival();
-        cargarFaltasRival();
-        cargarFaltasEquipo();
-        cargarEstadoPartido();
-        cargarNombreEquipo();
-        prepararBotonesRival();
-        prepararFormularioConvocar();
-        prepararFormularioPista();
-        inicializarTemporizador();
-  
-      })
-      .catch(error => {
-        console.error('Error al cargar la plantilla:', error);
-        alert('No se pudo cargar la plantilla de jugadores');
-      });    
-
-    });
-
-
-  // Eventos temporizador
-  botonesTemporizador();
+    })
+  // .catch(error => {
+  //   console.error('Error cargando partido:', error);
+  // //  alert('No se pudo cargar los datos del partido');
+  // //  window.location.href = 'index.html';
+  // });
 
   selectConfiguracion.addEventListener('change', (e) => configurarPartido(e.target.value));
   selectCuarto.addEventListener('change', (e) => cambiarCuarto(e.target.value));
-
-  configurarPartido(selectConfiguracion.value);
 });
-function cargarNombreEquipo() {
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/nombre`)
-    .once('value')
-    .then(snap => {
-      if (snap.exists()) {
-        const nombre = snap.val();
-        document.getElementById('nombreEquipoMarcador').textContent = nombre;
-      }
-    })
-    .catch(err => console.error('Error cargando nombre de equipo:', err));
-}
+
+
+
+
+
+
+// function cargarNombreEquipo() {
+//   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/nombre`)
+//     .once('value')
+//     .then(snap => {
+//       if (snap.exists()) {
+//         const nombre = snap.val();
+//         document.getElementById('nombreEquipoMarcador').textContent = nombre;
+//       }
+//     })
+//     .catch(err => console.error('Error cargando nombre de equipo:', err));
+// }
 
 function configurarPartido(opcion) {
   if (opcion === '6x8') {
@@ -147,29 +169,27 @@ function configurarPartido(opcion) {
   selectCuarto.value = parteActual;
 }
 
-function cargarEstadoPartido() {
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/estado`).once('value').then(snap => {
-    if (snap.exists()) estadoPartido = snap.val();
-    else estadoPartido = 'no empezado';
-    ajustarBotonesSegunEstado();
-  });
-}
+
 
 function ajustarBotonesSegunEstado() {
 
-  if (estadoPartido === 'no empezado') {
-    btnStartPause.disabled = true;
+  if (partido.estado == null) {
+    partido.estado = 'pendiente';
+  }
+  
+  if (partido.estado === 'pendiente') {
+    btnStartPause.disabled = false;
     btnTerminarCuarto.disabled = true;
     btnTerminar.disabled = true;
     partidoIniciado = false;
     partidoTerminado = false;
-  } else if (estadoPartido === 'en curso') {
+  } else if (partido.estado === 'en curso') {
     btnStartPause.disabled = false;
     btnTerminarCuarto.disabled = false;
     btnTerminar.disabled = false;
     partidoIniciado = true;
     partidoTerminado = false;
-  } else if (estadoPartido === 'finalizado') {
+  } else if (partido.estado === 'finalizado') {
     btnStartPause.disabled = true;
     btnTerminarCuarto.disabled = true;
     btnTerminar.disabled = true;
@@ -179,7 +199,7 @@ function ajustarBotonesSegunEstado() {
 }
 
 function guardarEstadoPartido(estado) {
-  estadoPartido = estado;
+  partido.estado = estado;
   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/estado`)
     .set(estado).then(() => {
       sincronizarPartidoGlobal(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId);
@@ -223,6 +243,7 @@ function iniciarContador() {
 }
 
 function pausarContador() {
+ // console.log(contadorActivo);
   if (contadorActivo) {
     clearInterval(intervalo);
     intervalo = null;
@@ -231,16 +252,16 @@ function pausarContador() {
   }
 }
 
-function cargarJugadoresEnPista() {
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/jugadoresEnPista`)
-    .once('value')
-    .then(snap => {
-      jugadoresEnPista = new Set();
-      if (snap.exists()) Object.keys(snap.val()).forEach(id => jugadoresEnPista.add(id));
-      renderListaJugadoresPista();
-      renderListaJugadoresConvocadosModal();
-    });
-}
+// function cargarJugadoresEnPista() {
+//   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/jugadoresEnPista`)
+//     .once('value')
+//     .then(snap => {
+//       jugadoresEnPista = new Set();
+//       if (snap.exists()) Object.keys(snap.val()).forEach(id => jugadoresEnPista.add(id));
+//       renderListaJugadoresPista();
+//       renderListaJugadoresConvocadosModal();
+//     });
+// }
 let ordenActual = { columna: null, ascendente: true };
 
 function renderListaJugadoresConvocados() {
@@ -281,12 +302,12 @@ function renderListaJugadoresConvocados() {
 
   const tbody = document.createElement('tbody');
 
-  let jugadores = plantillaJugadores.filter(i => convocados.has(i.id));
+  let jugadores = plantillaJugadores.filter(i => partido.convocados.has(i.id));
 
   if (ordenActual.columna) {
     jugadores.sort((a, b) => {
-      const statsA = estadisticasJugadores[a.id] || {};
-      const statsB = estadisticasJugadores[b.id] || {};
+      const statsA = partido.estadisticasJugadores[a.id] || {};
+      const statsB = partido.estadisticasJugadores[b.id] || {};
 
       let valA, valB;
 
@@ -315,7 +336,7 @@ function renderListaJugadoresConvocados() {
     const columnasStats = ['puntos', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas'];
     columnasStats.forEach(key => {
       const td = document.createElement('td');
-      td.textContent = (estadisticasJugadores[j.id] && estadisticasJugadores[j.id][key]) || 0;
+      td.textContent = (partido.estadisticasJugadores[j.id] && partido.estadisticasJugadores[j.id][key]) || 0;
       row.appendChild(td);
     });
 
@@ -336,40 +357,40 @@ function ordenarTablaPorColumna(columna) {
   }
 }
 
-function cargarEstadisticas() {
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/estadisticasJugadores`)
-    .on('value', snap => {
-      estadisticasJugadores = snap.exists() ? snap.val() : {};
-      renderListaJugadoresConvocados();
-      renderListaJugadoresPista();
-      actualizarMarcadorEquipo();
-      actualizarFaltasEquipo();
-    });
-}
+// function cargarEstadisticas() {
+//   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/estadisticasJugadores`)
+//     .on('value', snap => {
+//       partido.estadisticasJugadores = snap.exists() ? snap.val() : {};
+//       renderListaJugadoresConvocados();
+//       renderListaJugadoresPista();
+//       actualizarMarcadorEquipo();
+//       actualizarFaltasEquipo();
+//     });
+// }
 
-function cargarMarcadorRival() {
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/puntosRival`)
-    .on('value', snap => {
-      marcadorRival = snap.exists() ? snap.val() : 0;
-      document.getElementById('marcadorRival').textContent = marcadorRival;
-    });
-}
+// function cargarMarcadorRival() {
+//   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/puntosRival`)
+//     .on('value', snap => {
+//       marcadorRival = snap.exists() ? snap.val() : 0;
+//       document.getElementById('marcadorRival').textContent = marcadorRival;
+//     });
+// }
 
-function cargarFaltasRival() {
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/faltasRival`)
-    .on('value', snap => {
-      faltasRival = snap.exists() ? snap.val() : 0;
-      document.getElementById('faltasRival').textContent = `F: ${faltasRival}`;
-    });
-}
+// function cargarFaltasRival() {
+//   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/faltasRival`)
+//     .on('value', snap => {
+//       faltasRival = snap.exists() ? snap.val() : 0;
+//       document.getElementById('faltasRival').textContent = `F: ${faltasRival}`;
+//     });
+// }
 
-function cargarFaltasEquipo() {
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/faltasEquipo`)
-    .on('value', snap => {
-      faltasEquipo = snap.exists() ? snap.val() : 0;
-      document.getElementById('faltasEquipo').textContent = `F: ${faltasEquipo}`;
-    });
-}
+// function cargarFaltasEquipo() {
+//   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/faltasEquipo`)
+//     .on('value', snap => {
+//       faltasEquipo = snap.exists() ? snap.val() : 0;
+//       document.getElementById('faltasEquipo').textContent = `F: ${faltasEquipo}`;
+//     });
+// }
 
 // Botones puntos y faltas rival y equipo
 function prepararBotonesRival() {
@@ -420,10 +441,10 @@ function renderListaJugadoresPlantilla() {
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.className = 'form-check-input';
-    checkbox.checked = convocados.has(j.id);
+    checkbox.checked = partido.convocados.has(j.id);
     checkbox.onchange = () => {
-      if (checkbox.checked) convocados.add(j.id);
-      else convocados.delete(j.id);
+      if (checkbox.checked) partido.convocados.add(j.id);
+      else partido.convocados.delete(j.id);
     };
     label.appendChild(checkbox);
     label.appendChild(document.createTextNode(` ${j.nombre} (#${j.dorsal})`));
@@ -440,7 +461,7 @@ function prepararFormularioConvocar() {
 }
 function guardarConvocadosModal() {
   const data = {};
-  convocados.forEach(id => {
+  partido.convocados.forEach(id => {
     console.log(plantillaJugadores)
     const jugador = plantillaJugadores.find(j => j.id === id); // Asumiendo que tienes un objeto jugadoresInfo con datos de los jugadores
     console.log(jugador)
@@ -465,7 +486,7 @@ function guardarConvocadosModal() {
 
 // function guardarConvocadosModal() {
 //   const data = {};
-//   convocados.forEach(id => (data[id] = true));
+//   partido.convocados.forEach(id => (data[id] = true));
 //   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/convocados`)
 //     .set(data)
 //     .then(() => {
@@ -483,7 +504,7 @@ function renderListaJugadoresConvocadosModal() {
   if (!ul) return;
   ul.innerHTML = '';
 
-  plantillaJugadores.filter(j => convocados.has(j.id)).forEach(j => {
+  plantillaJugadores.filter(j => partido.convocados.has(j.id)).forEach(j => {
 
     const li = document.createElement('li');
     li.className = 'list-group-item';
@@ -492,17 +513,17 @@ function renderListaJugadoresConvocadosModal() {
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.className = 'form-check-input';
-    checkbox.checked = jugadoresEnPista.has(j.id);
+    checkbox.checked = partido.jugadoresEnPista.has(j.id);
     checkbox.onchange = () => {
       if (checkbox.checked) {
-        if (jugadoresEnPista.size >= 5) {
+        if (partido.jugadoresEnPista.size >= 5) {
           checkbox.checked = false;
           alert('Solo 5 jugadores pueden estar en pista');
           return;
         }
-        jugadoresEnPista.add(j.id);
+        partido.jugadoresEnPista.add(j.id);
       } else {
-        jugadoresEnPista.delete(j.id);
+        partido.jugadoresEnPista.delete(j.id);
       }
     };
     label.appendChild(checkbox);
@@ -521,7 +542,7 @@ function prepararFormularioPista() {
 
 function guardarJugadoresEnPista() {
   const data = {};
-  jugadoresEnPista.forEach(id => (data[id] = true));
+  partido.jugadoresEnPista.forEach(id => (data[id] = true));
   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/jugadoresEnPista`)
     .set(data)
     .then(() => {
@@ -538,27 +559,27 @@ function guardarJugadoresEnPista() {
 function renderListaJugadoresPista() {
   const ul = document.getElementById('listaJugadoresPista');
   ul.innerHTML = '';
-  plantillaJugadores.filter(j => jugadoresEnPista.has(j.id)).forEach(j => {
+  plantillaJugadores.filter(j => partido.jugadoresEnPista.has(j.id)).forEach(j => {
     const li = document.createElement('li');
     li.className = 'list-group-item d-flex flex-column';
     const nombre = document.createElement('div');
     nombre.textContent = `${j.nombre} (#${j.dorsal})`;
     nombre.style.fontWeight = '600';
-    const stats = estadisticasJugadores[j.id] || {};
+    const stats = partido.estadisticasJugadores[j.id] || {};
     const textoStats = document.createElement('small');
     textoStats.className = 'ms-3 text-muted';
     textoStats.textContent = `Pts:${stats.puntos || 0} A:${stats.asistencias || 0} R:${stats.rebotes || 0} S:${stats.robos || 0} T:${stats.tapones || 0} F:${stats.faltas || 0}`;
 
     nombre.appendChild(textoStats);
     li.appendChild(nombre);
-  
+
     const contStats = document.createElement('div');
     contStats.className = 'd-flex flex-wrap gap-1 mt-2';
 
     [1, 2, 3].forEach(p => {
       const btn = document.createElement('button');
       btn.className = 'btn btn-sm btn-outline-primary stat-btn';
-      
+
       btn.textContent = `+${p}`;
       btn.title = `Añadir ${p} punto${p > 1 ? 's' : ''}`;
       btn.type = 'button';
@@ -576,7 +597,7 @@ function renderListaJugadoresPista() {
       const btn = document.createElement('button');
       btn.className = 'btn btn-sm btn-outline-success stat-btn';
 
-      if(key=='faltas'){
+      if (key == 'faltas') {
         btn.className = 'btn btn-sm btn-outline-danger stat-btn';
 
       }
@@ -589,15 +610,15 @@ function renderListaJugadoresPista() {
 
     li.appendChild(contStats);
 
-    
+
 
     ul.appendChild(li);
   });
 }
 
 function agregarEstadistica(jugadorId, tipo, cantidad) {
-  if (!estadisticasJugadores[jugadorId]) {
-    estadisticasJugadores[jugadorId] = {
+  if (!partido.estadisticasJugadores[jugadorId]) {
+    partido.estadisticasJugadores[jugadorId] = {
       puntos: 0,
       asistencias: 0,
       rebotes: 0,
@@ -608,10 +629,10 @@ function agregarEstadistica(jugadorId, tipo, cantidad) {
 
 
   };
-  estadisticasJugadores[jugadorId][tipo] += cantidad;
+  partido.estadisticasJugadores[jugadorId][tipo] += cantidad;
 
   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/estadisticasJugadores`)
-    .set(estadisticasJugadores)
+    .set(partido.estadisticasJugadores)
     .then(() => {
 
       sincronizarPartidoGlobal(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId);
@@ -626,7 +647,7 @@ function agregarEstadistica(jugadorId, tipo, cantidad) {
 
 function actualizarMarcadorEquipo() {
   let total = 0;
-  Object.values(estadisticasJugadores).forEach((stats) => {
+  Object.values(partido.estadisticasJugadores).forEach((stats) => {
     total += stats.puntos || 0;
   });
   // Guardar y mostrar marcador equipo
@@ -638,9 +659,9 @@ function actualizarMarcadorEquipo() {
 function actualizarFaltasEquipo() {
   let totalFaltas = 0;
   plantillaJugadores
-    .filter((j) => convocados.has(j.id))
+    .filter((j) => partido.convocados.has(j.id))
     .forEach((j) => {
-      const stats = estadisticasJugadores[j.id] || {};
+      const stats = partido.estadisticasJugadores[j.id] || {};
       totalFaltas += stats.faltas || 0;
     });
   document.getElementById('faltasEquipo').textContent = `F: ${totalFaltas}`;
@@ -654,7 +675,9 @@ function botonesTemporizador() {
 
 
   btnStartPause.addEventListener('click', () => {
-    if (estadoPartido !== 'en curso') {
+
+    if (partido.estado !== 'en curso') {
+      partido.estado='en curso';
       guardarEstadoPartido('en curso');
       partidoIniciado = true;
       partidoTerminado = false;
@@ -665,9 +688,10 @@ function botonesTemporizador() {
       btnTerminarCuarto.disabled = false;
       btnTerminar.disabled = false;
 
-    iniciarContador();
-    return;
+      iniciarContador();
+      return;
     };
+    // console.log("dfssfsfds");
     if (contadorActivo) {
       pausarContador();
     } else {
@@ -675,8 +699,9 @@ function botonesTemporizador() {
     }
   });
 
+
   btnTerminarCuarto.addEventListener('click', () => {
-    if (estadoPartido !== 'en curso') return;
+    if (partido.estado !== 'en curso') return;
     pausarContador();
     if (parteActual < totalPartes) {
       parteActual++;
@@ -689,7 +714,7 @@ function botonesTemporizador() {
   });
 
   btnTerminar.addEventListener('click', () => {
-    if (estadoPartido !== 'en curso') return;
+    if (partido.estado !== 'en curso') return;
     pausarContador();
     guardarEstadoPartido('finalizado');
     partidoIniciado = false;

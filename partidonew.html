@@ -10,7 +10,7 @@
   <link href="css/styles.css" rel="stylesheet" />
   <link rel="icon" href="img/favicon.ico" type="image/x-icon" />
   <link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#2B2B2B" />
+  <meta name="theme-color" content="#2B2B2B" />
 
 
 </head>
@@ -34,8 +34,10 @@
     <div class="d-flex justify-content-center align-items-center gap-4 flex-wrap my-1">
 
       <div class="text-center bg-primary text-white rounded px-1 py-1" style="min-width: 100px;">
-        <label for="selectCuarto" class="form-label mb-1" style="font-weight:600; font-size:1rem;cursor:pointer;">Cuarto</label>
-        <select id="selectCuarto" class="form-select form-select-sm text-center" style="font-weight:bold; font-size:1.5rem; max-width: 80px; margin:0 auto;">
+        <label for="selectCuarto" class="form-label mb-1"
+          style="font-weight:600; font-size:1rem;cursor:pointer;">Cuarto</label>
+        <select id="selectCuarto" class="form-select form-select-sm text-center"
+          style="font-weight:bold; font-size:1.5rem; max-width: 80px; margin:0 auto;">
           <option value="1" selected>1</option>
           <option value="2">2</option>
           <option value="3">3</option>
@@ -52,20 +54,21 @@
       <div class="d-flex justify-content-center align-items-center gap-5 my-1 flex-wrap">
 
         <div class="text-center bg-dark text-white rounded px-1 py-1" style="min-width: 140px;">
-          <div id="nombreEquipoMarcador" style="font-weight: 700; font-size: 1.2rem; margin-bottom: 0.25rem;">Equipo</div>
+          <div id="nombreEquipoMarcador" style="font-weight: 700; font-size: 1.2rem; margin-bottom: 0.25rem;">Equipo
+          </div>
           <div id="marcadorEquipo" style="font-size: 3.5rem; font-weight: 900; line-height: 1;">0</div>
           <div id="faltasEquipo" style="font-size: 1.1rem; font-weight: 600; color: #f9a825;">F: 0</div>
         </div>
-  
+
         <div class="text-center bg-danger text-white rounded px-1 py-1" style="min-width: 140px;">
           <div id="nombreRivalMarcador" style="font-weight: 700; font-size: 1.2rem; margin-bottom: 0.25rem;">Rival</div>
           <div id="marcadorRival" style="font-size: 3.5rem; font-weight: 900; line-height: 1;">0</div>
           <div id="faltasRival" style="font-size: 1.1rem; font-weight: 600; color: #fff176;">F: 0</div>
         </div>
-  
+
       </div>
       <div class="d-flex gap-2 align-items-center">
-      
+
         <button id="btnStartPause" class="btn btn-success btn-sm" title="Pausar / Reanudar">
           <i class="bi bi-play-fill"></i>
         </button>
@@ -78,44 +81,61 @@
 
     </div>
 
-    
+
 
     <div class="mb-3">
       <label class="form-label fw-semibold">Control de puntos y faltas rival</label>
       <div class="d-flex gap-2 align-items-center flex-wrap">
-        <button class="btn btn-sm btn-outline-danger stat-btn" title="+1 punto rival" type="button" id="btnPuntoRival1">+1</button>
-        <button class="btn btn-sm btn-outline-danger stat-btn" title="+2 puntos rival" type="button" id="btnPuntoRival2">+2</button>
-        <button class="btn btn-sm btn-outline-danger stat-btn" title="+3 puntos rival" type="button" id="btnPuntoRival3">+3</button>
-        <button class="btn btn-sm btn-outline-danger stat-btn" title="+1 falta rival" type="button" id="btnFaltasRival">F+</button>
+        <button class="btn btn-sm btn-outline-danger stat-btn" title="+1 punto rival" type="button"
+          id="btnPuntoRival1">+1</button>
+        <button class="btn btn-sm btn-outline-danger stat-btn" title="+2 puntos rival" type="button"
+          id="btnPuntoRival2">+2</button>
+        <button class="btn btn-sm btn-outline-danger stat-btn" title="+3 puntos rival" type="button"
+          id="btnPuntoRival3">+3</button>
+        <button class="btn btn-sm btn-outline-danger stat-btn" title="+1 falta rival" type="button"
+          id="btnFaltasRival">F+</button>
       </div>
     </div>
 
     <!-- Tabs -->
     <ul class="nav nav-tabs mb-3" id="tabsPartido" role="tablist">
       <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="tab-convocados" data-bs-toggle="tab" data-bs-target="#convocados" type="button" role="tab" aria-controls="convocados" aria-selected="true">Convocados</button>
+        <button class="nav-link active" id="tab-convocados" data-bs-toggle="tab" data-bs-target="#convocados"
+          type="button" role="tab" aria-controls="convocados" aria-selected="true">Convocados</button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-pista" data-bs-toggle="tab" data-bs-target="#pista" type="button" role="tab" aria-controls="pista" aria-selected="false">Partido</button>
+        <button class="nav-link" id="tab-pista" data-bs-toggle="tab" data-bs-target="#pista" type="button" role="tab"
+          aria-controls="pista" aria-selected="false">Partido</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-en-vivo" data-bs-toggle="tab" data-bs-target="#en-vivo" type="button"
+          role="tab" aria-controls="en-vivo" aria-selected="false">En Vivo</button>
       </li>
     </ul>
 
     <div class="tab-content" id="tabsContent">
       <!-- Tab: Convocados -->
       <div class="tab-pane fade show active" id="convocados" role="tabpanel" aria-labelledby="tab-convocados">
-        <button type="button" class="btn btn-info mb-3" data-bs-toggle="modal" data-bs-target="#modalConvocarJugadores">Cambiar convocatoria</button>
+        <button type="button" class="btn btn-info mb-3" data-bs-toggle="modal"
+          data-bs-target="#modalConvocarJugadores">Cambiar convocatoria</button>
         <div id="tablaEstadisticasContainer"></div>
       </div>
       <!-- Tab: Partido -->
       <div class="tab-pane fade" id="pista" role="tabpanel" aria-labelledby="tab-pista">
-        <button type="button" class="btn btn-warning mb-3" data-bs-toggle="modal" data-bs-target="#modalElegirPista">Cambiar jugadores en pista</button>
+        <button type="button" class="btn btn-warning mb-3" data-bs-toggle="modal"
+          data-bs-target="#modalElegirPista">Cambiar jugadores en pista</button>
         <ul id="listaJugadoresPista" class="list-group"></ul>
+      </div>
+      <!-- Tab: En Vivo -->
+      <div class="tab-pane fade" id="en-vivo" role="tabpanel" aria-labelledby="tab-en-vivo">
+        <div id="listaEventosEnVivo" class="list-group mt-3"></div>
       </div>
     </div>
   </div>
 
   <!-- Modal Convocar Jugadores -->
-  <div class="modal fade" id="modalConvocarJugadores" tabindex="-1" aria-labelledby="modalConvocarJugadoresLabel" aria-hidden="true">
+  <div class="modal fade" id="modalConvocarJugadores" tabindex="-1" aria-labelledby="modalConvocarJugadoresLabel"
+    aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable">
       <form id="formConvocarJugadores" class="modal-content">
         <div class="modal-header">
@@ -134,7 +154,8 @@
   </div>
 
   <!-- Modal Elegir Jugadores en Pista -->
-  <div class="modal fade" id="modalElegirPista" tabindex="-1" aria-labelledby="modalElegirPistaLabel" aria-hidden="true">
+  <div class="modal fade" id="modalElegirPista" tabindex="-1" aria-labelledby="modalElegirPistaLabel"
+    aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable">
       <form id="formElegirPista" class="modal-content">
         <div class="modal-header">
@@ -158,7 +179,12 @@
   <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
   <script src="js/firebase-config.js"></script>
   <script src="js/load-header.js"></script>
-  <script src="js/partido.js"></script>
+
+
+
+  <script src="js/data/dataService.js"></script>
+  <script src="js/partidoApp.js"></script>
+  <script src="js/partidonew.js"></script>
 </body>
 
 </html>

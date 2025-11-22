@@ -188,8 +188,13 @@ function loadPartidos() {
           const puntosRival = partido.puntosRival ?? 0;
           const marcadorSpan = document.createElement('span');
           marcadorSpan.style.fontWeight = 'bold';
-          marcadorSpan.textContent = `${puntosEquipo} - ${puntosRival}`;
-
+          
+          if (partido.esLocal) {
+            marcadorSpan.textContent = `${puntosEquipo} - ${puntosRival}`;
+          } else {
+            marcadorSpan.textContent = `${puntosRival} - ${puntosEquipo}`;
+          }
+        
           // Icono estado partido
           const iconEstado = document.createElement('i');
           iconEstado.style.fontSize = '1.2em';
@@ -200,7 +205,7 @@ function loadPartidos() {
               iconEstado.classList.add('bi', 'bi-clock', 'text-secondary');
               iconEstado.title = 'Partido aún no ha empezado';
               break;
-            case 'jugando':
+            case 'en curso':
               iconEstado.classList.add('bi', 'bi-record-circle-fill', 'text-danger', 'blink');
               iconEstado.title = 'Partido en curso';
               break;
@@ -226,7 +231,7 @@ function loadPartidos() {
 
           // Botón gestionar partido
           const btnGestionar = document.createElement('a');
-          btnGestionar.href = `partido.html?idEquipo=${currentTeamId}&idCompeticion=${currentCompeticionId}&idPartido=${id}`;
+          btnGestionar.href = `partidonew.html?idEquipo=${currentTeamId}&idCompeticion=${currentCompeticionId}&idPartido=${id}`;
           btnGestionar.classList.add('btn', 'btn-sm', 'btn-warning');
           btnGestionar.title = 'Gestionar partido';
           btnGestionar.innerHTML = '<i class="bi bi-pencil-fill"></i>';

@@ -16,7 +16,6 @@ fetch('./header.html')
     authh.onAuthStateChanged(user => {
       if (user) {
         uid = user.uid;
-        console.log(uid)
         construirBreadcrumbDesdeParametros();
       }
     
@@ -62,7 +61,6 @@ fetch('./header.html')
   
     
     // Traer nombre competición
-    console.log("uid:" + uid);
     const compSnap = await dbh.ref(`usuarios/${uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/nombre`).once('value');
     const nombreCompeticion = compSnap.exists() ? compSnap.val() : 'Competición desconocida';
     breadcrumbItems.push({ nombre: nombreCompeticion, url: `competicion.html?idEquipo=${currentTeamId}&idCompeticion=${currentCompeticionId}` });

@@ -200,7 +200,11 @@ function mostrarPartidos(partido, contenedor) {
   const puntosRival = partido.puntosRival ?? 0;
   const marcadorSpan = document.createElement('span');
   marcadorSpan.style.fontWeight = 'bold';
-  marcadorSpan.textContent = `${puntosEquipo} - ${puntosRival}`;
+  if (partido.esLocal) {
+    marcadorSpan.textContent = `${puntosEquipo} - ${puntosRival}`;
+  } else {
+    marcadorSpan.textContent = `${puntosRival} - ${puntosEquipo}`;
+  }
 
   const iconEstado = document.createElement('i');
   iconEstado.style.fontSize = '1.2em';
@@ -210,7 +214,7 @@ function mostrarPartidos(partido, contenedor) {
       iconEstado.classList.add('bi', 'bi-clock', 'text-secondary');
       iconEstado.title = 'Partido aún no ha empezado';
       break;
-    case 'jugando':
+    case 'en curso':
       iconEstado.classList.add('bi', 'bi-record-circle-fill', 'text-danger', 'blink');
       iconEstado.title = 'Partido en curso';
       break;
