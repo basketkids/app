@@ -12,7 +12,7 @@ class PartidosGlobalesApp {
             .then(partido => {
                 this.partido = partido;
                 this.partido.id = partidoId;
-                console.log(this.partido.id);
+                // console.log(this.partido.id);
 
 
                 // Obtén el último evento válido para establecer cuarto y tiempo
@@ -49,15 +49,15 @@ class PartidosGlobalesApp {
         if (nombreElem) nombreElem.textContent = this.partido.nombreEquipo + " vs " + this.partido.nombreRival;
 
 
-        
+
         const ne = document.getElementById('nombreEquipoMarcador');
-        if (ne) ne.textContent = this.partido.nombreEquipo ;
+        if (ne) ne.textContent = this.partido.nombreEquipo;
 
         const nr = document.getElementById('nombreEquipoRival');
-        if (nr) nr.textContent =  this.partido.nombreRival;
+        if (nr) nr.textContent = this.partido.nombreRival;
 
         const estado = document.getElementById('divEstado');
-        if (estado) estado.textContent =  this.partido.estado;
+        if (estado) estado.textContent = this.partido.estado;
         // Renderizar marcador equipo
         const marcadorEquipo = document.getElementById('marcadorEquipo');
         if (marcadorEquipo) marcadorEquipo.textContent = this.partido.puntosEquipo || 0;
@@ -67,6 +67,7 @@ class PartidosGlobalesApp {
         if (marcadorRival) marcadorRival.textContent = this.partido.puntosRival || 0;
 
         // Renderizar faltas equipo
+      //  console.log(this.partido)
         const faltasEquipo = document.getElementById('faltasEquipo');
         if (faltasEquipo) faltasEquipo.textContent = `F: ${this.partido.faltasEquipo || 0}`;
 
@@ -75,60 +76,165 @@ class PartidosGlobalesApp {
         if (faltasRival) faltasRival.textContent = `F: ${this.partido.faltasRival || 0}`;
         this.actualizarDisplay();
         // Renderizar jugadores convocados
-        const containerConvocados = document.getElementById('tablaEstadisticasContainer');
-        if (containerConvocados) {
-            containerConvocados.innerHTML = '';
-            if (this.partido.convocados) {
-                const table = document.createElement('table');
-                table.className = 'table table-striped table-bordered table-sm';
-                const thead = document.createElement('thead');
-                const trHead = document.createElement('tr');
-                ['Nombre', 'Puntos', 'Asist.', 'Rebotes', 'Robos', 'Tapones', 'Faltas'].forEach(thText => {
-                    const th = document.createElement('th');
-                    th.textContent = thText;
-                    trHead.appendChild(th);
-                });
-                thead.appendChild(trHead);
-                table.appendChild(thead);
-
-                const tbody = document.createElement('tbody');
-                Object.entries(this.partido.convocados).forEach(([id, jug]) => {
-                    const tr = document.createElement('tr');
-
-                    // Nombre + dorsal
-                    const tdNombre = document.createElement('td');
-                    tdNombre.style.fontWeight = '600';
-                    tdNombre.textContent = `${jug.nombre} (#${jug.dorsal})`;
-                    tr.appendChild(tdNombre);
-
-                    // Estadísticas
-                    const stats = (this.partido.estadisticasJugadores && this.partido.estadisticasJugadores[id]) || {};
-                    ['puntos', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas'].forEach(stat => {
-                        const td = document.createElement('td');
-                        td.textContent = stats[stat] || 0;
-                        tr.appendChild(td);
-                    });
-
-                    tbody.appendChild(tr);
-                });
-                table.appendChild(tbody);
-                containerConvocados.appendChild(table);
-            }
-        }
+        this.renderizarEstadisticas();
 
         // Opcional: Renderizar lista básica de eventos en vivo
         this.renderEventosEnVivo();
     }
 
-    actualizarDisplay() {
-        const numCuartoElem = document.getElementById('numCuarto');
-        if (numCuartoElem) numCuartoElem.textContent = this.parteActual || 1;
+    renderizarEstadisticas() {
+        const containerConvocados = document.getElementById('tablaEstadisticasContainer');
+        if (!containerConvocados) return;
 
-        const elem = document.getElementById('contador');
-        if (elem) {
-            const min = Math.floor(this.segundosRestantes / 60);
-            const seg = this.segundosRestantes % 60;
-            elem.textContent = `${min.toString().padStart(2, '0')}:${seg.toString().padStart(2, '0')}`;
+        containerConvocados.innerHTML = '';
+        if (!this.partido.convocados) return;
+
+        const columnas = ['Nombre', 'Puntos', 'Asist.', 'Rebotes', 'Robos', 'Tapones', 'Faltas', 'Val.'];
+        // Campos clave para ordenar, en el mismo orden que columnas
+        const campos = ['nombre', 'puntos', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas','Fantasy'];
+
+        // Convertir convocados a array para poder ordenar
+        const jugadoresArray = Object.entries(this.partido.convocados).map(([id, jug]) => {
+            return { id, ...jug };
+        });
+
+        let ordenColumna = 0; // índice de la columna que se está ordenando
+        let ascendente = true; // si es ascendente o descendente
+
+        // Función para renderizar la tabla con los datos ordenados
+        const renderTabla = (data, colIdx, asc) => {
+            containerConvocados.innerHTML = '';
+
+            const table = document.createElement('table');
+            table.className = 'table table-striped table-bordered table-sm';
+
+            const thead = document.createElement('thead');
+            const trHead = document.createElement('tr');
+
+            columnas.forEach((thText, i) => {
+                const th = document.createElement('th');
+                th.textContent = thText;
+                th.style.cursor = 'pointer';
+                // Añadimos indicativo de orden
+                if (i === colIdx) {
+                    th.textContent += asc ? ' ↑' : ' ↓';
+                }
+                th.onclick = () => {
+                    if (ordenColumna === i) {
+                        ascendente = !ascendente; // invertir orden si es la misma columna
+                    } else {
+                        ordenColumna = i;
+                     //   console.log(i);
+                        // si es la primera columna (Nombre), orden asc al primer click, para el resto descendente
+                        ascendente = (i === 0);
+                    }
+                    ordenarYRenderizar();
+                };
+                trHead.appendChild(th);
+            });
+
+            thead.appendChild(trHead);
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            data.forEach(jug => {
+                const tr = document.createElement('tr');
+
+                // Nombre + dorsal
+                const tdNombre = document.createElement('td');
+                tdNombre.style.fontWeight = '600';
+                tdNombre.textContent = `${jug.nombre} (#${jug.dorsal})`;
+                tr.appendChild(tdNombre);
+
+                // Estadísticas
+                const stats = (this.partido.estadisticasJugadores && this.partido.estadisticasJugadores[jug.id]) || {};
+                ['puntos', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas'].forEach(stat => {
+                    const td = document.createElement('td');
+                    td.textContent = stats[stat] || 0;
+                    tr.appendChild(td);
+                });
+
+                const tdFanyasy = document.createElement('td');
+                tdFanyasy.style.fontWeight = '600';
+                tdFanyasy.textContent = this.calcularPuntosFantasy(this.partido.estadisticasJugadores[jug.id]);
+                tr.appendChild(tdFanyasy);
+                tbody.appendChild(tr);
+            });
+
+            table.appendChild(tbody);
+            containerConvocados.appendChild(table);
+        };
+
+        // Función que ordena según columna y dirección y llama render tabla
+        const ordenarYRenderizar = () => {
+            const campo = campos[ordenColumna];
+        //  console.log(campo);
+            jugadoresArray.sort((a, b) => {
+              let valA, valB;
+          
+              if (campo === 'nombre') {
+                valA = a.nombre.toLowerCase();
+                valB = b.nombre.toLowerCase();
+              } else if (campo === 'Fantasy') {
+         //       console.log("sdfsdf")
+                valA = this.calcularPuntosFantasy((this.partido.estadisticasJugadores[a.id]));
+                valB = this.calcularPuntosFantasy(( this.partido.estadisticasJugadores[b.id]));
+              } else {
+                const statsA = (this.partido.estadisticasJugadores && this.partido.estadisticasJugadores[a.id]) || {};
+                const statsB = (this.partido.estadisticasJugadores && this.partido.estadisticasJugadores[b.id]) || {};
+                valA = statsA[campo] || 0;
+                valB = statsB[campo] || 0;
+              }
+          
+              if (valA < valB) return ascendente ? -1 : 1;
+              if (valA > valB) return ascendente ? 1 : -1;
+              return 0;
+            });
+          
+            renderTabla(jugadoresArray, ordenColumna, ascendente);
+          };
+          
+
+        // Primero render
+        ordenarYRenderizar();
+    }
+
+    calcularPuntosFantasy(stats) {
+        if (!stats) return 0;
+
+        const puntosPorPunto = 1;
+        const puntosPorRebote = 1;
+        const puntosPorAsistencia = 2;
+        const puntosPorBloqueo = 3;
+        const puntosPorRobo = 3;
+        const puntosPorFalta = -1;
+
+        const puntos =
+            (stats.puntos || 0) * puntosPorPunto +
+            (stats.rebotes || 0) * puntosPorRebote +
+            (stats.asistencias || 0) * puntosPorAsistencia +
+            (stats.tapones || 0) * puntosPorBloqueo +
+            (stats.robos || 0) * puntosPorRobo +
+            (stats.faltas || 0) * puntosPorFalta;
+
+        return puntos;
+    }
+
+    actualizarDisplay() {
+        if (this.partido.estado != "finalizado") {
+            const numCuartoElem = document.getElementById('numCuarto');
+            if (numCuartoElem) numCuartoElem.textContent = this.parteActual || 1;
+
+            const elem = document.getElementById('contador');
+            if (elem) {
+                const min = Math.floor(this.segundosRestantes / 60);
+                const seg = this.segundosRestantes % 60;
+                elem.textContent = `${min.toString().padStart(2, '0')}:${seg.toString().padStart(2, '0')}`;
+            }
+        }
+        else {
+            const div = document.getElementById("cabeceramarcador")
+            div.style = 'display:none !important';
         }
     }
     renderEventosEnVivo() {
@@ -155,9 +261,10 @@ class PartidosGlobalesApp {
 
             const item = document.createElement('div');
             item.className = 'list-group-item d-flex justify-content-between align-items-center';
-
+            let dorsal = evento.dorsal !== undefined ? `#${evento.dorsal}` : '';
             if (evento.dorsal < 0) {
                 item.classList.add('bg-light', 'text-danger', 'fw-bold');
+                dorsal = '';
             }
 
             const tiempoRestante = (this.partido.duracionParte || 600) - evento.tiempoSegundos;
@@ -166,7 +273,7 @@ class PartidosGlobalesApp {
             const tiempoStr = `${min.toString().padStart(2, '0')}:${seg.toString().padStart(2, '0')}`;
 
             const nombre = evento.nombre || 'Desconocido';
-            const dorsal = evento.dorsal !== undefined ? `#${evento.dorsal}` : '';
+
 
             item.innerHTML = `
           <div>
@@ -187,12 +294,12 @@ class PartidosGlobalesApp {
             clearInterval(this.refrescoInterval);
             this.refrescoInterval = null;
         }
-        console.log(this.partido.estado)
+        //console.log(this.partido.estado)
         if (this.partido && this.partido.estado != 'finalizado') {
             // Refrescar cada 30 segundos recargando datos desde Firebase
 
             this.refrescoInterval = setInterval(() => {
-                    this.cargarPartidoGlobal(this.partido.id);
+                this.cargarPartidoGlobal(this.partido.id);
             }, 30000);
 
         }

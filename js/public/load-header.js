@@ -16,16 +16,10 @@ fetch('../header.html')
     authh.onAuthStateChanged(user => {
       if (user) {
         uid = user.uid;
-        console.log(uid)
         construirBreadcrumbDesdeParametros();
       }
-    
     });
-   
-
   }).catch(console.error);
-
-
 
   async function construirBreadcrumbDesdeParametros() {
     const cont = document.getElementById('breadcrumb-container');
