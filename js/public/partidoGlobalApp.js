@@ -240,52 +240,134 @@ class PartidosGlobalesApp {
     renderEventosEnVivo() {
         const cont = document.getElementById('listaEventosEnVivo');
         if (!cont || !this.partido || !this.partido.eventos) return;
-
+      
         cont.innerHTML = '';
-
+      
         const eventosArray = Object.values(this.partido.eventos);
-        eventosArray.sort((a, b) => {
-            if (a.cuarto === b.cuarto) return b.tiempoSegundos - a.tiempoSegundos;
-            return b.cuarto - a.cuarto;
-        });
-
-        let ultimoCuarto = null;
+      
+        // Agrupar eventos por cuarto
+        const eventosPorCuarto = {};
         eventosArray.forEach(evento => {
-            if (evento.cuarto !== ultimoCuarto) {
-                const header = document.createElement('h5');
-                header.className = 'mt-3 mb-2';
-                header.textContent = `Cuarto ${evento.cuarto}`;
-                cont.appendChild(header);
-                ultimoCuarto = evento.cuarto;
+          if (!eventosPorCuarto[evento.cuarto]) {
+            eventosPorCuarto[evento.cuarto] = [];
+          }
+          eventosPorCuarto[evento.cuarto].push(evento);
+        });
+      
+        // Obtener los cuartos ordenados descendentemente para pestañas donde cuarto más alto primero
+        const cuartos = Object.keys(eventosPorCuarto).map(Number).sort((a, b) => b - a);
+      
+        // Crear contenedor para pestañas nav y contenido tab panes
+        const tabsNav = document.createElement('ul');
+        tabsNav.className = 'nav nav-tabs';
+        tabsNav.id = 'cuartosTabs';
+        tabsNav.role = 'tablist';
+      
+        const tabsContent = document.createElement('div');
+        tabsContent.className = 'tab-content mt-3';
+        tabsContent.id = 'cuartosTabContent';
+      
+        cuartos.forEach((cuarto, index) => {
+          // Pestaña: crea botón tab
+          const tabId = `cuarto-tab-${cuarto}`;
+          const paneId = `cuarto-pane-${cuarto}`;
+      
+          const liNav = document.createElement('li');
+          liNav.className = 'nav-item';
+          liNav.role = 'presentation';
+      
+          const button = document.createElement('button');
+          button.className = 'nav-link' + (index === 0 ? ' active' : '');
+          button.id = tabId;
+          button.type = 'button';
+          button.dataset.bsToggle = 'tab';
+          button.dataset.bsTarget = `#${paneId}`;
+          button.role = 'tab';
+          button.ariaControls = paneId;
+          button.ariaSelected = index === 0 ? 'true' : 'false';
+          button.textContent = `Cuarto ${cuarto}`;
+      
+          liNav.appendChild(button);
+          tabsNav.appendChild(liNav);
+      
+          // Contenido pestaña
+          const pane = document.createElement('div');
+          pane.className = 'tab-pane fade' + (index === 0 ? ' show active' : '');
+          pane.id = paneId;
+          pane.role = 'tabpanel';
+          pane.ariaLabelledby = tabId;
+      
+          // Obtener eventos de este cuarto y ordenarlos por tiempo descendiente
+          const eventosCuarto = eventosPorCuarto[cuarto].slice().sort((a, b) => b.tiempoSegundos - a.tiempoSegundos);
+      
+          // Extraer jugadores únicos del cuarto (sin rival, dorsal < 0)
+          const jugadoresSet = new Map(); // key: jugadorId or nombre, value: jugador info
+          eventosCuarto.forEach(ev => {
+            if (ev.dorsal >= 0 && ev.jugadorId) {
+              if (!jugadoresSet.has(ev.jugadorId)) {
+                jugadoresSet.set(ev.jugadorId, { nombre: ev.nombre || 'Desconocido', dorsal: ev.dorsal || '' });
+              }
             }
-
+          });
+      
+          // Mostrar línea de jugadores en una fila
+          const lineaJugadores = document.createElement('div');
+          lineaJugadores.className = 'mb-3 d-flex flex-wrap gap-3';
+      
+          jugadoresSet.forEach(jug => {
+            const spanJug = document.createElement('span');
+            spanJug.className = 'badge bg-primary';
+            spanJug.textContent = `${jug.nombre} (#${jug.dorsal})`;
+            lineaJugadores.appendChild(spanJug);
+          });
+      
+          pane.appendChild(lineaJugadores);
+      
+          // Mostrar eventos del cuarto
+          eventosCuarto.forEach(evento => {
             const item = document.createElement('div');
             item.className = 'list-group-item d-flex justify-content-between align-items-center';
-            let dorsal = evento.dorsal !== undefined ? `#${evento.dorsal}` : '';
+      
+            let dorsalDisplay = evento.dorsal !== undefined ? `#${evento.dorsal}` : '';
             if (evento.dorsal < 0) {
-                item.classList.add('bg-light', 'text-danger', 'fw-bold');
-                dorsal = '';
+              item.classList.add('bg-light', 'text-danger', 'fw-bold');
+              dorsalDisplay = '';
             }
-
+      
             const tiempoRestante = (this.partido.duracionParte || 600) - evento.tiempoSegundos;
             const min = Math.floor(tiempoRestante / 60);
             const seg = tiempoRestante % 60;
-            const tiempoStr = `${min.toString().padStart(2, '0')}:${seg.toString().padStart(2, '0')}`;
-
+            const tiempoStr = `Q${evento.cuarto} ${min.toString().padStart(2, '0')}:${seg.toString().padStart(2, '0')}`;
+      
             const nombre = evento.nombre || 'Desconocido';
-
-
+      
             item.innerHTML = `
-          <div>
-            <span>${nombre} ${dorsal}</span>
-            <div><small>${evento.detalle || ''}</small></div>
-          </div>
-          <small class="text-muted fw-monospace">${tiempoStr}</small>
-        `;
-
-            cont.appendChild(item);
+              <div>
+                <span>${nombre} ${dorsalDisplay}</span>
+                <div><small>${evento.detalle || ''}</small></div>
+              </div>
+              <small class="text-muted fw-monospace">${tiempoStr}</small>
+            `;
+      
+            pane.appendChild(item);
+          });
+      
+          tabsContent.appendChild(pane);
         });
-    }
+      
+        // Añadir las pestañas y contenido al contenedor principal
+        cont.appendChild(tabsNav);
+        cont.appendChild(tabsContent);
+      
+        // Inicializar tabs con Bootstrap 5 JS si no está ya inicializado
+        if (typeof bootstrap !== 'undefined') {
+          const tabTriggerList = [].slice.call(cont.querySelectorAll('button[data-bs-toggle="tab"]'));
+          tabTriggerList.forEach(tabTriggerEl => {
+            new bootstrap.Tab(tabTriggerEl);
+          });
+        }
+      }
+      
 
 
     iniciarRefrescoSiEnCurso() {
