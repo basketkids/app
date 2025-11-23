@@ -422,27 +422,30 @@ class PartidoApp {
     }).catch(e => alert("Error guardando jugadores en pista: " + e.message));
   }
 
+
   agregarEstadistica(jugadorId, tipo, cantidad) {
-    console.log(jugadorId, tipo, cantidad);
+    // Estadísticas de equipo
     if (jugadorId != '') {
       if (!this.partido.estadisticasJugadores) this.partido.estadisticasJugadores = {};
       if (!this.partido.estadisticasJugadores[jugadorId]) {
         this.partido.estadisticasJugadores[jugadorId] = { puntos: 0, asistencias: 0, rebotes: 0, robos: 0, tapones: 0, faltas: 0 };
       }
       this.partido.estadisticasJugadores[jugadorId][tipo] += cantidad;
-      if (tipo == "puntos") {
-        console.log("goolaaa")
+      if (tipo === "puntos") {
         this.partido.puntosEquipo += cantidad;
       }
     } else {
-      if (tipo == "puntos") {
-        console.log("goolaaa")
+      // Estadísticas de rival
+      if (tipo === "puntos") {
+     
         this.partido.puntosRival += cantidad;
+      } else if (tipo === "faltas") {
+        console.log("goasas");
+        this.partido.faltasRival = (this.partido.faltasRival || 0) + cantidad;
       }
     }
-    console.log(this.partido);
+  
     const nombreEquipoRival = this.partido.nombreRival || 'Rival';
-    // Crear evento para agregar estadística
     const evento = {
       tipo: tipo,
       jugadorId: jugadorId,
@@ -454,12 +457,10 @@ class PartidoApp {
       estadisticaTipo: tipo,
       cantidad: cantidad
     };
-    console.log(evento);
-    // Guardar partido actualizado y agregar evento, luego renderizar todo
+  
     const key = Date.now().toString() + Math.random().toString(36).substr(2, 5);
-
-    // Agregar el evento con esa clave
     this.partido.eventos[key] = evento;
+  
     this.dataService.pushEvento(evento)
       .then(() => {
         this.actualizarMarcadoryFaltas();
@@ -467,6 +468,7 @@ class PartidoApp {
       })
       .catch(e => console.error('Error agregando evento:', e));
   }
+  
 
 
 

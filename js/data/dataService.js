@@ -141,8 +141,13 @@ class DataService {
           });
       }
     } else {
-      this._actualizarMarcador(evento);
-      this._actualizarFaltas(evento);
+      if (evento.tipo == "puntos") {
+        this._actualizarMarcador(evento);
+
+      } else {
+        this._actualizarFaltas(evento);
+
+      }
     }
 
   }
