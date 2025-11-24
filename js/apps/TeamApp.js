@@ -10,6 +10,7 @@ class TeamApp extends BaseApp {
         this.inputJugadorDorsal = document.getElementById('inputJugadorDorsal');
         this.addPlayerForm = document.getElementById('addPlayerForm');
         this.playersList = document.getElementById('playersList');
+        this.selectJerseyColor = document.getElementById('selectJerseyColor');
 
         this.nuevoCompeticionBtn = document.getElementById('nuevoCompeticionBtn');
         this.competicionesList = document.getElementById('competicionesList');
@@ -53,6 +54,12 @@ class TeamApp extends BaseApp {
             }
             const team = snap.val();
             this.teamNameSpan.textContent = team.nombre;
+
+            // Load jersey color
+            if (team.jerseyColor) {
+                this.selectJerseyColor.value = team.jerseyColor;
+            }
+
             this.loadPlantilla();
             this.loadCompeticiones();
         });
@@ -81,6 +88,8 @@ class TeamApp extends BaseApp {
         this.addCompeticionForm.addEventListener('submit', e => this.handleAddCompetition(e));
 
         this.btnConfirmDelete.addEventListener('click', () => this.handleDeletePlayer());
+
+        this.selectJerseyColor.addEventListener('change', () => this.handleJerseyColorChange());
     }
 
     handleAddPlayer(e) {
@@ -130,6 +139,18 @@ class TeamApp extends BaseApp {
         this.confirmDeleteModal.show();
     }
 
+    handleJerseyColorChange() {
+        const jerseyColor = this.selectJerseyColor.value;
+        this.teamService.update(this.currentUser.uid, this.currentTeamId, { jerseyColor })
+            .then(() => {
+                // Reload plantilla to update avatars with new color
+                this.loadPlantilla();
+            })
+            .catch(error => {
+                alert('Error al actualizar color de camiseta: ' + error.message);
+            });
+    }
+
     async loadPlantilla() {
         this.playersList.innerHTML = '';
         const jugadoresSnap = await this.playerService.getSquad(this.currentUser.uid, this.currentTeamId);
@@ -149,17 +170,21 @@ class TeamApp extends BaseApp {
 
         const mediasGlobales = await this.calcularMediasEquipoDiccionario(this.currentTeamId);
 
-        this.renderPlayersTable(jugadoresArray, mediasGlobales);
-        this.renderPlayersListMobile(jugadoresArray, mediasGlobales);
+        // Get team jersey color
+        const teamSnap = await this.teamService.get(this.currentUser.uid, this.currentTeamId);
+        const jerseyColor = teamSnap.exists() && teamSnap.val().jerseyColor ? teamSnap.val().jerseyColor : '5199e4';
+
+        this.renderPlayersTable(jugadoresArray, mediasGlobales, jerseyColor);
+        this.renderPlayersListMobile(jugadoresArray, mediasGlobales, jerseyColor);
     }
 
-    renderPlayersTable(jugadoresArray, mediasGlobales) {
+    renderPlayersTable(jugadoresArray, mediasGlobales, jerseyColor) {
         const table = document.createElement('table');
         table.className = 'table table-striped table-bordered table-sm d-none d-md-table';
 
         const thead = document.createElement('thead');
         const trHead = document.createElement('tr');
-        ['Dorsal', 'Nombre', 'Pts/Juego', 'Partidos', 'Asist.', 'Rebotes', 'Robos', 'Tapones', 'Faltas', 'Valoración', 'Acciones'].forEach(thText => {
+        ['Avatar', 'Dorsal', 'Nombre', 'Pts/Juego', 'Partidos', 'Asist.', 'Rebotes', 'Robos', 'Tapones', 'Faltas', '+/-', 'Valoración', 'Acciones'].forEach(thText => {
             const th = document.createElement('th');
             th.textContent = thText;
             trHead.appendChild(th);
@@ -173,6 +198,19 @@ class TeamApp extends BaseApp {
             const stats = mediasGlobales[jugador.key] || null;
             const tr = document.createElement('tr');
 
+            // Avatar cell
+            const tdAvatar = document.createElement('td');
+            const avatarImg = document.createElement('img');
+            avatarImg.className = 'rounded-circle';
+            avatarImg.style.width = '60px';
+            avatarImg.style.height = '60px';
+
+            const avatarUrl = this.getAvatarUrl(jugador.key, jugador.avatarConfig, jerseyColor);
+            avatarImg.src = avatarUrl;
+            avatarImg.alt = 'Avatar';
+            tdAvatar.appendChild(avatarImg);
+            tr.appendChild(tdAvatar);
+
             this.createCell(tr, jugador.dorsal || '');
             this.createCell(tr, jugador.nombre || '');
 
@@ -184,9 +222,11 @@ class TeamApp extends BaseApp {
                 this.createCell(tr, stats.robos.toFixed(2));
                 this.createCell(tr, stats.tapones.toFixed(2));
                 this.createCell(tr, stats.faltas.toFixed(2));
+                const mm = stats.masMenos.toFixed(2);
+                this.createCell(tr, mm > 0 ? `+${mm}` : mm);
                 this.createCell(tr, stats.valoracionFantasy.toFixed(2));
             } else {
-                for (let i = 0; i < 8; i++) this.createCell(tr, '-');
+                for (let i = 0; i < 9; i++) this.createCell(tr, '-');
             }
 
             const tdAcciones = document.createElement('td');
@@ -222,7 +262,51 @@ class TeamApp extends BaseApp {
         tr.appendChild(td);
     }
 
-    renderPlayersListMobile(jugadoresArray, mediasGlobales) {
+    getAvatarUrl(playerId, avatarConfig, teamJerseyColor = '5199e4') {
+        // Generate seed with player ID and current date
+        const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+        const seed = `${playerId}-${currentDate}`;
+
+        const baseUrl = `https://api.dicebear.com/9.x/avataaars/svg?seed=${seed}`;
+        const params = [];
+
+        // Apply user config or defaults
+        if (avatarConfig) {
+            Object.keys(avatarConfig).forEach(key => {
+                // Skip hasFacialHair and hasAccessories as they're handled separately
+                if (key === 'hasFacialHair' || key === 'hasAccessories') return;
+                params.push(`${key}=${avatarConfig[key]}`);
+            });
+
+            // Handle facial hair
+            if (avatarConfig.hasFacialHair) {
+                params.push('facialHairType=beardLight');
+                params.push('facialHairProbability=100');
+            }
+
+            // Handle accessories
+            if (avatarConfig.hasAccessories) {
+                params.push('accessoriesType=round');
+                params.push('accessoriesProbability=100');
+            }
+        } else {
+            // Set default neutral values
+            params.push('skinColor=ffdbb4'); // Piel clara
+            params.push('top=shortFlat'); // Pelo corto plano
+            params.push('hairColor=a55728'); // Castaño
+            params.push('eyes=default');
+            params.push('eyebrows=default');
+            params.push('mouth=default');
+        }
+
+        // Fixed clothing with team color
+        params.push('clothing=shirtScoopNeck');
+        params.push(`clothesColor=${teamJerseyColor}`);
+
+        return params.length ? `${baseUrl}&${params.join('&')}` : baseUrl;
+    }
+
+    renderPlayersListMobile(jugadoresArray, mediasGlobales, jerseyColor) {
         const listaMovil = document.createElement('ul');
         listaMovil.className = 'list-group d-block d-md-none';
 
@@ -232,11 +316,26 @@ class TeamApp extends BaseApp {
             li.className = 'list-group-item d-flex justify-content-between align-items-center';
 
             const divInfo = document.createElement('div');
+            divInfo.className = 'd-flex align-items-center gap-2';
+
+            // Avatar
+            const avatarImg = document.createElement('img');
+            avatarImg.className = 'rounded-circle';
+            avatarImg.style.width = '60px';
+            avatarImg.style.height = '60px';
+            const avatarUrl = this.getAvatarUrl(jugador.key, jugador.avatarConfig, jerseyColor);
+            avatarImg.src = avatarUrl;
+            avatarImg.alt = 'Avatar';
+            divInfo.appendChild(avatarImg);
+
+            // Info text
+            const divText = document.createElement('div');
             if (stats) {
-                divInfo.innerHTML = `<strong>${jugador.nombre} (#${jugador.dorsal})</strong><br/>Pts: ${stats.puntos.toFixed(2)} | Val: ${stats.valoracionFantasy.toFixed(2)}`;
+                divText.innerHTML = `<strong>${jugador.nombre} (#${jugador.dorsal})</strong><br/>Pts: ${stats.puntos.toFixed(2)} | Val: ${stats.valoracionFantasy.toFixed(2)}`;
             } else {
-                divInfo.innerHTML = `<strong>${jugador.nombre} (#${jugador.dorsal})</strong><br/>Sin estadísticas`;
+                divText.innerHTML = `<strong>${jugador.nombre} (#${jugador.dorsal})</strong><br/>Sin estadísticas`;
             }
+            divInfo.appendChild(divText);
 
             const divBotones = document.createElement('div');
             const btnEditar = document.createElement('a');
@@ -305,7 +404,7 @@ class TeamApp extends BaseApp {
                             const stats = jugadorSnap.val();
                             if (!mediasPorJugador[jugadorId]) {
                                 mediasPorJugador[jugadorId] = {
-                                    puntos: 0, asistencias: 0, rebotes: 0, robos: 0, tapones: 0, faltas: 0, partidosJugados: 0
+                                    puntos: 0, asistencias: 0, rebotes: 0, robos: 0, tapones: 0, faltas: 0, masMenos: 0, partidosJugados: 0
                                 };
                             }
                             mediasPorJugador[jugadorId].puntos += stats.puntos || 0;
@@ -314,6 +413,7 @@ class TeamApp extends BaseApp {
                             mediasPorJugador[jugadorId].robos += stats.robos || 0;
                             mediasPorJugador[jugadorId].tapones += stats.tapones || 0;
                             mediasPorJugador[jugadorId].faltas += stats.faltas || 0;
+                            mediasPorJugador[jugadorId].masMenos += stats.masMenos || 0;
                             mediasPorJugador[jugadorId].partidosJugados++;
                         });
                     }
@@ -334,6 +434,7 @@ class TeamApp extends BaseApp {
                 robos: acc.robos / acc.partidosJugados,
                 tapones: acc.tapones / acc.partidosJugados,
                 faltas: acc.faltas / acc.partidosJugados,
+                masMenos: acc.masMenos / acc.partidosJugados,
                 partidosJugados: acc.partidosJugados,
                 valoracionFantasy: this.calcularPuntosFantasy({
                     puntos: acc.puntos / acc.partidosJugados,

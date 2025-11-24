@@ -131,6 +131,19 @@ class PartidoApp extends BaseApp {
     this.actualizarDisplay();
     this.actualizarBotonesPorEstado();
     this.actualizarMarcadoryFaltas();
+    this.renderNombresEquipos();
+  }
+
+  renderNombresEquipos() {
+    const nombreEquipo = document.getElementById('nombreEquipoMarcador');
+    const nombreRival = document.getElementById('nombreEquipoRival') || document.getElementById('nombreRivalMarcador');
+
+    if (nombreEquipo && this.partido.nombreEquipo) {
+      nombreEquipo.textContent = this.partido.nombreEquipo;
+    }
+    if (nombreRival && this.partido.nombreRival) {
+      nombreRival.textContent = this.partido.nombreRival;
+    }
   }
 
 
@@ -177,63 +190,181 @@ class PartidoApp extends BaseApp {
     if (btnFaltasRival) {
       btnFaltasRival.addEventListener('click', () => this.agregarEstadistica('', 'faltas', 1));
     }
-  } renderEventosEnVivo() {
+  }
+
+  renderEventosEnVivo() {
     const cont = document.getElementById('listaEventosEnVivo');
     if (!cont || !this.partido || !this.partido.eventos) return;
 
     cont.innerHTML = '';
 
-    const eventosArray = Object.values(this.partido.eventos);
+    const eventosArray = Object.entries(this.partido.eventos).map(([key, value]) => ({ ...value, id: key }));
 
-    // Orden descendente por cuarto y tiempo para mostrar primero los cuartos más altos y luego jugadas más recientes
-    eventosArray.sort((a, b) => {
-      if (a.cuarto === b.cuarto) {
-        // Por tiempo descendente (más actual primero)
-        return b.tiempoSegundos - a.tiempoSegundos;
-      } else {
-        // Por cuarto descendente (cuarto mayor primero)
-        return b.cuarto - a.cuarto;
+    // Agrupar eventos por cuarto
+    const eventosPorCuarto = eventosArray.reduce((acc, evento) => {
+      if (!acc[evento.cuarto]) {
+        acc[evento.cuarto] = [];
       }
-    });
+      acc[evento.cuarto].push(evento);
+      return acc;
+    }, {});
 
-    let ultimoCuarto = null;
-    eventosArray.forEach(evento => {
-      if (evento.cuarto !== ultimoCuarto) {
-        const header = document.createElement('h5');
-        header.className = 'mt-3 mb-2';
-        header.textContent = `Cuarto ${evento.cuarto}`;
-        cont.appendChild(header);
-        ultimoCuarto = evento.cuarto;
-      }
+    // Ordenar cuartos de forma descendente
+    const cuartosOrdenados = Object.keys(eventosPorCuarto).sort((a, b) => b - a);
 
-      const item = document.createElement('div');
-      item.className = 'list-group-item d-flex justify-content-between align-items-center';
+    // Crear la estructura de pestañas de Bootstrap
+    const tabsNav = document.createElement('ul');
+    tabsNav.className = 'nav nav-tabs mb-3';
+    tabsNav.id = 'eventosTabs';
+    tabsNav.setAttribute('role', 'tablist');
 
-      // Resaltar eventos rival (dorsal negativo)
-      if (evento.dorsal < 0) {
-        item.classList.add('bg-light', 'text-danger', 'fw-bold');
-      }
+    const tabsContent = document.createElement('div');
+    tabsContent.className = 'tab-content';
+    tabsContent.id = 'eventosTabsContent';
 
-      // Calcular tiempo restante para finalizar el cuarto
-      const tiempoRestanteSeg = (this.partido.duracionParte || 600) - evento.tiempoSegundos;
-      const minutos = Math.floor(tiempoRestanteSeg / 60);
-      const segundos = tiempoRestanteSeg % 60;
-      const tiempoStr = `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
+    cuartosOrdenados.forEach((cuarto, index) => {
+      const isActive = index === 0; // El primer cuarto (el más reciente) estará activo por defecto
 
-      const jugadorStr = evento.nombre || 'Desconocido';
-      const dorsalStr = evento.dorsal > 0 ? `#${evento.dorsal}` : '';
+      // Crear el botón de la pestaña
+      const navItem = document.createElement('li');
+      navItem.className = 'nav-item';
+      navItem.setAttribute('role', 'presentation');
 
-      item.innerHTML = `
+      const button = document.createElement('button');
+      button.className = `nav-link ${isActive ? 'active' : ''}`;
+      button.id = `cuarto-${cuarto}-tab`;
+      button.setAttribute('data-bs-toggle', 'tab');
+      button.setAttribute('data-bs-target', `#cuarto-${cuarto}-pane`);
+      button.setAttribute('type', 'button');
+      button.setAttribute('role', 'tab');
+      button.setAttribute('aria-controls', `cuarto-${cuarto}-pane`);
+      button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      button.textContent = `Cuarto ${cuarto}`;
+      navItem.appendChild(button);
+      tabsNav.appendChild(navItem);
+
+      // Crear el contenido del panel de la pestaña
+      const pane = document.createElement('div');
+      pane.className = `tab-pane fade ${isActive ? 'show active' : ''}`;
+      pane.id = `cuarto-${cuarto}-pane`;
+      pane.setAttribute('role', 'tabpanel');
+      pane.setAttribute('aria-labelledby', `cuarto-${cuarto}-tab`);
+      pane.setAttribute('tabindex', '0');
+
+      // Ordenar eventos dentro de cada cuarto por tiempo descendente
+      const eventosCuarto = eventosPorCuarto[cuarto].sort((a, b) => b.tiempoSegundos - a.tiempoSegundos);
+
+      // Mostrar eventos del cuarto
+      eventosCuarto.forEach(evento => {
+        const item = document.createElement('div');
+        item.className = 'list-group-item d-flex justify-content-between align-items-center';
+
+        let dorsalDisplay = evento.dorsal !== undefined ? `#${evento.dorsal}` : '';
+        if (evento.dorsal < 0) {
+          item.classList.add('bg-light', 'text-danger', 'fw-bold');
+          dorsalDisplay = '';
+        }
+
+        const tiempoRestante = (this.partido.duracionParte || 600) - evento.tiempoSegundos;
+        const min = Math.floor(tiempoRestante / 60);
+        const seg = tiempoRestante % 60;
+        const tiempoStr = `Q${evento.cuarto} ${min.toString().padStart(2, '0')}:${seg.toString().padStart(2, '0')}`;
+
+        const nombre = evento.nombre || 'Desconocido';
+
+        let iconClass = 'bi-circle';
+        switch (evento.tipo) {
+          case 'puntos': iconClass = 'bi-basket'; break;
+          case 'asistencias': iconClass = 'bi-share'; break;
+          case 'rebotes': iconClass = 'bi-arrow-counterclockwise'; break;
+          case 'robos': iconClass = 'bi-hand-index-thumb'; break;
+          case 'tapones': iconClass = 'bi-hand-palm'; break;
+          case 'faltas': iconClass = 'bi-exclamation-triangle'; break;
+          case 'cambioPista': iconClass = 'bi-arrow-left-right'; break;
+          default: iconClass = 'bi-circle';
+        }
+
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'd-flex align-items-center gap-2';
+        infoDiv.innerHTML = `
+        <i class="bi ${iconClass} text-secondary"></i>
         <div>
-          <span>${jugadorStr} ${dorsalStr}</span>
+          <span>${nombre} ${dorsalDisplay}</span>
           <div><small>${evento.detalle || ''}</small></div>
         </div>
-        <small class="text-muted fw-monospace">${tiempoStr}</small>
       `;
-      cont.appendChild(item);
+
+        const rightDiv = document.createElement('div');
+        rightDiv.className = 'd-flex align-items-center gap-2';
+
+        if (evento.marcadorEquipo !== undefined && evento.marcadorRival !== undefined) {
+          const scoreSmall = document.createElement('small');
+          scoreSmall.className = 'text-muted fw-bold me-1';
+          scoreSmall.style.fontSize = '0.8em';
+          scoreSmall.textContent = `[${evento.marcadorEquipo}-${evento.marcadorRival}]`;
+          rightDiv.appendChild(scoreSmall);
+        }
+
+        const timeSmall = document.createElement('small');
+        timeSmall.className = 'text-muted fw-monospace';
+        timeSmall.textContent = tiempoStr;
+        rightDiv.appendChild(timeSmall);
+
+        // Botón borrar
+        const btnBorrar = document.createElement('button');
+        btnBorrar.className = 'btn btn-sm btn-outline-danger';
+        btnBorrar.innerHTML = '<i class="bi bi-trash"></i>';
+        btnBorrar.title = 'Deshacer evento';
+        btnBorrar.onclick = () => this.borrarEvento(evento.id, evento);
+        rightDiv.appendChild(btnBorrar);
+
+        item.appendChild(infoDiv);
+        item.appendChild(rightDiv);
+
+        pane.appendChild(item);
+      });
+
+      tabsContent.appendChild(pane);
     });
+
+    // Añadir las pestañas y contenido al contenedor principal
+    cont.appendChild(tabsNav);
+    cont.appendChild(tabsContent);
+
+    // Inicializar tabs con Bootstrap 5 JS si no está ya inicializado
+    if (typeof bootstrap !== 'undefined') {
+      const tabTriggerList = [].slice.call(cont.querySelectorAll('button[data-bs-toggle="tab"]'));
+      tabTriggerList.forEach(tabTriggerEl => {
+        new bootstrap.Tab(tabTriggerEl);
+      });
+    }
   }
 
+  borrarEvento(eventoId, evento) {
+    if (!confirm('¿Estás seguro de que quieres deshacer este evento?')) return;
+
+    this.dataService.deleteEvento(eventoId, evento)
+      .then(() => {
+        console.log('Evento eliminado y revertido');
+        // Recargar datos para actualizar UI
+        return this.dataService.cargarPartido();
+      })
+      .then(partidoActualizado => {
+        this.partido = partidoActualizado;
+
+        // Defensive: Ensure event is gone locally
+        if (this.partido.eventos && this.partido.eventos[eventoId]) {
+          console.warn("Event still present after delete, removing locally");
+          delete this.partido.eventos[eventoId];
+        }
+
+        this.renderizarTodo();
+      })
+      .catch(error => {
+        console.error('Error al borrar evento:', error);
+        alert('Error al deshacer el evento');
+      });
+  }
 
 
   renderListaJugadoresPlantilla() {
@@ -275,7 +406,7 @@ class PartidoApp extends BaseApp {
 
     const thead = document.createElement('thead');
     const headerRow = document.createElement('tr');
-    ['Nombre', 'Puntos', 'Asist.', 'Rebotes', 'Robos', 'Tapones', 'Faltas'].forEach(text => {
+    ['Nombre', 'Puntos', 'Asist.', 'Rebotes', 'Robos', 'Tapones', 'Faltas', '+/-'].forEach(text => {
       const th = document.createElement('th');
       th.textContent = text;
       headerRow.appendChild(th);
@@ -294,9 +425,10 @@ class PartidoApp extends BaseApp {
         tr.appendChild(tdNombre);
 
         const stats = (this.partido.estadisticasJugadores && this.partido.estadisticasJugadores[id]) || {};
-        ['puntos', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas'].forEach(k => {
+        ['puntos', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas', 'masMenos'].forEach(k => {
           const td = document.createElement('td');
           td.textContent = stats[k] || 0;
+          if (k === 'masMenos' && stats[k] > 0) td.textContent = `+${stats[k]}`;
           tr.appendChild(td);
         });
 
@@ -330,7 +462,9 @@ class PartidoApp extends BaseApp {
       const stats = (this.partido.estadisticasJugadores && this.partido.estadisticasJugadores[id]) || {};
       const txtStats = document.createElement('small');
       txtStats.className = 'ms-3 text-muted';
-      txtStats.textContent = `Pts:${stats.puntos || 0} A:${stats.asistencias || 0} R:${stats.rebotes || 0} S:${stats.robos || 0} T:${stats.tapones || 0} F:${stats.faltas || 0}`;
+      const masMenos = stats.masMenos || 0;
+      const masMenosStr = masMenos > 0 ? `+${masMenos}` : masMenos;
+      txtStats.textContent = `Pts:${stats.puntos || 0} A:${stats.asistencias || 0} R:${stats.rebotes || 0} S:${stats.robos || 0} T:${stats.tapones || 0} F:${stats.faltas || 0} +/-:${masMenosStr}`;
       nombre.appendChild(txtStats);
       li.appendChild(nombre);
 
@@ -480,17 +614,32 @@ class PartidoApp extends BaseApp {
       tiempoSegundos: this.partido.duracionParte - this.segundosRestantes,
       detalle: `+ ${cantidad} ${tipo}`,
       estadisticaTipo: tipo,
-      cantidad: cantidad
+      cantidad: cantidad,
+      marcadorEquipo: this.partido.puntosEquipo || 0,
+      marcadorRival: this.partido.puntosRival || 0,
+      jugadoresEnPista: this.partido.jugadoresEnPista ? Object.keys(this.partido.jugadoresEnPista) : []
     };
 
-    const key = Date.now().toString() + Math.random().toString(36).substr(2, 5);
-    this.partido.eventos[key] = evento;
+    // Optimistic update for +/-
+    if (tipo === 'puntos') {
+      const delta = (jugadorId !== '') ? cantidad : -cantidad;
+      if (this.partido.jugadoresEnPista) {
+        Object.keys(this.partido.jugadoresEnPista).forEach(id => {
+          if (!this.partido.estadisticasJugadores[id]) {
+            this.partido.estadisticasJugadores[id] = { puntos: 0, asistencias: 0, rebotes: 0, robos: 0, tapones: 0, faltas: 0, masMenos: 0 };
+          }
+          this.partido.estadisticasJugadores[id].masMenos = (this.partido.estadisticasJugadores[id].masMenos || 0) + delta;
+        });
+      }
+    }
 
-    this.dataService.pushEvento(evento)
-      .then(() => {
-        this.actualizarMarcadoryFaltas();
-        this.renderizarTodo();
-      })
+    const key = this.dataService.getNewEventKey();
+    if (!this.partido.eventos) this.partido.eventos = {};
+    this.partido.eventos[key] = evento;
+    this.actualizarMarcadoryFaltas();
+    this.renderizarTodo();
+
+    this.dataService.pushEvento(evento, key)
       .catch(e => console.error('Error agregando evento:', e));
   }
 
@@ -503,9 +652,16 @@ class PartidoApp extends BaseApp {
       jugadorId, nombre, dorsal,
       cuarto: this.partido.parteActual || 1,
       tiempoSegundos: this.partido.duracionParte - this.segundosRestantes,
-      detalle: `Jugador ${accion} a pista`
+      detalle: `Jugador ${accion} a pista`,
+      marcadorEquipo: this.partido.puntosEquipo || 0,
+      marcadorRival: this.partido.puntosRival || 0
     };
-    this.dataService.pushEvento(evento).catch(e => console.error('Error guardando evento:', e));
+    const key = this.dataService.getNewEventKey();
+    if (!this.partido.eventos) this.partido.eventos = {};
+    this.partido.eventos[key] = evento;
+
+    this.dataService.pushEvento(evento, key)
+      .catch(e => console.error('Error guardando evento:', e));
   }
   actualizarMarcadoryFaltas() {
     const fr = document.getElementById('faltasRival');
@@ -659,9 +815,17 @@ class PartidoApp extends BaseApp {
       cuarto: this.partido.parteActual || 1,
       tiempoSegundos: this.partido.duracionParte - this.segundosRestantes,
       detalle: detalle,
-      dorsal: -2 // Special dorsal for system events
+      dorsal: -2, // Special dorsal for system events
+      marcadorEquipo: this.partido.puntosEquipo || 0,
+      marcadorRival: this.partido.puntosRival || 0
     };
-    this.dataService.pushEvento(evento).catch(e => console.error('Error guardando evento:', e));
+    const key = this.dataService.getNewEventKey();
+    if (!this.partido.eventos) this.partido.eventos = {};
+    this.partido.eventos[key] = evento;
+    this.renderEventosEnVivo();
+
+    this.dataService.pushEvento(evento, key)
+      .catch(e => console.error('Error guardando evento:', e));
   }
 
   terminarPartido() {

@@ -91,9 +91,9 @@ class PartidosGlobalesApp {
     containerConvocados.innerHTML = '';
     if (!this.partido.convocados) return;
 
-    const columnas = ['Nombre', 'Puntos', 'Asist.', 'Rebotes', 'Robos', 'Tapones', 'Faltas', 'Val.'];
+    const columnas = ['Nombre', 'Puntos', 'Asist.', 'Rebotes', 'Robos', 'Tapones', 'Faltas', '+/-', 'Val.'];
     // Campos clave para ordenar, en el mismo orden que columnas
-    const campos = ['nombre', 'puntos', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas', 'Fantasy'];
+    const campos = ['nombre', 'puntos', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas', 'masMenos', 'Fantasy'];
 
     // Convertir convocados a array para poder ordenar
     const jugadoresArray = Object.entries(this.partido.convocados).map(([id, jug]) => {
@@ -150,9 +150,11 @@ class PartidosGlobalesApp {
 
         // Estadísticas
         const stats = (this.partido.estadisticasJugadores && this.partido.estadisticasJugadores[jug.id]) || {};
-        ['puntos', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas'].forEach(stat => {
+        ['puntos', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas', 'masMenos'].forEach(stat => {
           const td = document.createElement('td');
-          td.textContent = stats[stat] || 0;
+          let val = stats[stat] || 0;
+          if (stat === 'masMenos' && val > 0) val = `+${val}`;
+          td.textContent = val;
           tr.appendChild(td);
         });
 
@@ -343,13 +345,32 @@ class PartidosGlobalesApp {
 
         const nombre = evento.nombre || 'Desconocido';
 
+        let iconClass = 'bi-circle';
+        switch (evento.tipo) {
+          case 'puntos': iconClass = 'bi-basket'; break;
+          case 'asistencias': iconClass = 'bi-share'; break;
+          case 'rebotes': iconClass = 'bi-arrow-counterclockwise'; break;
+          case 'robos': iconClass = 'bi-hand-index-thumb'; break;
+          case 'tapones': iconClass = 'bi-hand-palm'; break;
+          case 'faltas': iconClass = 'bi-exclamation-triangle'; break;
+          case 'cambioPista': iconClass = 'bi-arrow-left-right'; break;
+          default: iconClass = 'bi-circle';
+        }
+
         item.innerHTML = `
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi ${iconClass} text-secondary"></i>
               <div>
                 <span>${nombre} ${dorsalDisplay}</span>
                 <div><small>${evento.detalle || ''}</small></div>
               </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              ${(evento.marcadorEquipo !== undefined && evento.marcadorRival !== undefined) ?
+            `<small class="text-muted fw-bold me-1" style="font-size: 0.8em">[${evento.marcadorEquipo}-${evento.marcadorRival}]</small>` : ''}
               <small class="text-muted fw-monospace">${tiempoStr}</small>
-            `;
+            </div>
+          `;
 
         pane.appendChild(item);
       });

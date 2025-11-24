@@ -19,6 +19,57 @@
   <div class="container my-4">
     <h2>Editar Jugador</h2>
     <form id="formEditarJugador" class="mb-4">
+      <div class="row mb-4">
+        <div class="col-md-4 text-center">
+          <img id="avatarPreview" src="" alt="Avatar" class="img-fluid rounded-circle mb-3"
+            style="width: 150px; height: 150px; background-color: #f8f9fa;">
+        </div>
+        <div class="col-md-8">
+          <div class="row g-2">
+            <div class="col-6">
+              <label for="selectSkinColor" class="form-label">Piel</label>
+              <select id="selectSkinColor" class="form-select form-select-sm"></select>
+            </div>
+            <div class="col-6">
+              <label for="selectTop" class="form-label">Pelo/Sombrero</label>
+              <select id="selectTop" class="form-select form-select-sm"></select>
+            </div>
+            <div class="col-6">
+              <label for="selectHairColor" class="form-label">Color Pelo</label>
+              <select id="selectHairColor" class="form-select form-select-sm"></select>
+            </div>
+            <div class="col-6">
+              <label for="selectEyes" class="form-label">Ojos</label>
+              <select id="selectEyes" class="form-select form-select-sm"></select>
+            </div>
+            <div class="col-6">
+              <label for="selectEyebrow" class="form-label">Cejas</label>
+              <select id="selectEyebrow" class="form-select form-select-sm"></select>
+            </div>
+            <div class="col-6">
+              <label for="selectMouth" class="form-label">Boca</label>
+              <select id="selectMouth" class="form-select form-select-sm"></select>
+            </div>
+            <div class="col-6">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="checkFacialHair">
+                <label class="form-check-label" for="checkFacialHair">
+                  Barba
+                </label>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="checkAccessories">
+                <label class="form-check-label" for="checkAccessories">
+                  Gafas
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="mb-3">
         <label for="inputNombre" class="form-label">Nombre</label>
         <input type="text" id="inputNombre" class="form-control" required />

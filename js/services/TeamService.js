@@ -24,4 +24,8 @@ class TeamService {
     getName(userId, teamId) {
         return this.db.ref(`usuarios/${userId}/equipos/${teamId}/nombre`).once('value');
     }
+
+    update(userId, teamId, data) {
+        return this.db.ref(`usuarios/${userId}/equipos/${teamId}`).update(data);
+    }
 }

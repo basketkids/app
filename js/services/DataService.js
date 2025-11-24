@@ -96,20 +96,26 @@ class DataService {
       .then(() => this._sincronizarPartidoGlobal());
   }
 
+  getNewEventKey() {
+    return this.partidoRef.child('eventos').push().key;
+  }
+
   /**
    * Agrega un evento al partido (canasta, falta, cambio pista, estadistica)
    * Y actualiza las estadísticas y marcadores automáticamente.
    * @param {Object} evento - Evento que contiene:
    *  tipo, jugadorId, nombre, dorsal, cuarto, tiempoSegundos, detalle,
    *  puntos?, estadisticaTipo?, cantidad?
+   * @param {string} [key] - Optional key to use. If not provided, a new one is generated.
    */
-  pushEvento(evento) {
+  pushEvento(evento, key = null) {
     console.log('Guardando evento:', evento);
     const eventosRef = this.partidoRef.child('eventos');
-    // console.log('Guardando evento:',evento);
-    return eventosRef.push(evento)
+    const newRef = key ? eventosRef.child(key) : eventosRef.push();
+    return newRef.set(evento)
       .then(() => this._procesarEvento(evento))
-      .then(() => this._sincronizarPartidoGlobal());;
+      .then(() => this._sincronizarPartidoGlobal())
+      .then(() => newRef.key);
   }
 
   // Procesa internamente un evento para actualizar estadísticas y marcadores
@@ -118,71 +124,154 @@ class DataService {
       return Promise.resolve();
     }
 
-    if (evento.dorsal >= 0) {
-      const estadisticasRef = this.partidoRef.child('estadisticasJugadores');
+    return this._actualizarMasMenos(evento).then(() => {
+      if (evento.dorsal >= 0) {
+        const estadisticasRef = this.partidoRef.child('estadisticasJugadores');
 
-      switch (evento.tipo) {
-        case 'puntos':
+        switch (evento.tipo) {
+          case 'puntos':
 
-          return estadisticasRef.once('value').then(snap => {
-            const stats = snap.val() || {};
-            if (!stats[evento.jugadorId]) stats[evento.jugadorId] = this._inicializarEstadisticas();
-            stats[evento.jugadorId].puntos = (stats[evento.jugadorId].puntos || 0) + (evento.cantidad || 0);
-            return estadisticasRef.set(stats).then(() => this._actualizarMarcador(evento));
+            return estadisticasRef.once('value').then(snap => {
+              const stats = snap.val() || {};
+              if (!stats[evento.jugadorId]) stats[evento.jugadorId] = this._inicializarEstadisticas();
+              stats[evento.jugadorId].puntos = (stats[evento.jugadorId].puntos || 0) + (evento.cantidad || 0);
+              return estadisticasRef.set(stats).then(() => this._actualizarMarcador(evento));
 
-          });
+            });
 
-        case 'cambioPista':
-          return Promise.resolve();
+          case 'cambioPista':
+            return Promise.resolve();
 
-        default:
-          // console.log("otros")
-          return estadisticasRef.once('value').then(snap => {
-            const stats = snap.val() || {};
-            if (!stats[evento.jugadorId]) stats[evento.jugadorId] = this._inicializarEstadisticas();
-            if (evento.estadisticaTipo && evento.cantidad)
-              stats[evento.jugadorId][evento.estadisticaTipo] = (stats[evento.jugadorId][evento.estadisticaTipo] || 0) + evento.cantidad;
-            return estadisticasRef.set(stats).then(() => this._actualizarFaltas(evento));
-          });
-      }
-    } else {
-      if (evento.tipo == "puntos") {
-        this._actualizarMarcador(evento);
-
+          default:
+            // console.log("otros")
+            return estadisticasRef.once('value').then(snap => {
+              const stats = snap.val() || {};
+              if (!stats[evento.jugadorId]) stats[evento.jugadorId] = this._inicializarEstadisticas();
+              if (evento.estadisticaTipo && evento.cantidad)
+                stats[evento.jugadorId][evento.estadisticaTipo] = (stats[evento.jugadorId][evento.estadisticaTipo] || 0) + evento.cantidad;
+              return estadisticasRef.set(stats).then(() => this._actualizarFaltas(evento));
+            });
+        }
       } else {
-        this._actualizarFaltas(evento);
+        if (evento.tipo == "puntos") {
+          this._actualizarMarcador(evento);
 
+        } else {
+          this._actualizarFaltas(evento);
+
+        }
       }
-    }
-
+    });
   }
 
-  // Actualiza marcador según evento
-  _actualizarMarcador(evento) {
+
+
+  // Elimina un evento y revierte sus efectos
+  deleteEvento(eventoId, evento) {
+    console.log('Eliminando evento:', evento);
+    console.log('Eliminando evento:', eventoId);
+    return this.partidoRef.child('eventos').child(eventoId).remove()
+      .then(() => this._revertirEvento(evento))
+      .then(() => this._sincronizarPartidoGlobal());
+  }
+
+  // Revierte los efectos de un evento (lógica inversa a _procesarEvento)
+  _revertirEvento(evento) {
+    if (evento.tipo === 'finCuarto' || evento.tipo === 'inicioCuarto') {
+      return Promise.resolve();
+    }
+
+    return this._actualizarMasMenos(evento, true).then(() => {
+      if (evento.dorsal >= 0) {
+        const estadisticasRef = this.partidoRef.child('estadisticasJugadores');
+
+        switch (evento.tipo) {
+          case 'puntos':
+            return estadisticasRef.once('value').then(snap => {
+              const stats = snap.val() || {};
+              if (stats[evento.jugadorId]) {
+                stats[evento.jugadorId].puntos = (stats[evento.jugadorId].puntos || 0) - (evento.cantidad || 0);
+                return estadisticasRef.set(stats).then(() => this._actualizarMarcador(evento, true));
+              }
+              return Promise.resolve();
+            });
+
+          case 'cambioPista':
+            return Promise.resolve();
+
+          default:
+            return estadisticasRef.once('value').then(snap => {
+              const stats = snap.val() || {};
+              if (stats[evento.jugadorId]) {
+                if (evento.estadisticaTipo && evento.cantidad) {
+                  stats[evento.jugadorId][evento.estadisticaTipo] = (stats[evento.jugadorId][evento.estadisticaTipo] || 0) - evento.cantidad;
+                }
+                return estadisticasRef.set(stats).then(() => this._actualizarFaltas(evento, true));
+              }
+              return Promise.resolve();
+            });
+        }
+      } else {
+        if (evento.tipo == "puntos") {
+          console.log("actualizarMarcador")
+          return this._actualizarMarcador(evento, true);
+        } else {
+          console.log("actualizarFaltas")
+          return this._actualizarFaltas(evento, true);
+        }
+      }
+    });
+  }
+
+  // Actualiza marcador según evento. Si revertir es true, resta.
+  _actualizarMarcador(evento, revertir = false) {
+    const factor = revertir ? -1 : 1;
     if (evento.dorsal === -1) {
       const puntosRivalRef = this.partidoRef.child('puntosRival');
-      return puntosRivalRef.transaction(v => (v || 0) + (evento.cantidad || 0));
+      return puntosRivalRef.transaction(v => (v || 0) + (evento.cantidad || 0) * factor);
     } else {
       const puntosEquipoRef = this.partidoRef.child('puntosEquipo');
-      console.log("holoolaaaa" + puntosEquipoRef);
-      return puntosEquipoRef.transaction(v => (v || 0) + (evento.cantidad || 0));
+      return puntosEquipoRef.transaction(v => (v || 0) + (evento.cantidad || 0) * factor);
     }
   }
 
-  // Actualiza faltas según evento
-  _actualizarFaltas(evento) {
+  // Actualiza faltas según evento. Si revertir es true, resta.
+  _actualizarFaltas(evento, revertir = false) {
+    const factor = revertir ? -1 : 1;
     if (evento.dorsal === -1) {
       const faltasRivalRef = this.partidoRef.child('faltasRival');
-      return faltasRivalRef.transaction(v => (v || 0) + 1);
+      return faltasRivalRef.transaction(v => (v || 0) + 1 * factor);
     } else {
       const faltasEquipoRef = this.partidoRef.child('faltasEquipo');
-      return faltasEquipoRef.transaction(v => (v || 0) + 1);
+      return faltasEquipoRef.transaction(v => (v || 0) + 1 * factor);
     }
+  }
+
+  _actualizarMasMenos(evento, revertir = false) {
+    if (evento.tipo !== 'puntos' || !evento.jugadoresEnPista) return Promise.resolve();
+
+    const factor = revertir ? -1 : 1;
+    const cantidad = (evento.cantidad || 0) * factor;
+    // Si anota equipo (dorsal >= 0) suma, si anota rival (dorsal < 0) resta
+    const delta = (evento.dorsal >= 0) ? cantidad : -cantidad;
+
+    const estadisticasRef = this.partidoRef.child('estadisticasJugadores');
+    return estadisticasRef.once('value').then(snap => {
+      const stats = snap.val() || {};
+      let updated = false;
+      evento.jugadoresEnPista.forEach(id => {
+        if (!stats[id]) stats[id] = this._inicializarEstadisticas();
+        stats[id].masMenos = (stats[id].masMenos || 0) + delta;
+        updated = true;
+      });
+      if (updated) return estadisticasRef.set(stats);
+      return Promise.resolve();
+    });
   }
 
   // Inicializa estructura de estadísticas para un jugador
   _inicializarEstadisticas() {
-    return { puntos: 0, asistencias: 0, rebotes: 0, robos: 0, tapones: 0, faltas: 0 };
+    return { puntos: 0, asistencias: 0, rebotes: 0, robos: 0, tapones: 0, faltas: 0, masMenos: 0 };
   }
 
   // Sincroniza el partido actual dentro del nodo global 'partidosGlobales'
