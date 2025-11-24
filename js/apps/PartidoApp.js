@@ -1,6 +1,7 @@
-class PartidoApp {
-  constructor(dataService) {
-    this.dataService = dataService;
+class PartidoApp extends BaseApp {
+  constructor() {
+    super();
+    this.dataService = null;
 
     // Estado centralizado único que contiene toda la información del partido
     this.partido = null;
@@ -15,9 +16,25 @@ class PartidoApp {
     this.contadorActivo = false;
   }
 
-  async init() {
+  onUserLoggedIn(user) {
+    const teamId = this.getParam('idEquipo');
+    const competitionId = this.getParam('idCompeticion');
+    const matchId = this.getParam('idPartido');
+
+    if (!teamId || !competitionId || !matchId) {
+      alert('Faltan parámetros en la URL');
+      window.location.href = 'index.html';
+      return;
+    }
+
+    this.dataService = new DataService(this.db, user.uid, teamId, competitionId, matchId);
+    this.initMatch();
+  }
+
+  async initMatch() {
     try {
       this.partido = await this.dataService.cargarPartido();
+      console.log(this.partido);
 
       if (!this.partido) throw new Error('Partido no encontrado');
 
@@ -27,6 +44,8 @@ class PartidoApp {
       this.configurarPartido(this.configuracionPartido, false);
 
       this.parteActual = this.partido.parteActual || 1;
+      console.log(this.partido.parteActual);
+      console.log(this.parteActual);
       this.segundosRestantes = this.partido.duracionParte || (this.configuracionPartido === '6x8' ? 8 * 60 : 10 * 60);
 
       this.estadoPartido = this.partido.estado || 'no empezado';
@@ -41,6 +60,8 @@ class PartidoApp {
     }
   }
   calcularTiempoRestante() {
+    console.log(this.parteActual);
+    console.log(this.partido.parteActual);
     // Aquí actualizar cuarto y segundos al último evento si existen eventos
     const eventosArray = this.partido.eventos ? Object.values(this.partido.eventos) : [];
     if (eventosArray.length > 0) {
@@ -52,6 +73,7 @@ class PartidoApp {
         }
       });
       const ultimaJugada = eventosArray[0];
+      console.log(ultimaJugada);
       this.partido.parteActual = ultimaJugada.cuarto || this.partido.parteActual || 1;
       const duracionParte = this.partido.duracionParte || (this.configuracionPartido === '6x8' ? 8 * 60 : 10 * 60);
       this.segundosRestantes = duracionParte - (ultimaJugada.tiempoSegundos || 0);
@@ -60,6 +82,8 @@ class PartidoApp {
       this.partido.parteActual = this.partido.parteActual || 1;
       this.segundosRestantes = this.partido.duracionParte || (this.configuracionPartido === '6x8' ? 8 * 60 : 10 * 60);
     }
+    console.log(this.parteActual);
+    console.log(this.partido.parteActual);
 
   }
 
@@ -75,7 +99,7 @@ class PartidoApp {
       this.partido.configuracion = '4x10';
     }
 
-    this.partido.parteActual = 1;
+    //
     this.segundosRestantes = this.partido.duracionParte;
     this.estadoPartido = 'no empezado';
 
@@ -90,6 +114,7 @@ class PartidoApp {
         option.textContent = i;
         this.selectCuarto.appendChild(option);
       }
+
       this.selectCuarto.value = this.partido.parteActual;
     }
 
@@ -437,14 +462,14 @@ class PartidoApp {
     } else {
       // Estadísticas de rival
       if (tipo === "puntos") {
-     
+
         this.partido.puntosRival += cantidad;
       } else if (tipo === "faltas") {
         console.log("goasas");
         this.partido.faltasRival = (this.partido.faltasRival || 0) + cantidad;
       }
     }
-  
+
     const nombreEquipoRival = this.partido.nombreRival || 'Rival';
     const evento = {
       tipo: tipo,
@@ -457,10 +482,10 @@ class PartidoApp {
       estadisticaTipo: tipo,
       cantidad: cantidad
     };
-  
+
     const key = Date.now().toString() + Math.random().toString(36).substr(2, 5);
     this.partido.eventos[key] = evento;
-  
+
     this.dataService.pushEvento(evento)
       .then(() => {
         this.actualizarMarcadoryFaltas();
@@ -468,7 +493,7 @@ class PartidoApp {
       })
       .catch(e => console.error('Error agregando evento:', e));
   }
-  
+
 
 
 
@@ -492,6 +517,47 @@ class PartidoApp {
     if (me) me.textContent = this.partido.puntosEquipo || 0;
     const mr = document.getElementById('marcadorRival');
     if (mr) mr.textContent = this.partido.puntosRival || 0;
+
+    this.actualizarLucesFaltas();
+  }
+
+  actualizarLucesFaltas() {
+    const faltas = this.calcularFaltasCuarto();
+    console.log(faltas);
+    this.renderLuces('foulLightsEquipo', faltas.equipo);
+    this.renderLuces('foulLightsRival', faltas.rival);
+  }
+
+  calcularFaltasCuarto() {
+    let faltasEquipo = 0;
+    let faltasRival = 0;
+    const cuartoActual = this.partido.parteActual || 1;
+
+    if (this.partido.eventos) {
+      Object.values(this.partido.eventos).forEach(evento => {
+        if (evento.cuarto === cuartoActual && evento.estadisticaTipo === 'faltas') {
+          if (evento.dorsal >= 0) {
+            faltasEquipo++;
+          } else {
+            faltasRival++;
+          }
+        }
+      });
+    }
+    return { equipo: faltasEquipo, rival: faltasRival };
+  }
+
+  renderLuces(elementId, numFaltas) {
+    const container = document.getElementById(elementId);
+    if (!container) return;
+    const dots = container.querySelectorAll('.foul-dot');
+    dots.forEach((dot, index) => {
+      if (index < numFaltas) {
+        dot.classList.add('active');
+      } else {
+        dot.classList.remove('active');
+      }
+    });
   }
 
   inicializarTemporizador() {
@@ -562,17 +628,40 @@ class PartidoApp {
   }
 
   terminarCuarto() {
+    console.log('Terminar cuarto');
     if (this.estadoPartido !== 'en curso') return;
     this.pausarContador();
     if ((this.partido.parteActual || 1) < (this.partido.totalPartes || 4)) {
+      this.registrarEventoPartido('finCuarto', `Fin del Cuarto ${this.partido.parteActual}`);
+
       this.partido.parteActual++;
       this.segundosRestantes = this.partido.duracionParte;
       this.guardarPartido();
+      console.log('Partido guardado');
+      console.log(this.partido);
+
+      this.registrarEventoPartido('inicioCuarto', `Inicio del Cuarto ${this.partido.parteActual}`);
+
       this.actualizarDisplay();
+      this.renderEventosEnVivo();
+      this.actualizarLucesFaltas();
+
       this.iniciarContador();
     } else {
       alert('Último cuarto, termine el partido con el botón Terminar Partido.');
     }
+  }
+
+  registrarEventoPartido(tipo, detalle) {
+    console.log('Registrando evento', tipo, detalle);
+    const evento = {
+      tipo: tipo,
+      cuarto: this.partido.parteActual || 1,
+      tiempoSegundos: this.partido.duracionParte - this.segundosRestantes,
+      detalle: detalle,
+      dorsal: -2 // Special dorsal for system events
+    };
+    this.dataService.pushEvento(evento).catch(e => console.error('Error guardando evento:', e));
   }
 
   terminarPartido() {
@@ -595,6 +684,7 @@ class PartidoApp {
   }
 
   guardarPartido() {
+    console.log('Guardando partido', this.partido);
     this.dataService.guardarPartido(this.partido).catch(console.error);
   }
 

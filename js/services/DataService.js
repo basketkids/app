@@ -104,6 +104,7 @@ class DataService {
    *  puntos?, estadisticaTipo?, cantidad?
    */
   pushEvento(evento) {
+    console.log('Guardando evento:', evento);
     const eventosRef = this.partidoRef.child('eventos');
     // console.log('Guardando evento:',evento);
     return eventosRef.push(evento)
@@ -113,6 +114,10 @@ class DataService {
 
   // Procesa internamente un evento para actualizar estadísticas y marcadores
   _procesarEvento(evento) {
+    if (evento.tipo === 'finCuarto' || evento.tipo === 'inicioCuarto') {
+      return Promise.resolve();
+    }
+
     if (evento.dorsal >= 0) {
       const estadisticasRef = this.partidoRef.child('estadisticasJugadores');
 

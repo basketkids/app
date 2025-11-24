@@ -7,15 +7,12 @@ let currentUser = null,
 
 const db = firebase.database();
 const auth = firebase.auth();
-let partido = null;
-// let plantillaJugadores = [];
-// let convocados = new Set();
-// let jugadoresEnPista = new Set();
 
-// let partido.estadisticasJugadores = {};
-// let marcadorRival = 0;
-// let faltasRival = 0;
-// let faltasEquipo = 0;
+const matchService = new MatchService(db);
+const playerService = new PlayerService(db);
+
+let partido = null;
+
 
 let duracionParte = 10 * 60; // por defecto 10 minutos
 let totalPartes = 4; // por defecto 4 cuartos
@@ -62,8 +59,7 @@ auth.onAuthStateChanged(user => {
   }
 
   // Recuperar TODO el objeto partido
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}`)
-    .once('value')
+  matchService.get(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId)
     .then(snap => {
       if (!snap.exists()) {
         alert('No se encontró el partido');
@@ -84,8 +80,7 @@ auth.onAuthStateChanged(user => {
       partido.estadisticasJugadores = partido.estadisticasJugadores || {};
 
       // Cargar plantilla jugadores (única consulta aparte)
-      return db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/plantilla`)
-        .once('value')
+      return playerService.getSquad(currentUser.uid, currentTeamId)
         .then(snapshot => {
           plantillaJugadores = [];
           snapshot.forEach(child => {
@@ -107,7 +102,7 @@ auth.onAuthStateChanged(user => {
           document.getElementById('marcadorEquipo').textContent = partido.puntosEquipo;
           document.getElementById('marcadorRival').textContent = partido.puntosRival;
           actualizarFaltasEquipo();
-          
+
           prepararBotonesRival();
           prepararFormularioConvocar();
           prepararFormularioPista();
@@ -118,11 +113,11 @@ auth.onAuthStateChanged(user => {
           configurarPartido(selectConfiguracion.value);
         });
     })
-  // .catch(error => {
-  //   console.error('Error cargando partido:', error);
-  // //  alert('No se pudo cargar los datos del partido');
-  // //  window.location.href = 'index.html';
-  // });
+    .catch(error => {
+      console.error('Error cargando partido:', error);
+      alert('No se pudo cargar los datos del partido');
+      window.location.href = 'index.html';
+    });
 
   selectConfiguracion.addEventListener('change', (e) => configurarPartido(e.target.value));
   selectCuarto.addEventListener('change', (e) => cambiarCuarto(e.target.value));
@@ -133,17 +128,7 @@ auth.onAuthStateChanged(user => {
 
 
 
-// function cargarNombreEquipo() {
-//   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/nombre`)
-//     .once('value')
-//     .then(snap => {
-//       if (snap.exists()) {
-//         const nombre = snap.val();
-//         document.getElementById('nombreEquipoMarcador').textContent = nombre;
-//       }
-//     })
-//     .catch(err => console.error('Error cargando nombre de equipo:', err));
-// }
+
 
 function configurarPartido(opcion) {
   if (opcion === '6x8') {
@@ -176,7 +161,7 @@ function ajustarBotonesSegunEstado() {
   if (partido.estado == null) {
     partido.estado = 'pendiente';
   }
-  
+
   if (partido.estado === 'pendiente') {
     btnStartPause.disabled = false;
     btnTerminarCuarto.disabled = true;
@@ -200,10 +185,7 @@ function ajustarBotonesSegunEstado() {
 
 function guardarEstadoPartido(estado) {
   partido.estado = estado;
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/estado`)
-    .set(estado).then(() => {
-      sincronizarPartidoGlobal(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId);
-    })
+  matchService.updateStatus(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId, estado)
     .catch(err => console.error('Error guardando estado partido:', err));
 }
 
@@ -243,7 +225,6 @@ function iniciarContador() {
 }
 
 function pausarContador() {
- // console.log(contadorActivo);
   if (contadorActivo) {
     clearInterval(intervalo);
     intervalo = null;
@@ -252,16 +233,7 @@ function pausarContador() {
   }
 }
 
-// function cargarJugadoresEnPista() {
-//   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/jugadoresEnPista`)
-//     .once('value')
-//     .then(snap => {
-//       jugadoresEnPista = new Set();
-//       if (snap.exists()) Object.keys(snap.val()).forEach(id => jugadoresEnPista.add(id));
-//       renderListaJugadoresPista();
-//       renderListaJugadoresConvocadosModal();
-//     });
-// }
+
 let ordenActual = { columna: null, ascendente: true };
 
 function renderListaJugadoresConvocados() {
@@ -357,40 +329,7 @@ function ordenarTablaPorColumna(columna) {
   }
 }
 
-// function cargarEstadisticas() {
-//   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/estadisticasJugadores`)
-//     .on('value', snap => {
-//       partido.estadisticasJugadores = snap.exists() ? snap.val() : {};
-//       renderListaJugadoresConvocados();
-//       renderListaJugadoresPista();
-//       actualizarMarcadorEquipo();
-//       actualizarFaltasEquipo();
-//     });
-// }
 
-// function cargarMarcadorRival() {
-//   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/puntosRival`)
-//     .on('value', snap => {
-//       marcadorRival = snap.exists() ? snap.val() : 0;
-//       document.getElementById('marcadorRival').textContent = marcadorRival;
-//     });
-// }
-
-// function cargarFaltasRival() {
-//   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/faltasRival`)
-//     .on('value', snap => {
-//       faltasRival = snap.exists() ? snap.val() : 0;
-//       document.getElementById('faltasRival').textContent = `F: ${faltasRival}`;
-//     });
-// }
-
-// function cargarFaltasEquipo() {
-//   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/faltasEquipo`)
-//     .on('value', snap => {
-//       faltasEquipo = snap.exists() ? snap.val() : 0;
-//       document.getElementById('faltasEquipo').textContent = `F: ${faltasEquipo}`;
-//     });
-// }
 
 // Botones puntos y faltas rival y equipo
 function prepararBotonesRival() {
@@ -402,28 +341,19 @@ function prepararBotonesRival() {
 
 function modificarMarcadorRival(cant) {
   marcadorRival += cant;
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/puntosRival`)
-    .set(marcadorRival).then(() => {
-      sincronizarPartidoGlobal(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId);
-    });
+  matchService.updateField(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId, 'puntosRival', marcadorRival);
   document.getElementById('marcadorRival').textContent = marcadorRival;
 }
 
 function modificarFaltasRival(cant) {
   faltasRival += cant;
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/faltasRival`)
-    .set(faltasRival).then(() => {
-      sincronizarPartidoGlobal(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId);
-    });
+  matchService.updateField(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId, 'faltasRival', faltasRival);
   document.getElementById('faltasRival').textContent = `F: ${faltasRival}`;
 }
 
 function modificarFaltasEquipo(cant) {
   faltasEquipo += cant;
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/faltasEquipo`)
-    .set(faltasEquipo).then(() => {
-      sincronizarPartidoGlobal(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId);
-    });
+  matchService.updateField(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId, 'faltasEquipo', faltasEquipo);
   document.getElementById('faltasEquipo').textContent = `F: ${faltasEquipo}`;
 }
 
@@ -462,9 +392,7 @@ function prepararFormularioConvocar() {
 function guardarConvocadosModal() {
   const data = {};
   partido.convocados.forEach(id => {
-    console.log(plantillaJugadores)
     const jugador = plantillaJugadores.find(j => j.id === id); // Asumiendo que tienes un objeto jugadoresInfo con datos de los jugadores
-    console.log(jugador)
     if (jugador) {
       data[id] = {
         dorsal: jugador.dorsal || null,
@@ -473,30 +401,16 @@ function guardarConvocadosModal() {
     }
   });
 
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/convocados`)
-    .set(data)
+  matchService.updateConvocados(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId, data)
     .then(() => {
       bootstrap.Modal.getOrCreateInstance(document.getElementById('modalConvocarJugadores')).hide();
-      sincronizarPartidoGlobal(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId);
 
       renderListaJugadoresConvocados();
       renderListaJugadoresConvocadosModal();
     });
 }
 
-// function guardarConvocadosModal() {
-//   const data = {};
-//   partido.convocados.forEach(id => (data[id] = true));
-//   db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/convocados`)
-//     .set(data)
-//     .then(() => {
-//       bootstrap.Modal.getOrCreateInstance(document.getElementById('modalConvocarJugadores')).hide();
-//       sincronizarPartidoGlobal(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId);
 
-//       renderListaJugadoresConvocados();
-//       renderListaJugadoresConvocadosModal();
-//     });
-// }
 
 // **** Modal elegir jugadores en pista (de convocados) ****
 function renderListaJugadoresConvocadosModal() {
@@ -543,11 +457,9 @@ function prepararFormularioPista() {
 function guardarJugadoresEnPista() {
   const data = {};
   partido.jugadoresEnPista.forEach(id => (data[id] = true));
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/jugadoresEnPista`)
-    .set(data)
+  matchService.updatePista(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId, data)
     .then(() => {
       bootstrap.Modal.getOrCreateInstance(document.getElementById('modalElegirPista')).hide();
-      sincronizarPartidoGlobal(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId);
 
       renderListaJugadoresPista();
       renderListaJugadoresConvocadosModal();
@@ -631,11 +543,8 @@ function agregarEstadistica(jugadorId, tipo, cantidad) {
   };
   partido.estadisticasJugadores[jugadorId][tipo] += cantidad;
 
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/estadisticasJugadores`)
-    .set(partido.estadisticasJugadores)
+  matchService.updateStats(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId, partido.estadisticasJugadores)
     .then(() => {
-
-      sincronizarPartidoGlobal(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId);
 
       actualizarFaltasEquipo();
       actualizarMarcadorEquipo();
@@ -651,8 +560,7 @@ function actualizarMarcadorEquipo() {
     total += stats.puntos || 0;
   });
   // Guardar y mostrar marcador equipo
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/puntosEquipo`)
-    .set(total);
+  matchService.updateField(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId, 'puntosEquipo', total);
   document.getElementById('marcadorEquipo').textContent = total;
 }
 
@@ -666,8 +574,7 @@ function actualizarFaltasEquipo() {
     });
   document.getElementById('faltasEquipo').textContent = `F: ${totalFaltas}`;
   // Guardar faltas equipo
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/faltasEquipo`)
-    .set(totalFaltas);
+  matchService.updateField(currentUser.uid, currentTeamId, currentCompeticionId, currentPartidoId, 'faltasEquipo', totalFaltas);
 }
 function botonesTemporizador() {
 
@@ -677,7 +584,7 @@ function botonesTemporizador() {
   btnStartPause.addEventListener('click', () => {
 
     if (partido.estado !== 'en curso') {
-      partido.estado='en curso';
+      partido.estado = 'en curso';
       guardarEstadoPartido('en curso');
       partidoIniciado = true;
       partidoTerminado = false;
@@ -691,7 +598,7 @@ function botonesTemporizador() {
       iniciarContador();
       return;
     };
-    // console.log("dfssfsfds");
+
     if (contadorActivo) {
       pausarContador();
     } else {
@@ -729,20 +636,4 @@ function botonesTemporizador() {
 }
 
 
-function sincronizarPartidoGlobal(userId, equipoId, competicionId, partidoId) {
-  console.log("sincronizar:", userId, equipoId, competicionId, partidoId);
-  const refPartido = db.ref(`usuarios/${userId}/equipos/${equipoId}/competiciones/${competicionId}/partidos/${partidoId}`);
-  const refGlobal = db.ref(`partidosGlobales/${partidoId}`);
-  return db.ref(`usuarios/${userId}/equipos/${equipoId}/nombre`).once('value').then(nombreSnap => {
-    return refPartido.once('value').then(snapshot => {
-      if (!snapshot.exists()) {
-        console.log("El partido fue eliminado, borrando de global");
-        return refGlobal.remove();
-      }
-      const p = snapshot.val();
-      return refGlobal.set(p);
-    });
-  }).catch(error => {
-    console.error('Error al sincronizar partido global:', error);
-  });
-}
+

@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="icon" href="img/favicon.ico" type="image/x-icon" />
   <link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#2B2B2B" />
+  <meta name="theme-color" content="#2B2B2B" />
 
 </head>
 
@@ -30,14 +30,14 @@
       </ul>
     </nav>
 
-    <section id="seccion-rivales" style="display:none"  >
+    <section id="seccion-rivales" style="display:none">
       <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addRivalModal">
         Añadir Rival
       </button>
       <ul id="rivalesList" class="list-group"></ul>
     </section>
 
-    <section id="seccion-partidos" class="seccion-activa" >
+    <section id="seccion-partidos" class="seccion-activa">
       <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addPartidoModal">
         Añadir Partido
       </button>
@@ -121,7 +121,12 @@
 
   <script src="js/firebase-config.js"></script>
   <script src="js/load-header.js"></script>
+  <script src="js/services/CompetitionService.js"></script>
+  <script src="js/services/MatchService.js"></script>
+  <script src="js/apps/BaseApp.js"></script>
+  <script src="js/apps/CompetitionApp.js"></script>
   <script src="js/competicion.js"></script>
+
 
 </body>
 
