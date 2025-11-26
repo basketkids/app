@@ -51,4 +51,34 @@ class CompetitionService {
     getMatchRival(userId, teamId, compId, rivalId) {
         return this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones/${compId}/rivales/${rivalId}`).once('value');
     }
+
+    /**
+     * Find a rival by name, or create it if it doesn't exist
+     * @param {string} userId - User ID
+     * @param {string} teamId - Team ID
+     * @param {string} compId - Competition ID
+     * @param {string} rivalName - Name of the rival team
+     * @returns {Promise<string>} - Promise resolving to the rival ID
+     */
+    findOrCreateRival(userId, teamId, compId, rivalName) {
+        const rivalsRef = this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones/${compId}/rivales`);
+
+        return rivalsRef.once('value').then(snapshot => {
+            const rivals = snapshot.val();
+
+            // Search for existing rival with the same name (case-insensitive)
+            if (rivals) {
+                for (const [id, rival] of Object.entries(rivals)) {
+                    if (rival.nombre && rival.nombre.toLowerCase() === rivalName.toLowerCase()) {
+                        return id; // Return existing rival ID
+                    }
+                }
+            }
+
+            // Rival doesn't exist, create it
+            return this.addRival(userId, teamId, compId, rivalName).then(newRef => {
+                return newRef.key; // Return new rival ID
+            });
+        });
+    }
 }

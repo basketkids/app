@@ -38,9 +38,18 @@
     </section>
 
     <section id="seccion-partidos" class="seccion-activa">
-      <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addPartidoModal">
-        Añadir Partido
-      </button>
+      <div class="d-flex gap-2 mb-3">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPartidoModal">
+          Añadir Partido
+        </button>
+        <button type="button" class="btn btn-success" id="importCSVBtn">
+          <i class="bi bi-file-earmark-arrow-up"></i> Importar Calendario CSV
+        </button>
+        <button type="button" class="btn btn-info" id="exportAllCalendarBtn">
+          <i class="bi bi-calendar-check"></i> Exportar Todos a Calendar
+        </button>
+        <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+      </div>
       <ul id="partidosList" class="list-group"></ul>
     </section>
 
@@ -121,6 +130,8 @@
 
   <script src="js/firebase-config.js"></script>
   <script src="js/load-header.js"></script>
+  <script src="js/utils/CalendarHelper.js"></script>
+  <script src="js/utils/CSVParser.js"></script>
   <script src="js/services/CompetitionService.js"></script>
   <script src="js/services/MatchService.js"></script>
   <script src="js/apps/BaseApp.js"></script>

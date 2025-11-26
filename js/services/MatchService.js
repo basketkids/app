@@ -57,4 +57,29 @@ class MatchService {
     deleteGlobal(matchId) {
         return this.db.ref(`partidosGlobales/${matchId}`).remove();
     }
+
+    /**
+     * Get all matches for a competition
+     * @param {string} userId - User ID
+     * @param {string} teamId - Team ID
+     * @param {string} compId - Competition ID
+     * @returns {Promise} - Promise with snapshot of all matches
+     */
+    getAllMatches(userId, teamId, compId) {
+        return this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones/${compId}/partidos`).once('value');
+    }
+
+    /**
+     * Check if a match already exists at the same date and time
+     * @param {Object} matches - Object with all existing matches (from Firebase snapshot.val())
+     * @param {string} fechaHora - DateTime in ISO format (YYYY-MM-DDTHH:MM)
+     * @returns {boolean} - True if duplicate exists
+     */
+    static checkDuplicate(matches, fechaHora) {
+        if (!matches) return false;
+
+        return Object.values(matches).some(match => {
+            return match.fechaHora === fechaHora;
+        });
+    }
 }

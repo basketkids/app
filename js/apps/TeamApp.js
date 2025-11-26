@@ -4,6 +4,7 @@ class TeamApp extends BaseApp {
         this.teamService = new TeamService(this.db);
         this.playerService = new PlayerService(this.db);
         this.competitionService = new CompetitionService(this.db);
+        this.diceBearManager = new DiceBearManager();
 
         this.teamNameSpan = document.getElementById('teamName');
         this.inputJugadorNombre = document.getElementById('inputJugadorNombre');
@@ -205,7 +206,7 @@ class TeamApp extends BaseApp {
             avatarImg.style.width = '60px';
             avatarImg.style.height = '60px';
 
-            const avatarUrl = this.getAvatarUrl(jugador.key, jugador.avatarConfig, jerseyColor);
+            const avatarUrl = this.diceBearManager.getImage(jugador.key, jugador.avatarConfig, jerseyColor);
             avatarImg.src = avatarUrl;
             avatarImg.alt = 'Avatar';
             tdAvatar.appendChild(avatarImg);
@@ -262,49 +263,6 @@ class TeamApp extends BaseApp {
         tr.appendChild(td);
     }
 
-    getAvatarUrl(playerId, avatarConfig, teamJerseyColor = '5199e4') {
-        // Generate seed with player ID and current date
-        const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-        const seed = `${playerId}-${currentDate}`;
-
-        const baseUrl = `https://api.dicebear.com/9.x/avataaars/svg?seed=${seed}`;
-        const params = [];
-
-        // Apply user config or defaults
-        if (avatarConfig) {
-            Object.keys(avatarConfig).forEach(key => {
-                // Skip hasFacialHair and hasAccessories as they're handled separately
-                if (key === 'hasFacialHair' || key === 'hasAccessories') return;
-                params.push(`${key}=${avatarConfig[key]}`);
-            });
-
-            // Handle facial hair
-            if (avatarConfig.hasFacialHair) {
-                params.push('facialHairType=beardLight');
-                params.push('facialHairProbability=100');
-            }
-
-            // Handle accessories
-            if (avatarConfig.hasAccessories) {
-                params.push('accessoriesType=round');
-                params.push('accessoriesProbability=100');
-            }
-        } else {
-            // Set default neutral values
-            params.push('skinColor=ffdbb4'); // Piel clara
-            params.push('top=shortFlat'); // Pelo corto plano
-            params.push('hairColor=a55728'); // Castaño
-            params.push('eyes=default');
-            params.push('eyebrows=default');
-            params.push('mouth=default');
-        }
-
-        // Fixed clothing with team color
-        params.push('clothing=shirtScoopNeck');
-        params.push(`clothesColor=${teamJerseyColor}`);
-
-        return params.length ? `${baseUrl}&${params.join('&')}` : baseUrl;
-    }
 
     renderPlayersListMobile(jugadoresArray, mediasGlobales, jerseyColor) {
         const listaMovil = document.createElement('ul');
@@ -323,7 +281,7 @@ class TeamApp extends BaseApp {
             avatarImg.className = 'rounded-circle';
             avatarImg.style.width = '60px';
             avatarImg.style.height = '60px';
-            const avatarUrl = this.getAvatarUrl(jugador.key, jugador.avatarConfig, jerseyColor);
+            const avatarUrl = this.diceBearManager.getImage(jugador.key, jugador.avatarConfig, jerseyColor);
             avatarImg.src = avatarUrl;
             avatarImg.alt = 'Avatar';
             divInfo.appendChild(avatarImg);
