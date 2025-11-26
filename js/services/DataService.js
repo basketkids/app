@@ -109,7 +109,7 @@ class DataService {
    * @param {string} [key] - Optional key to use. If not provided, a new one is generated.
    */
   pushEvento(evento, key = null) {
-    console.log('Guardando evento:', evento);
+    // console.log('Guardando evento:', evento);
     const eventosRef = this.partidoRef.child('eventos');
     const newRef = key ? eventosRef.child(key) : eventosRef.push();
     return newRef.set(evento)
@@ -168,8 +168,8 @@ class DataService {
 
   // Elimina un evento y revierte sus efectos
   deleteEvento(eventoId, evento) {
-    console.log('Eliminando evento:', evento);
-    console.log('Eliminando evento:', eventoId);
+    // console.log('Eliminando evento:', evento);
+    // console.log('Eliminando evento:', eventoId);
     return this.partidoRef.child('eventos').child(eventoId).remove()
       .then(() => this._revertirEvento(evento))
       .then(() => this._sincronizarPartidoGlobal());
@@ -213,10 +213,10 @@ class DataService {
         }
       } else {
         if (evento.tipo == "puntos") {
-          console.log("actualizarMarcador")
+          // console.log("actualizarMarcador")
           return this._actualizarMarcador(evento, true);
         } else {
-          console.log("actualizarFaltas")
+          // console.log("actualizarFaltas")
           return this._actualizarFaltas(evento, true);
         }
       }
@@ -276,7 +276,7 @@ class DataService {
 
   // Sincroniza el partido actual dentro del nodo global 'partidosGlobales'
   _sincronizarPartidoGlobal() {
-    console.log("sincronizandoooo")
+    // console.log("sincronizandoooo")
     const refGlobal = this.db.ref(`partidosGlobales/${this.matchId}`);
     return this.partidoRef.once('value')
       .then(snapshot => {

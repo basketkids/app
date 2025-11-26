@@ -599,7 +599,6 @@ class PartidoApp extends BaseApp {
 
         this.partido.puntosRival += cantidad;
       } else if (tipo === "faltas") {
-        console.log("goasas");
         this.partido.faltasRival = (this.partido.faltasRival || 0) + cantidad;
       }
     }
@@ -802,14 +801,14 @@ class PartidoApp extends BaseApp {
       this.renderEventosEnVivo();
       this.actualizarLucesFaltas();
 
-      this.iniciarContador();
+      // this.iniciarContador(); // Don't auto-start next quarter
     } else {
       alert('Último cuarto, termine el partido con el botón Terminar Partido.');
     }
   }
 
   registrarEventoPartido(tipo, detalle) {
-    console.log('Registrando evento', tipo, detalle);
+    // console.log('Registrando evento', tipo, detalle);
     const evento = {
       tipo: tipo,
       cuarto: this.partido.parteActual || 1,
@@ -848,7 +847,7 @@ class PartidoApp extends BaseApp {
   }
 
   guardarPartido() {
-    console.log('Guardando partido', this.partido);
+    // console.log('Guardando partido', this.partido);
     this.dataService.guardarPartido(this.partido).catch(console.error);
   }
 
