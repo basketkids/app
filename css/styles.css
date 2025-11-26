@@ -188,133 +188,10 @@ h5 {
   margin-bottom: 30px;
 }
 
-/* Day Column */
-.calendar-day {
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.06);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: box-shadow 0.2s ease;
-}
-
-.calendar-day:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
-}
-
-/* Day Header */
-.calendar-day-header {
-  background-color: var(--bs-primary);
-  color: white;
-  padding: 12px;
-  text-align: center;
-  font-weight: 600;
-}
-
-.calendar-day-header .day-name {
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.calendar-day-header .day-number {
-  font-size: 1.5rem;
-  margin-top: 4px;
-}
-
-/* Today Highlight */
-.today-highlight .calendar-day-header {
-  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
-}
-
-.today-highlight {
-  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.4);
-  border: 2px solid #1976d2;
-}
-
 /* Matches Container */
 .matches-container {
-  padding: 10px;
-  flex: 1;
   overflow-y: auto;
   max-height: 600px;
-}
-
-/* Match Card */
-.match-card {
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  padding: 12px;
-  margin-bottom: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.match-card:hover {
-  background-color: #e9ecef;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-  border-color: #adb5bd;
-}
-
-.match-card:last-child {
-  margin-bottom: 0;
-}
-
-.match-time {
-  font-weight: bold;
-  color: var(--bs-primary);
-  font-size: 1.1rem;
-  margin-bottom: 6px;
-}
-
-.match-competition {
-  margin-bottom: 8px;
-}
-
-.match-competition .badge {
-  margin-right: 4px;
-  font-weight: 500;
-}
-
-.match-teams {
-  margin-bottom: 6px;
-  font-size: 0.95rem;
-  color: #212529;
-}
-
-.match-location {
-  font-size: 0.85rem;
-  color: #6c757d;
-}
-
-.match-location .location-link {
-  color: #1976d2;
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.match-location .location-link:hover {
-  color: #1565c0;
-  text-decoration: underline;
-}
-
-.match-result {
-  margin-top: 8px;
-}
-
-.match-result .badge {
-  font-size: 0.9rem;
-  padding: 6px 10px;
-}
-
-.no-matches {
-  text-align: center;
-  padding: 30px 10px;
-  font-style: italic;
-  color: #6c757d;
 }
 
 /* Responsive Design - Mobile */
@@ -327,22 +204,6 @@ h5 {
 
   .matches-container {
     max-height: none;
-  }
-
-  .calendar-day-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px;
-  }
-
-  .calendar-day-header .day-name {
-    font-size: 1rem;
-  }
-
-  .calendar-day-header .day-number {
-    font-size: 1.3rem;
-    margin-top: 0;
   }
 }
 

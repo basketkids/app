@@ -112,10 +112,11 @@ class CalendarApp extends BaseApp {
         // Update day header
         const dayName = date.toLocaleDateString('es-ES', { weekday: 'long' });
         const dayNumber = date.getDate();
-        const header = dayCol.querySelector('.calendar-day-header');
+        const header = dayCol.querySelector('.card-header'); // Changed selector to match new HTML
+        header.className = 'card-header bg-primary text-white p-2 d-flex justify-content-between align-items-center'; // Ensure classes
         header.innerHTML = `
-            <div class="day-name">${dayName.charAt(0).toUpperCase() + dayName.slice(1)}</div>
-            <div class="day-number">${dayNumber}</div>
+            <span class="text-uppercase fw-bold small">${dayName}</span>
+            <span class="fs-5 fw-bold">${dayNumber}</span>
         `;
 
         // Clear and render matches
@@ -129,7 +130,8 @@ class CalendarApp extends BaseApp {
 
     createMatchCard(match) {
         const card = document.createElement('div');
-        card.className = 'match-card';
+        card.className = 'match-card p-2 mb-2 border rounded shadow-sm bg-white';
+        card.style.cursor = 'pointer';
         card.onclick = () => this.goToMatch(match);
 
         const matchDate = new Date(match.fechaHora);
@@ -138,48 +140,91 @@ class CalendarApp extends BaseApp {
         const local = match.esLocal ? match.teamName : match.nombreRival;
         const visitante = match.esLocal ? match.nombreRival : match.teamName;
 
+        // Location
         const locationLink = match.pabellon
             ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.pabellon)}" 
                   target="_blank" 
                   onclick="event.stopPropagation()" 
-                  class="location-link">
+                  class="text-decoration-none text-muted" style="font-size: 0.85em;">
                   <i class="bi bi-geo-alt"></i> ${match.pabellon}
                </a>`
-            : '<span class="text-muted">Sin ubicación</span>';
+            : '<span class="text-muted" style="font-size: 0.85em;">Sin ubicación</span>';
 
-        const statusBadge = this.getStatusBadge(match);
-        const teamBadge = match.esLocal
-            ? '<span class="badge bg-success">Local</span>'
-            : '<span class="badge bg-info">Visitante</span>';
+        // Status Icon
+        let iconHtml = '';
+        switch (match.estado) {
+            case 'pendiente':
+                iconHtml = '<i class="bi bi-clock text-secondary" title="Pendiente"></i>';
+                break;
+            case 'en_curso': // Note: DataService might use 'en curso' or 'en_curso', check consistency. CompetitionApp uses 'en curso'.
+            case 'en curso':
+                iconHtml = '<i class="bi bi-record-circle-fill text-danger blink" title="En curso"></i>';
+                break;
+            case 'finalizado':
+                iconHtml = '<i class="bi bi-check-circle-fill text-success" title="Finalizado"></i>';
+                break;
+            default:
+                iconHtml = '<i class="bi bi-question-circle-fill text-muted"></i>';
+        }
+
+        // Score
+        let scoreHtml = '';
+        if (match.estado === 'finalizado' || match.estado === 'en curso' || match.estado === 'en_curso') {
+            const puntosEquipo = match.puntosEquipo ?? 0;
+            const puntosRival = match.puntosRival ?? 0;
+            // If user is local, show Equipo - Rival. If visitor, show Rival - Equipo? 
+            // Usually we want to see OurTeam vs Rival. 
+            // CompetitionApp logic:
+            // if (partido.esLocal) { marcadorSpan.textContent = `${puntosEquipo} - ${puntosRival}`; } 
+            // else { marcadorSpan.textContent = `${puntosRival} - ${puntosEquipo}`; }
+
+            let scoreText = '';
+            if (match.esLocal) {
+                scoreText = `${puntosEquipo} - ${puntosRival}`;
+            } else {
+                scoreText = `${puntosRival} - ${puntosEquipo}`;
+            }
+            scoreHtml = `<span class="fw-bold ms-2">${scoreText}</span>`;
+        }
+
+        // Manage Button
+        const manageBtn = `
+            <button class="btn btn-sm btn-warning ms-auto" 
+                onclick="event.stopPropagation(); window.location.href='partidonew.html?idEquipo=${match.teamId}&idCompeticion=${match.compId}&idPartido=${match.matchId}'"
+                title="Gestionar partido">
+                <i class="bi bi-pencil-fill"></i>
+            </button>
+        `;
 
         card.innerHTML = `
-            <div class="match-time">${time}</div>
-            <div class="match-competition">
-                <span class="badge bg-secondary">${match.compName}</span>
-                ${teamBadge}
+            <div class="d-flex justify-content-between align-items-start mb-1">
+                <div class="text-muted small">${time}</div>
+                <span class="badge bg-secondary" style="font-size: 0.7em;">${match.compName}</span>
             </div>
-            <div class="match-teams">
-                <strong>${local}</strong> vs <strong>${visitante}</strong>
+            
+            <div class="mb-2">
+                <div class="fw-bold text-truncate" title="${local}">${local}</div>
+                <div class="text-muted small">vs</div>
+                <div class="fw-bold text-truncate" title="${visitante}">${visitante}</div>
             </div>
-            <div class="match-location">${locationLink}</div>
-            ${statusBadge}
+
+            <div class="mb-2">
+                ${locationLink}
+            </div>
+
+            <div class="d-flex align-items-center mt-2 border-top pt-2">
+                <div class="d-flex align-items-center">
+                    ${iconHtml}
+                    ${scoreHtml}
+                </div>
+                ${manageBtn}
+            </div>
         `;
 
         return card;
     }
 
-    getStatusBadge(match) {
-        if (match.estado === 'finalizado') {
-            const puntosEquipo = match.puntosEquipo ?? 0;
-            const puntosRival = match.puntosRival ?? 0;
-            return `<div class="match-result">
-                <span class="badge bg-dark">${puntosEquipo} - ${puntosRival}</span>
-            </div>`;
-        } else if (match.estado === 'en_curso') {
-            return '<div class="match-result"><span class="badge bg-warning">En curso</span></div>';
-        }
-        return '';
-    }
+    // getStatusBadge removed as it is integrated into createMatchCard
 
     goToMatch(match) {
         window.location.href = `partidonew.html?idEquipo=${match.teamId}&idCompeticion=${match.compId}&idPartido=${match.matchId}`;

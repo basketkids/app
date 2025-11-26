@@ -1,285 +1,241 @@
 
 
 firebase.initializeApp(window.firebaseConfig);
-
 const db = firebase.database();
 
-let fechaActual = new Date();
+// Initialize services
+const calendarService = new CalendarService(db);
 
-function formatoFechaISO(date) {
-  return date.toISOString().slice(0, 10);
+let currentWeekStart = null;
+let allMatches = [];
+let weekMatches = {};
+
+document.addEventListener('DOMContentLoaded', () => {
+  initApp();
+});
+
+async function initApp() {
+  currentWeekStart = calendarService.getCurrentWeekStart();
+  setupEventListeners();
+  await loadMatches();
 }
 
+function setupEventListeners() {
+  document.getElementById('prevWeekBtn').addEventListener('click', () => navigateWeek(-1));
+  document.getElementById('nextWeekBtn').addEventListener('click', () => navigateWeek(1));
+  document.getElementById('todayBtn').addEventListener('click', () => goToToday());
+}
 
-
-function loadPartidos() {
-  partidosList.innerHTML = '';
-  db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos`)
-    .on('value', snapshot => {
-      partidosList.innerHTML = '';
-      if (!snapshot.exists()) {
-        partidosList.innerHTML = '<li class="list-group-item">No hay partidos añadidos</li>';
-        return;
-      }
-
-      db.ref(`usuarios/${currentUser.uid}/equipos/${currentTeamId}/nombre`).once('value').then(nombreSnap => {
-        const nombreEquipo = nombreSnap.exists() ? nombreSnap.val() : 'Mi equipo';
-
-        snapshot.forEach(partidoSnap => {
-          const partido = partidoSnap.val();
-          const id = partidoSnap.key;
-
-          const li = document.createElement('li');
-          li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center', 'flex-column', 'text-start');
-
-          // Fecha y hora en dos líneas con letra pequeña, alineado a la izquierda
-          const fechaObj = new Date(partido.fechaHora);
-          const fechaStr = fechaObj.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
-          const horaStr = fechaObj.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-
-          const divFechaHora = document.createElement('div');
-          divFechaHora.style.fontSize = '0.85em';
-          divFechaHora.style.lineHeight = '1.1em';
-          divFechaHora.style.marginBottom = '0.3rem';
-          divFechaHora.textContent = `${fechaStr}\n${horaStr}`.replace('\n', '\n'); // For newline
-
-          // Equipos local y visitante
-          let local = partido.esLocal ? nombreEquipo : partido.nombreRival || 'Rival';
-          let visitante = partido.esLocal ? (partido.nombreRival || 'Rival') : nombreEquipo;
-
-          const divEquipos = document.createElement('div');
-          divEquipos.style.fontWeight = '600';
-          divEquipos.textContent = `${local} vs ${visitante}`;
-
-          // Contenedor para marcador e icono estado
-          const divMarcador = document.createElement('div');
-          divMarcador.classList.add('d-flex', 'align-items-center', 'gap-2', 'mt-2');
-
-          // Marcador
-          const puntosEquipo = partido.puntosEquipo ?? 0;
-          const puntosRival = partido.puntosRival ?? 0;
-          const marcadorSpan = document.createElement('span');
-          marcadorSpan.style.fontWeight = 'bold';
-          marcadorSpan.textContent = `${puntosEquipo} - ${puntosRival}`;
-
-          // Icono estado partido
-          const iconEstado = document.createElement('i');
-          iconEstado.style.fontSize = '1.2em';
-          iconEstado.style.display = 'inline-block';
-
-          switch (partido.estado) {
-            case 'pendiente':
-              iconEstado.classList.add('bi', 'bi-clock', 'text-secondary');
-              iconEstado.title = 'Partido aún no ha empezado';
-              break;
-            case 'jugando':
-              iconEstado.classList.add('bi', 'bi-record-circle-fill', 'text-danger', 'blink');
-              iconEstado.title = 'Partido en curso';
-              break;
-            case 'finalizado':
-              iconEstado.classList.add('bi', 'bi-check-circle-fill', 'text-success');
-              iconEstado.title = 'Partido finalizado';
-              break;
-            default:
-              iconEstado.classList.add('bi', 'bi-question-circle-fill', 'text-muted');
-              iconEstado.title = 'Estado desconocido';
-          }
-
-          divMarcador.appendChild(iconEstado);
-          divMarcador.appendChild(marcadorSpan);
-
-          li.appendChild(divFechaHora);
-          li.appendChild(divEquipos);
-          li.appendChild(divMarcador);
-
-          // Contenedor botones (gestionar, borrar) alineados a derecha (última fila)
-          const botonesContainer = document.createElement('div');
-          botonesContainer.classList.add('d-flex', 'gap-2', 'mt-2', 'justify-content-end', 'w-100');
-
-          // Botón gestionar partido
-          const btnGestionar = document.createElement('a');
-          btnGestionar.href = `partido.html?idEquipo=${currentTeamId}&idCompeticion=${currentCompeticionId}&idPartido=${id}`;
-          btnGestionar.classList.add('btn', 'btn-sm', 'btn-warning');
-          btnGestionar.title = 'Gestionar partido';
-          btnGestionar.innerHTML = '<i class="bi bi-pencil-fill"></i>';
-          botonesContainer.appendChild(btnGestionar);
-
-          // Botón borrar partido
-          const btnBorrar = document.createElement('button');
-          btnBorrar.classList.add('btn', 'btn-sm', 'btn-danger');
-          btnBorrar.title = 'Borrar partido';
-          btnBorrar.innerHTML = '<i class="bi bi-trash-fill"></i>';
-          btnBorrar.onclick = () => {
-            elementoABorrar = { tipo: 'partido', id };
-            confirmDeleteModal.show();
-          };
-          botonesContainer.appendChild(btnBorrar);
-
-          li.appendChild(botonesContainer);
-
-          partidosList.appendChild(li);
+async function loadMatches() {
+  showLoading();
+  try {
+    const snapshot = await db.ref('partidosGlobales').once('value');
+    if (snapshot.exists()) {
+      allMatches = [];
+      snapshot.forEach(child => {
+        allMatches.push({
+          id: child.key,
+          ...child.val()
         });
       });
-    });
+
+      // Sort by date
+      allMatches.sort((a, b) => {
+        return new Date(a.fechaHora) - new Date(b.fechaHora);
+      });
+    } else {
+      allMatches = [];
+    }
+    renderCalendar();
+  } catch (error) {
+    console.error('Error loading matches:', error);
+    alert('Error al cargar los partidos');
+  } finally {
+    hideLoading();
+  }
 }
 
+function navigateWeek(direction) {
+  const newWeekStart = new Date(currentWeekStart);
+  newWeekStart.setDate(newWeekStart.getDate() + (direction * 7));
+  currentWeekStart = newWeekStart;
+  renderCalendar();
+}
 
+function goToToday() {
+  currentWeekStart = calendarService.getCurrentWeekStart();
+  renderCalendar();
+}
 
+function renderCalendar() {
+  weekMatches = calendarService.getMatchesForWeek(allMatches, currentWeekStart);
 
-function cargarPartidosPorFecha(fechaISO) {
-  const contenedor = document.getElementById('partidosPorFecha');
-  contenedor.innerHTML = 'Cargando partidos...';
+  // Update week display
+  const weekRange = calendarService.formatWeekRange(currentWeekStart);
+  document.getElementById('weekRange').textContent = weekRange;
 
-  db.ref('partidosGlobales').once('value').then(snapshot => {
-    contenedor.innerHTML = '';
-    if (!snapshot.exists()) {
-      contenedor.textContent = 'No hay partidos en esta fecha.';
-      return;
+  // Render each day
+  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  days.forEach((day, index) => {
+    const dayDate = new Date(currentWeekStart);
+    dayDate.setDate(dayDate.getDate() + index);
+
+    const isToday = dayDate.getTime() === today.getTime();
+    // The HTML structure has changed, we need to target the matches container within the day column
+    const dayColumn = document.getElementById(`${day}Matches`);
+    const matchesContainer = dayColumn.querySelector('.matches-container');
+    const dayHeader = dayColumn.querySelector('.card-header');
+    const dayNumberSpan = dayHeader.querySelector('.day-number');
+
+    // Update day number
+    dayNumberSpan.textContent = dayDate.getDate();
+
+    // Highlight today
+    if (isToday) {
+      dayHeader.classList.remove('bg-primary');
+      dayHeader.classList.add('bg-warning', 'text-dark');
+      dayHeader.classList.remove('text-white');
+    } else {
+      dayHeader.classList.add('bg-primary', 'text-white');
+      dayHeader.classList.remove('bg-warning', 'text-dark');
     }
 
-    const partidosFiltrados = [];
-    snapshot.forEach(partidoSnap => {
-      const partido = partidoSnap.val();
-      partido.id = partidoSnap.key;
+    renderDay(dayColumn, matchesContainer, weekMatches[day]);
+  });
 
-      console.log(partido.id);
-      const fechaPartido = partido.fechaHora ? partido.fechaHora.slice(0, 10) : '';
-      console.log(fechaPartido);
-      if (fechaPartido === fechaISO) {
-        partidosFiltrados.push(partido);
-      }
-    });
+  // Count visible days (days with matches)
+  const visibleDays = days.filter(day => weekMatches[day].length > 0).length;
 
-    if (partidosFiltrados.length === 0) {
-      contenedor.textContent = 'No hay partidos en esta fecha.';
-      return;
+  // Adjust grid columns based on visible days
+  // Note: Bootstrap grid classes handle responsiveness, but we can add custom logic if needed.
+  // For now, we'll let the CSS grid/flex layout handle it or just hide empty days if desired.
+  // To match CalendarApp behavior of hiding empty days:
+  days.forEach(day => {
+    const dayColumn = document.getElementById(`${day}Matches`);
+    if (weekMatches[day].length === 0) {
+      dayColumn.style.display = 'none';
+    } else {
+      dayColumn.style.display = 'block';
     }
-
-    partidosFiltrados.forEach(partido => {
-      mostrarPartidos(partido, contenedor);
-
-    });
-  }).catch(error => {
-    contenedor.textContent = 'Error cargando partidos.';
-    console.error(error);
   });
 }
 
-function mostrarPartidos(partido, contenedor) {
-  const li = document.createElement('li');
-  li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
-  // Elimina 'flex-column' para que las columnas sean horizontales
+function renderDay(dayColumn, container, matches) {
+  container.innerHTML = '';
 
-  // Contenedor columna izquierda (info partido)
-  const infoCol = document.createElement('div');
-  infoCol.style.flexGrow = '1'; // Ocupa todo espacio disponible
-  infoCol.classList.add('d-flex', 'flex-column', 'text-start');
-
-  // Fecha y hora
-  const fechaObj = new Date(partido.fechaHora);
-  const fechaStr = fechaObj.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
-  const horaStr = fechaObj.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-  const divFechaHora = document.createElement('div');
-  divFechaHora.style.fontSize = '0.85em';
-  divFechaHora.style.lineHeight = '1.1em';
-  divFechaHora.style.marginBottom = '0.3rem';
-  divFechaHora.textContent = `${fechaStr}\n${horaStr}`;
-
-  // Equipos local y visitante
-  const nombreEquipo = partido.nombreEquipo;
-  let local = partido.esLocal ? nombreEquipo : partido.nombreRival || 'Rival';
-  let visitante = partido.esLocal ? (partido.nombreRival || 'Rival') : nombreEquipo;
-  const divEquipos = document.createElement('div');
-  divEquipos.style.fontWeight = '600';
-  divEquipos.textContent = `${local} vs ${visitante}`;
-
-  // Marcador y estado (en fila)
-  const divMarcador = document.createElement('div');
-  divMarcador.classList.add('d-flex', 'align-items-center', 'gap-2', 'mt-2');
-  const puntosEquipo = partido.puntosEquipo ?? 0;
-  const puntosRival = partido.puntosRival ?? 0;
-  const marcadorSpan = document.createElement('span');
-  marcadorSpan.style.fontWeight = 'bold';
-  if (partido.esLocal) {
-    marcadorSpan.textContent = `${puntosEquipo} - ${puntosRival}`;
-  } else {
-    marcadorSpan.textContent = `${puntosRival} - ${puntosEquipo}`;
+  if (matches.length === 0) {
+    return;
   }
 
-  const iconEstado = document.createElement('i');
-  iconEstado.style.fontSize = '1.2em';
-  iconEstado.style.display = 'inline-block';
+  matches.forEach(match => {
+    const matchCard = createMatchCard(match);
+    container.appendChild(matchCard);
+  });
+}
+
+function createMatchCard(partido) {
+  const card = document.createElement('div');
+  card.className = 'match-card p-2 mb-2 border rounded shadow-sm bg-white';
+
+  const fechaObj = new Date(partido.fechaHora);
+  const time = fechaObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+  const nombreEquipo = partido.nombreEquipo;
+  const local = partido.esLocal ? nombreEquipo : partido.nombreRival || 'Rival';
+  const visitante = partido.esLocal ? (partido.nombreRival || 'Rival') : nombreEquipo;
+
+  // Location
+  const locationLink = partido.pabellon
+    ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(partido.pabellon)}" 
+              target="_blank" 
+              onclick="event.stopPropagation()" 
+              class="text-decoration-none text-muted" style="font-size: 0.85em;">
+              <i class="bi bi-geo-alt"></i> ${partido.pabellon}
+           </a>`
+    : '<span class="text-muted" style="font-size: 0.85em;">Sin ubicación</span>';
+
+  // Status Icon
+  let iconHtml = '';
   switch (partido.estado) {
     case 'pendiente':
-      iconEstado.classList.add('bi', 'bi-clock', 'text-secondary');
-      iconEstado.title = 'Partido aún no ha empezado';
+      iconHtml = '<i class="bi bi-clock text-secondary" title="Pendiente"></i>';
       break;
+    case 'en_curso':
     case 'en curso':
-      iconEstado.classList.add('bi', 'bi-record-circle-fill', 'text-danger', 'blink');
-      iconEstado.title = 'Partido en curso';
+      iconHtml = '<i class="bi bi-record-circle-fill text-danger blink" title="En curso"></i>';
       break;
     case 'finalizado':
-      iconEstado.classList.add('bi', 'bi-check-circle-fill', 'text-success');
-      iconEstado.title = 'Partido finalizado';
+      iconHtml = '<i class="bi bi-check-circle-fill text-success" title="Finalizado"></i>';
       break;
     default:
-      iconEstado.classList.add('bi', 'bi-question-circle-fill', 'text-muted');
-      iconEstado.title = 'Estado desconocido';
+      iconHtml = '<i class="bi bi-question-circle-fill text-muted"></i>';
   }
 
-  divMarcador.appendChild(iconEstado);
-  divMarcador.appendChild(marcadorSpan);
-
-  // Añadir partes al contenedor info columna
-  infoCol.appendChild(divFechaHora);
-  infoCol.appendChild(divEquipos);
-  infoCol.appendChild(divMarcador);
-
-  // Contenedor columna derecha (botones)
-  const botonesContainer = document.createElement('div');
-  botonesContainer.classList.add('d-flex', 'gap-2', 'justify-content-end');
-
-  // Botón gestionar partido
-  const boton = document.createElement('a');
-  boton.href = `partido.html?id=${partido.id}`;
-  boton.className = 'btn btn-success btn-sm';
-  boton.title = 'Ver jugador';
-  boton.innerHTML = '<i class="bi bi-eye"></i>';
-  botonesContainer.appendChild(boton);
-
-  // Añadir columnas al li
-  li.appendChild(infoCol);
-  li.appendChild(botonesContainer);
-
-  // Finalmente añadir el li al contenedor padre
-  contenedor.appendChild(li);
-}
-
-
-function configurarBuscadorFechas() {
-  const btnPrev = document.getElementById('btnFechaAnterior');
-  const btnNext = document.getElementById('btnFechaSiguiente');
-  const lblFecha = document.getElementById('labelFecha');
-
-  function actualizar() {
-    const fechaISO = formatoFechaISO(fechaActual);
-    lblFecha.textContent = fechaISO;
-    cargarPartidosPorFecha(fechaISO);
+  // Score
+  let scoreHtml = '';
+  if (partido.estado === 'finalizado' || partido.estado === 'en curso' || partido.estado === 'en_curso') {
+    const puntosEquipo = partido.puntosEquipo ?? 0;
+    const puntosRival = partido.puntosRival ?? 0;
+    let scoreText = '';
+    if (partido.esLocal) {
+      scoreText = `${puntosEquipo} - ${puntosRival}`;
+    } else {
+      scoreText = `${puntosRival} - ${puntosEquipo}`;
+    }
+    scoreHtml = `<span class="fw-bold ms-2">${scoreText}</span>`;
   }
 
-  btnPrev.onclick = () => {
-    fechaActual.setDate(fechaActual.getDate() - 1);
-    actualizar();
-  };
+  // View Button
+  const viewBtn = `
+        <a href="partido.html?id=${partido.id}" 
+           class="btn btn-sm btn-success ms-auto" 
+           title="Ver partido">
+            <i class="bi bi-eye-fill"></i>
+        </a>
+    `;
 
-  btnNext.onclick = () => {
-    fechaActual.setDate(fechaActual.getDate() + 1);
-    actualizar();
-  };
+  // Competicion name (if available)
+  const compNameBadge = partido.nombreCompeticion
+    ? `<span class="badge bg-secondary" style="font-size: 0.7em;">${partido.nombreCompeticion}</span>`
+    : '';
 
-  actualizar();
+  card.innerHTML = `
+        <div class="d-flex justify-content-between align-items-start mb-1">
+            <div class="text-muted small">${time}</div>
+            ${compNameBadge}
+        </div>
+        
+        <div class="mb-2">
+            <div class="fw-bold text-truncate" title="${local}">${local}</div>
+            <div class="text-muted small">vs</div>
+            <div class="fw-bold text-truncate" title="${visitante}">${visitante}</div>
+        </div>
+  
+        <div class="mb-2">
+            ${locationLink}
+        </div>
+  
+        <div class="d-flex align-items-center mt-2 border-top pt-2">
+            <div class="d-flex align-items-center">
+                ${iconHtml}
+                ${scoreHtml}
+            </div>
+            ${viewBtn}
+        </div>
+    `;
+
+  return card;
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  configurarBuscadorFechas();
-});
+function showLoading() {
+  document.getElementById('loadingSpinner').style.display = 'block';
+  document.getElementById('calendarGrid').style.opacity = '0.5';
+}
+
+function hideLoading() {
+  document.getElementById('loadingSpinner').style.display = 'none';
+  document.getElementById('calendarGrid').style.opacity = '1';
+}
