@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reparar Partidos Globales</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="p-4">
+    <div class="container">
+        <h1>Reparar Partidos Globales</h1>
+        <p class="lead">Esta herramienta recorrerá tus partidos y actualizará la lista pública (partidosGlobales)
+            asegurando que tengan el ID de equipo y competición correctos.</p>
+
+        <div id="auth-status" class="alert alert-secondary">Comprobando autenticación...</div>
+
+        <button id="btnStart" class="btn btn-primary" disabled>Iniciar Reparación</button>
+
+        <div class="mt-4">
+            <h3>Progreso</h3>
+            <div class="progress mb-3" style="height: 25px;">
+                <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%">0%</div>
+            </div>
+            <div id="log" class="border p-3 bg-light" style="height: 300px; overflow-y: auto; font-family: monospace;">
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/fix_matches.js"></script>
+</body>
+
+</html>

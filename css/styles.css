@@ -139,10 +139,14 @@ h5 {
   border-radius: 4px;
 }
 
+#breadcrumb-container {
+  margin-left: 15px;
+}
+
 #breadcrumb-container a {
   color: var(--bs-primary) !important;
-  margin-left: 5px;
 }
+
 
 
 .btn {
@@ -213,4 +217,57 @@ h5 {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 12px;
   }
+}
+
+/* Month View Grid (Desktop) */
+.month-grid {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .month-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+
+.month-day-cell {
+  min-height: 100px;
+  border: 1px solid #dee2e6;
+  padding: 5px;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.month-day-header {
+  font-weight: bold;
+  text-align: right;
+  margin-bottom: 5px;
+}
+
+.month-day-match {
+  font-size: 0.75em;
+  margin-bottom: 2px;
+  padding: 2px 4px;
+  background-color: #f8f9fa;
+  border-radius: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid #e9ecef;
+}
+
+.month-day-match:hover {
+  background-color: #e9ecef;
+}
+
+.month-day-match.match-local {
+  border-left: 3px solid #2B2B2B;
+}
+
+.month-day-match.match-visitor {
+  border-left: 3px solid #6c757d;
 }

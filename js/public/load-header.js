@@ -21,72 +21,89 @@ fetch('../header.html')
     });
   }).catch(console.error);
 
-  async function construirBreadcrumbDesdeParametros() {
-    const cont = document.getElementById('breadcrumb-container');
-    if (!cont) return;
-  
-    const params = new URLSearchParams(window.location.search);
-    const currentTeamId = params.get('idEquipo');
-    const currentCompeticionId = params.get('idCompeticion');
-    const currentPartidoId = params.get('idPartido');
-    const currrentJugadorId= params.get('idJugador');
-    const breadcrumbItems = [{ nombre: 'Inicio', url: '../' }];
-    if (window.location.pathname.includes('/public')) {
-      // Estás en la carpeta public
-      breadcrumbItems.push({ nombre: "partidos", url: "" });
-    }
-    if (!currentTeamId) {
-      // Solo inicio si no viene equipo
-      cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
-      return;
-    }
-  
-   
-    // Traer nombre equipo
-    const equipoSnap = await dbh.ref(`usuarios/${uid}/equipos/${currentTeamId}/nombre`).once('value');
-    const nombreEquipo = equipoSnap.exists() ? equipoSnap.val() : 'Equipo desconocido';
-    breadcrumbItems.push({ nombre: nombreEquipo, url: `equipo.html?idEquipo=${currentTeamId}` });
-  
+async function construirBreadcrumbDesdeParametros() {
+  const cont = document.getElementById('breadcrumb-container');
+  if (!cont) return;
 
-    
-    if (!currentCompeticionId) {
-      cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
-      return;
+  const params = new URLSearchParams(window.location.search);
+  const currentTeamId = params.get('idEquipo');
+  const currentCompeticionId = params.get('idCompeticion');
+  const currentPartidoId = params.get('idPartido');
+  const globalPartidoId = params.get('id'); // For global matches in public view
+  const currrentJugadorId = params.get('idJugador');
+  const breadcrumbItems = [{ nombre: 'Inicio', url: '../index.html' }];
+
+  // Check if we're viewing a global match (no teamId, but has partido id)
+  if (!currentTeamId && globalPartidoId) {
+    breadcrumbItems.push({ nombre: 'Partidos públicos', url: 'index.html' });
+
+    // Fetch match name from partidosGlobales
+    const partidoSnap = await dbh.ref(`partidosGlobales/${globalPartidoId}`).once('value');
+    if (partidoSnap.exists()) {
+      const partido = partidoSnap.val();
+      const nombrePartido = `${partido.nombreEquipo} vs ${partido.nombreRival}`;
+      breadcrumbItems.push({ nombre: nombrePartido, url: null });
+    } else {
+      breadcrumbItems.push({ nombre: 'Partido', url: null });
     }
-  
-    
-    // Traer nombre competición
-    console.log("uid:" + uid);
-    const compSnap = await dbh.ref(`usuarios/${uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/nombre`).once('value');
-    const nombreCompeticion = compSnap.exists() ? compSnap.val() : 'Competición desconocida';
-    breadcrumbItems.push({ nombre: nombreCompeticion, url: `competicion.html?idEquipo=${currentTeamId}&idCompeticion=${currentCompeticionId}` });
-  
-    if (!currentPartidoId) {
-      cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
-      return;
-    }
-  
-    // Traer nombre partido
-    const partidoSnap = await dbh.ref(`usuarios/${uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/rival`).once('value');
-    const nombrePartido = partidoSnap.exists() ? partidoSnap.val() : 'Partido';
-    breadcrumbItems.push({ nombre: nombrePartido, url: null });
-  
+
     cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
+    return;
   }
-  
-  function renderBreadcrumbHTML(items) {
-    let html = '<nav aria-label="breadcrumb"><ol class="breadcrumb">';
-    items.forEach((item, i) => {
-      if (i === items.length - 1 || !item.url) {
-        html += `<li class="breadcrumb-item active" aria-current="page">${item.nombre}</li>`;
-      } else {
-        html += `<li class="breadcrumb-item"><a href="${item.url}">${item.nombre}</a></li>`;
-      }
-    });
-    html += '</ol></nav>';
-    return html;
+
+  if (!currentTeamId) {
+    // Solo inicio si no viene equipo - estamos en la lista de partidos públicos
+    breadcrumbItems.push({ nombre: 'Partidos públicos', url: null });
+    cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
+    return;
   }
-  
+
+
+  // Traer nombre equipo
+  const equipoSnap = await dbh.ref(`usuarios/${uid}/equipos/${currentTeamId}/nombre`).once('value');
+  const nombreEquipo = equipoSnap.exists() ? equipoSnap.val() : 'Equipo desconocido';
+  breadcrumbItems.push({ nombre: nombreEquipo, url: `equipo.html?idEquipo=${currentTeamId}` });
+
+
+
+  if (!currentCompeticionId) {
+    cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
+    return;
+  }
+
+
+  // Traer nombre competición
+  console.log("uid:" + uid);
+  const compSnap = await dbh.ref(`usuarios/${uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/nombre`).once('value');
+  const nombreCompeticion = compSnap.exists() ? compSnap.val() : 'Competición desconocida';
+  breadcrumbItems.push({ nombre: nombreCompeticion, url: `competicion.html?idEquipo=${currentTeamId}&idCompeticion=${currentCompeticionId}` });
+
+  if (!currentPartidoId) {
+    cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
+    return;
+  }
+
+  // Traer nombre partido
+  const partidoSnap = await dbh.ref(`usuarios/${uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/rival`).once('value');
+  const nombrePartido = partidoSnap.exists() ? partidoSnap.val() : 'Partido';
+  breadcrumbItems.push({ nombre: nombrePartido, url: null });
+
+  cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
+}
+
+function renderBreadcrumbHTML(items) {
+  let html = '<nav aria-label="breadcrumb"><ol class="breadcrumb">';
+  items.forEach((item, i) => {
+    if (i === items.length - 1 || !item.url) {
+      html += `<li class="breadcrumb-item active" aria-current="page">${item.nombre}</li>`;
+    } else {
+      html += `<li class="breadcrumb-item"><a href="${item.url}">${item.nombre}</a></li>`;
+    }
+  });
+  html += '</ol></nav>';
+  return html;
+}
+
 
 // Ejemplo función para inicializar Firebase Auth en header (ajustar según tu código)
 function inicializarAuth() {

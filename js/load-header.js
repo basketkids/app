@@ -18,79 +18,93 @@ fetch('./header.html')
         uid = user.uid;
         construirBreadcrumbDesdeParametros();
       }
-    
+
     });
-   
+
 
   }).catch(console.error);
 
 
 
-  async function construirBreadcrumbDesdeParametros() {
-    const cont = document.getElementById('breadcrumb-container');
-    if (!cont) return;
-  
-    const params = new URLSearchParams(window.location.search);
-    const currentTeamId = params.get('idEquipo');
-    const currentCompeticionId = params.get('idCompeticion');
-    const currentPartidoId = params.get('idPartido');
-    const currrentJugadorId= params.get('idJugador');
-    const breadcrumbItems = [{ nombre: 'Inicio', url: './index.html' }];
-    if (window.location.pathname.includes('/public')) {
-      // Estás en la carpeta public
-      breadcrumbItems.push({ nombre: "partidos", url: "" });
-    }
-    if (!currentTeamId) {
-      // Solo inicio si no viene equipo
-      cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
-      return;
-    }
-  
-   
-    // Traer nombre equipo
-    const equipoSnap = await dbh.ref(`usuarios/${uid}/equipos/${currentTeamId}/nombre`).once('value');
-    const nombreEquipo = equipoSnap.exists() ? equipoSnap.val() : 'Equipo desconocido';
-    breadcrumbItems.push({ nombre: nombreEquipo, url: `equipo.html?idEquipo=${currentTeamId}` });
-  
+async function construirBreadcrumbDesdeParametros() {
+  const cont = document.getElementById('breadcrumb-container');
+  if (!cont) return;
 
-    
-    if (!currentCompeticionId) {
-      cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
-      return;
-    }
-  
-    
-    // Traer nombre competición
-    const compSnap = await dbh.ref(`usuarios/${uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/nombre`).once('value');
-    const nombreCompeticion = compSnap.exists() ? compSnap.val() : 'Competición desconocida';
-    breadcrumbItems.push({ nombre: nombreCompeticion, url: `competicion.html?idEquipo=${currentTeamId}&idCompeticion=${currentCompeticionId}` });
-  
-    if (!currentPartidoId) {
-      cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
-      return;
-    }
-  
-    // Traer nombre partido
-    const partidoSnap = await dbh.ref(`usuarios/${uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/rival`).once('value');
-    const nombrePartido = partidoSnap.exists() ? partidoSnap.val() : 'Partido';
-    breadcrumbItems.push({ nombre: nombrePartido, url: null });
-  
+  const params = new URLSearchParams(window.location.search);
+  const currentTeamId = params.get('idEquipo');
+  const currentCompeticionId = params.get('idCompeticion');
+  const currentPartidoId = params.get('idPartido');
+  const currrentJugadorId = params.get('idJugador');
+  const breadcrumbItems = [{ nombre: 'Inicio', url: 'index.html' }];
+
+  // Check if we're on the calendario page
+  if (window.location.pathname.includes('calendario.html')) {
+    breadcrumbItems.push({ nombre: 'Calendario', url: null });
     cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
+    return;
   }
-  
-  function renderBreadcrumbHTML(items) {
-    let html = '<nav aria-label="breadcrumb"><ol class="breadcrumb">';
-    items.forEach((item, i) => {
-      if (i === items.length - 1 || !item.url) {
-        html += `<li class="breadcrumb-item active" aria-current="page">${item.nombre}</li>`;
-      } else {
-        html += `<li class="breadcrumb-item"><a class="" href="${item.url}">${item.nombre}</a></li>`;
-      }
-    });
-    html += '</ol></nav>';
-    return html;
+
+  if (!currentTeamId) {
+    // Solo inicio si no viene equipo
+    cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
+    return;
   }
-  
+
+
+  // Traer nombre equipo
+  const equipoSnap = await dbh.ref(`usuarios/${uid}/equipos/${currentTeamId}/nombre`).once('value');
+  const nombreEquipo = equipoSnap.exists() ? equipoSnap.val() : 'Equipo desconocido';
+  breadcrumbItems.push({ nombre: nombreEquipo, url: `equipo.html?idEquipo=${currentTeamId}` });
+
+
+
+
+  if (!currentCompeticionId && !currrentJugadorId) {
+    cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
+    return;
+  }
+
+  // If we have a player but no competition, handle player view
+  if (currrentJugadorId && !currentCompeticionId) {
+    const jugadorSnap = await dbh.ref(`usuarios/${uid}/equipos/${currentTeamId}/plantilla/${currrentJugadorId}/nombre`).once('value');
+    const nombreJugador = jugadorSnap.exists() ? jugadorSnap.val() : 'Jugador';
+    breadcrumbItems.push({ nombre: nombreJugador, url: null });
+    cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
+    return;
+  }
+
+
+  // Traer nombre competición
+  const compSnap = await dbh.ref(`usuarios/${uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/nombre`).once('value');
+  const nombreCompeticion = compSnap.exists() ? compSnap.val() : 'Competición desconocida';
+  breadcrumbItems.push({ nombre: nombreCompeticion, url: `competicion.html?idEquipo=${currentTeamId}&idCompeticion=${currentCompeticionId}` });
+
+  if (!currentPartidoId) {
+    cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
+    return;
+  }
+
+  // Traer nombre partido
+  const partidoSnap = await dbh.ref(`usuarios/${uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/rival`).once('value');
+  const nombrePartido = partidoSnap.exists() ? partidoSnap.val() : 'Partido';
+  breadcrumbItems.push({ nombre: nombrePartido, url: null });
+
+  cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
+}
+
+function renderBreadcrumbHTML(items) {
+  let html = '<nav aria-label="breadcrumb"><ol class="breadcrumb">';
+  items.forEach((item, i) => {
+    if (i === items.length - 1 || !item.url) {
+      html += `<li class="breadcrumb-item active" aria-current="page">${item.nombre}</li>`;
+    } else {
+      html += `<li class="breadcrumb-item"><a class="" href="${item.url}">${item.nombre}</a></li>`;
+    }
+  });
+  html += '</ol></nav>';
+  return html;
+}
+
 
 // Ejemplo función para inicializar Firebase Auth en header (ajustar según tu código)
 function inicializarAuth() {

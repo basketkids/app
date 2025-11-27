@@ -82,6 +82,13 @@ class PartidosGlobalesApp {
 
     // Opcional: Renderizar lista básica de eventos en vivo
     this.renderEventosEnVivo();
+
+    // Update Other Matches Button
+    const otherMatchesBtn = document.getElementById('otherMatchesBtn');
+    if (otherMatchesBtn && this.partido.equipoId) {
+      otherMatchesBtn.href = `index.html?teamId=${this.partido.equipoId}`;
+      otherMatchesBtn.style.display = 'inline-flex';
+    }
   }
 
   renderizarEstadisticas() {
@@ -345,21 +352,39 @@ class PartidosGlobalesApp {
 
         const nombre = evento.nombre || 'Desconocido';
 
-        let iconClass = 'bi-circle';
+        let iconHtml = '';
+        // Increased size, added white background and shadow for better contrast
+        const iconStyle = 'width: 60px; height: 60px; object-fit: contain; background: #fff; border-radius: 50%; padding: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);';
+
         switch (evento.tipo) {
-          case 'puntos': iconClass = 'bi-basket'; break;
-          case 'asistencias': iconClass = 'bi-share'; break;
-          case 'rebotes': iconClass = 'bi-arrow-counterclockwise'; break;
-          case 'robos': iconClass = 'bi-hand-index-thumb'; break;
-          case 'tapones': iconClass = 'bi-hand-palm'; break;
-          case 'faltas': iconClass = 'bi-exclamation-triangle'; break;
-          case 'cambioPista': iconClass = 'bi-arrow-left-right'; break;
-          default: iconClass = 'bi-circle';
+          case 'puntos':
+            iconHtml = `<img src="../img/icons/canasta.png" alt="Puntos" style="${iconStyle}">`;
+            break;
+          case 'asistencias':
+            iconHtml = `<img src="../img/icons/asistencia.png" alt="Asistencia" style="${iconStyle}">`;
+            break;
+          case 'rebotes':
+            iconHtml = `<img src="../img/icons/rebote.png" alt="Rebote" style="${iconStyle}">`;
+            break;
+          case 'robos':
+            iconHtml = `<img src="../img/icons/robo.png" alt="Robo" style="${iconStyle}">`;
+            break;
+          case 'tapones':
+            iconHtml = `<img src="../img/icons/tapon.png" alt="Tapón" style="${iconStyle}">`;
+            break;
+          case 'faltas':
+            iconHtml = `<img src="../img/icons/falta.png" alt="Falta" style="${iconStyle}">`;
+            break;
+          case 'cambioPista':
+            iconHtml = '<i class="bi bi-arrow-left-right text-secondary" style="font-size: 1.2rem;"></i>';
+            break;
+          default:
+            iconHtml = '<i class="bi bi-circle text-secondary"></i>';
         }
 
         item.innerHTML = `
             <div class="d-flex align-items-center gap-2">
-              <i class="bi ${iconClass} text-secondary"></i>
+              ${iconHtml}
               <div>
                 <span>${nombre} ${dorsalDisplay}</span>
                 <div><small>${evento.detalle || ''}</small></div>

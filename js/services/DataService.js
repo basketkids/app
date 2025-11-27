@@ -53,6 +53,9 @@ class DataService {
 
         partido.eventos = partido.eventos || {};
 
+        // Ensure global data is synced (e.g. to add teamId if missing)
+        this._sincronizarPartidoGlobal();
+
         return partido;
       } else {
         return null;
@@ -281,7 +284,11 @@ class DataService {
     return this.partidoRef.once('value')
       .then(snapshot => {
         if (!snapshot.exists()) return refGlobal.remove();
-        return refGlobal.set(snapshot.val());
+        const data = snapshot.val();
+        // Inject teamId and competitionId for global context
+        data.equipoId = this.teamId;
+        data.competicionId = this.competitionId;
+        return refGlobal.set(data);
       });
   }
 }
