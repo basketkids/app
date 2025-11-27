@@ -21,32 +21,16 @@
 
   <div class="container">
 
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <div class="d-flex align-items-center gap-2">
-        <h2 id="teamName"></h2>
-        <a id="teamCalendarLink" href="#" class="btn btn-sm btn-outline-primary"
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <h2 id="teamName" class="mb-0 text-break"></h2>
+        <button id="editTeamBtn" class="btn btn-sm btn-outline-secondary" title="Editar equipo">
+          <i class="bi bi-pencil"></i>
+        </button>
+        <a id="teamCalendarLink" href="#" class="btn btn-sm btn-outline-primary text-nowrap"
           title="Ver partidos globales del equipo">
-          <i class="bi bi-calendar3"></i> Partidos Globales
+          <i class="bi bi-calendar3"></i> <span class="d-none d-sm-inline">Partidos Globales</span>
         </a>
-      </div>
-      <div class="d-flex align-items-center gap-2">
-        <label for="selectJerseyColor" class="form-label mb-0">Color Camiseta:</label>
-        <select id="selectJerseyColor" class="form-select form-select-sm" style="width: auto;">
-          <option value="262e33">Negro</option>
-          <option value="65c9ff">Azul Claro</option>
-          <option value="5199e4" selected>Azul</option>
-          <option value="25557c">Azul Oscuro</option>
-          <option value="e6e6e6">Gris Claro</option>
-          <option value="929598">Gris</option>
-          <option value="3c4f5c">Gris Oscuro</option>
-          <option value="b1e2ff">Celeste</option>
-          <option value="a7ffc4">Verde</option>
-          <option value="ffafb9">Rosa</option>
-          <option value="ffffb1">Amarillo</option>
-          <option value="ff488e">Rosa Fuerte</option>
-          <option value="ff5c5c">Rojo</option>
-          <option value="ffffff">Blanco</option>
-        </select>
       </div>
     </div>
 
@@ -132,6 +116,49 @@
       </div>
     </div>
   </div>
+
+  <!-- Modal Editar Equipo -->
+  <div class="modal fade" id="editTeamModal" tabindex="-1" aria-labelledby="editTeamModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editTeamModalLabel">Editar Equipo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Team Name -->
+          <div class="mb-3">
+            <label for="editTeamNameInput" class="form-label fw-semibold">Nombre del Equipo</label>
+            <input type="text" id="editTeamNameInput" class="form-control" placeholder="Nombre del equipo">
+          </div>
+
+          <!-- Jersey Color Palette -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold mb-2">Color de Camiseta</label>
+            <div id="modalColorPalette" class="d-flex flex-wrap gap-2">
+              <!-- Color swatches will be generated here -->
+            </div>
+          </div>
+
+          <!-- Fix Matches Link -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Utilidades</label>
+            <div>
+              <a id="fixMatchesLink" href="#" class="btn btn-sm btn-warning" target="_blank">
+                <i class="bi bi-tools"></i> Corregir Partidos Globales
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="saveTeamBtn" class="btn btn-primary">Guardar Cambios</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer-container"></div>
 
   <!-- Bootstrap JS, Firebase y scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

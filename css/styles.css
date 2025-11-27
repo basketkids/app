@@ -103,6 +103,12 @@ h5 {
   background-color: #F7F7F7 !important;
 }
 
+body {
+  padding-bottom: 60px;
+  /* Space for fixed footer */
+  overflow-x: hidden;
+}
+
 .btn-primary,
 .bg-primary,
 .text-primary {
@@ -270,4 +276,21 @@ h5 {
 
 .month-day-match.match-visitor {
   border-left: 3px solid #6c757d;
+}
+
+/* Mobile Header Optimization */
+@media (max-width: 576px) {
+  .logo {
+    width: 150px !important;
+    height: 35px !important;
+  }
+
+  #userAvatar {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  #userInfo {
+    font-size: 0.9rem;
+  }
 }

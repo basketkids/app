@@ -11,8 +11,13 @@
 <body class="p-4">
     <div class="container">
         <h1>Reparar Partidos Globales</h1>
-        <p class="lead">Esta herramienta recorrerá tus partidos y actualizará la lista pública (partidosGlobales)
-            asegurando que tengan el ID de equipo y competición correctos.</p>
+        <p class="lead">Esta herramienta sincronizará todos los datos de tus partidos con la lista pública
+            (partidosGlobales),
+            incluyendo nombres de equipo, IDs de equipo y competición, y todos los demás datos del partido.</p>
+
+        <div id="team-info" class="alert alert-info" style="display: none;">
+            <strong>Equipo:</strong> <span id="team-name"></span>
+        </div>
 
         <div id="auth-status" class="alert alert-secondary">Comprobando autenticación...</div>
 

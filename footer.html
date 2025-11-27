@@ -1,0 +1,70 @@
+<footer class="bg-dark text-white fixed-bottom py-1" style="font-size: 0.8rem;">
+    <div class="container-fluid px-3">
+        <div class="d-flex justify-content-between align-items-center">
+
+            <!-- Left: Brand & License (Always visible) -->
+            <div class="d-flex align-items-center gap-2">
+                <span class="fw-bold">BasketKids</span>
+                <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/deed.es" target="_blank"
+                    class="text-white-50 text-decoration-none" style="font-size: 0.9em;">
+                    <i class="bi bi-cc-circle"></i> CC BY-NC-SA
+                </a>
+            </div>
+
+            <!-- Mobile Toggle Button -->
+            <button class="btn btn-sm btn-outline-secondary d-md-none border-0 text-white-50 p-0" type="button"
+                data-bs-toggle="collapse" data-bs-target="#footerLinks" aria-expanded="false"
+                aria-label="Toggle footer links">
+                <i class="bi bi-chevron-up"></i> Info
+            </button>
+
+            <!-- Desktop Links (Always visible on md+) -->
+            <div class="d-none d-md-flex gap-3">
+                <a href="about.html" class="text-white-50 text-decoration-none hover-white">Sobre Nosotros</a>
+                <a href="terms.html" class="text-white-50 text-decoration-none hover-white">Términos</a>
+                <a href="privacy.html" class="text-white-50 text-decoration-none hover-white">Privacidad</a>
+                <a href="mailto:contacto@basketkids.com"
+                    class="text-white-50 text-decoration-none hover-white">Contacto</a>
+            </div>
+        </div>
+
+        <!-- Mobile Collapsible Links -->
+        <div class="collapse d-md-none mt-2 border-top border-secondary pt-2" id="footerLinks">
+            <div class="d-flex justify-content-between">
+                <div class="">
+                    <ul class="list-unstyled mb-0">
+                        <li><a href="about.html" class="text-white-50 text-decoration-none d-block py-1">Sobre
+                                Nosotros</a></li>
+                        <li><a href="mailto:contacto@basketkids.com"
+                                class="text-white-50 text-decoration-none d-block py-1">Contacto</a></li>
+                    </ul>
+                </div>
+                <div class="text-end">
+                    <ul class="list-unstyled mb-0">
+                        <li><a href="terms.html" class="text-white-50 text-decoration-none d-block py-1">Términos</a>
+                        </li>
+                        <li><a href="privacy.html"
+                                class="text-white-50 text-decoration-none d-block py-1">Privacidad</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Rotate icon on collapse
+        const footerCollapse = document.getElementById('footerLinks');
+        if (footerCollapse) {
+            footerCollapse.addEventListener('show.bs.collapse', () => {
+                document.querySelector('[data-bs-target="#footerLinks"] i').classList.replace('bi-chevron-up', 'bi-chevron-down');
+            });
+            footerCollapse.addEventListener('hide.bs.collapse', () => {
+                document.querySelector('[data-bs-target="#footerLinks"] i').classList.replace('bi-chevron-down', 'bi-chevron-up');
+            });
+        }
+    </script>
+    <style>
+        .hover-white:hover {
+            color: #fff !important;
+        }
+    </style>
+</footer>

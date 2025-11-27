@@ -7,11 +7,15 @@ class TeamApp extends BaseApp {
         this.diceBearManager = new DiceBearManager();
 
         this.teamNameSpan = document.getElementById('teamName');
+        this.editTeamBtn = document.getElementById('editTeamBtn');
+        this.editTeamNameInput = document.getElementById('editTeamNameInput');
+        this.modalColorPalette = document.getElementById('modalColorPalette');
+        this.saveTeamBtn = document.getElementById('saveTeamBtn');
+
         this.inputJugadorNombre = document.getElementById('inputJugadorNombre');
         this.inputJugadorDorsal = document.getElementById('inputJugadorDorsal');
         this.addPlayerForm = document.getElementById('addPlayerForm');
         this.playersList = document.getElementById('playersList');
-        this.selectJerseyColor = document.getElementById('selectJerseyColor');
 
         this.nuevoCompeticionBtn = document.getElementById('nuevoCompeticionBtn');
         this.competicionesList = document.getElementById('competicionesList');
@@ -23,14 +27,36 @@ class TeamApp extends BaseApp {
         this.seccionCompeticiones = document.getElementById('seccion-competiciones');
 
         this.confirmDeleteModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+        this.editTeamModal = new bootstrap.Modal(document.getElementById('editTeamModal'));
         this.nombreJugadorConfirm = document.getElementById('nombreJugadorConfirm');
         this.btnConfirmDelete = document.getElementById('btnConfirmDelete');
         this.jugadorAEliminar = null;
 
         this.currentTeamId = null;
+        this.currentTeamName = '';
+        this.currentJerseyColor = '5199e4';
+
+        this.colors = [
+            { value: '262e33', name: 'Negro' },
+            { value: '65c9ff', name: 'Azul Claro' },
+            { value: '5199e4', name: 'Azul' },
+            { value: '25557c', name: 'Azul Oscuro' },
+            { value: 'e6e6e6', name: 'Gris Claro' },
+            { value: '929598', name: 'Gris' },
+            { value: '3c4f5c', name: 'Gris Oscuro' },
+            { value: 'b1e2ff', name: 'Celeste' },
+            { value: 'a7ffc4', name: 'Verde' },
+            { value: 'ffafb9', name: 'Rosa' },
+            { value: 'ffffb1', name: 'Amarillo' },
+            { value: 'ff488e', name: 'Rosa Fuerte' },
+            { value: 'ff5c5c', name: 'Rojo' },
+            { value: 'ffffff', name: 'Blanco' }
+        ];
     }
 
     onUserLoggedIn(user) {
+        // Ensure currentUser is set (should already be set by BaseApp, but double-check)
+        this.currentUser = user;
         this.loadTeamFromUrl();
         this.setupEventListeners();
     }
@@ -47,6 +73,12 @@ class TeamApp extends BaseApp {
     }
 
     loadTeamData() {
+        if (!this.currentUser || !this.currentUser.uid) {
+            console.error('User not authenticated');
+            alert('Error: Usuario no autenticado. Por favor, recarga la página.');
+            return;
+        }
+
         this.teamService.get(this.currentUser.uid, this.currentTeamId).then(snap => {
             if (!snap.exists()) {
                 alert('Equipo no encontrado o no tienes permiso');
@@ -54,6 +86,7 @@ class TeamApp extends BaseApp {
                 return;
             }
             const team = snap.val();
+            this.currentTeamName = team.nombre;
             this.teamNameSpan.textContent = team.nombre;
 
             // Set team global matches link
@@ -63,12 +96,13 @@ class TeamApp extends BaseApp {
             }
 
             // Load jersey color
-            if (team.jerseyColor) {
-                this.selectJerseyColor.value = team.jerseyColor;
-            }
+            this.currentJerseyColor = team.jerseyColor || '5199e4';
 
             this.loadPlantilla();
             this.loadCompeticiones();
+        }).catch(error => {
+            console.error('Error loading team data:', error);
+            alert('Error al cargar datos del equipo: ' + error.message);
         });
     }
 
@@ -96,7 +130,11 @@ class TeamApp extends BaseApp {
 
         this.btnConfirmDelete.addEventListener('click', () => this.handleDeletePlayer());
 
-        this.selectJerseyColor.addEventListener('change', () => this.handleJerseyColorChange());
+        // Edit team button - opens modal
+        this.editTeamBtn.addEventListener('click', () => this.openEditTeamModal());
+
+        // Save team button in modal
+        this.saveTeamBtn.addEventListener('click', () => this.handleSaveTeam());
     }
 
     handleAddPlayer(e) {
@@ -146,15 +184,86 @@ class TeamApp extends BaseApp {
         this.confirmDeleteModal.show();
     }
 
-    handleJerseyColorChange() {
-        const jerseyColor = this.selectJerseyColor.value;
-        this.teamService.update(this.currentUser.uid, this.currentTeamId, { jerseyColor })
+    openEditTeamModal() {
+        // Populate modal with current values
+        this.editTeamNameInput.value = this.currentTeamName;
+        this.renderModalColorPalette();
+
+        // Set fix_matches link with team ID
+        const fixMatchesLink = document.getElementById('fixMatchesLink');
+        if (fixMatchesLink) {
+            fixMatchesLink.href = `fix_matches.html?idEquipo=${encodeURIComponent(this.currentTeamId)}`;
+        }
+
+        this.editTeamModal.show();
+    }
+
+    renderModalColorPalette() {
+        this.modalColorPalette.innerHTML = '';
+        this.colors.forEach(color => {
+            const swatch = document.createElement('button');
+            swatch.type = 'button';
+            swatch.className = 'btn p-0 position-relative';
+            swatch.style.width = '50px';
+            swatch.style.height = '50px';
+            swatch.style.backgroundColor = `#${color.value}`;
+            swatch.style.border = this.currentJerseyColor === color.value ? '3px solid #2B2B2B' : '2px solid #dee2e6';
+            swatch.style.borderRadius = '8px';
+            swatch.style.cursor = 'pointer';
+            swatch.title = color.name;
+
+            // Add checkmark if selected
+            if (this.currentJerseyColor === color.value) {
+                const check = document.createElement('i');
+                check.className = 'bi bi-check-lg position-absolute top-50 start-50 translate-middle';
+                check.style.fontSize = '1.5rem';
+                check.style.color = color.value === 'ffffff' || color.value === 'ffffb1' ? '#000' : '#fff';
+                check.style.fontWeight = 'bold';
+                swatch.appendChild(check);
+            }
+
+            swatch.addEventListener('click', () => {
+                this.currentJerseyColor = color.value;
+                this.renderModalColorPalette();
+            });
+            this.modalColorPalette.appendChild(swatch);
+        });
+    }
+
+    handleSaveTeam() {
+        const newName = this.editTeamNameInput.value.trim();
+        const updates = {};
+        let hasChanges = false;
+
+        if (newName && newName !== this.currentTeamName) {
+            updates.nombre = newName;
+            hasChanges = true;
+        }
+
+        if (this.currentJerseyColor) {
+            updates.jerseyColor = this.currentJerseyColor;
+            hasChanges = true;
+        }
+
+        if (!hasChanges) {
+            this.editTeamModal.hide();
+            return;
+        }
+
+        this.teamService.update(this.currentUser.uid, this.currentTeamId, updates)
             .then(() => {
-                // Reload plantilla to update avatars with new color
-                this.loadPlantilla();
+                if (updates.nombre) {
+                    this.currentTeamName = updates.nombre;
+                    this.teamNameSpan.textContent = updates.nombre;
+                }
+                this.editTeamModal.hide();
+                // Reload plantilla to update avatars if color changed
+                if (updates.jerseyColor) {
+                    this.loadPlantilla();
+                }
             })
             .catch(error => {
-                alert('Error al actualizar color de camiseta: ' + error.message);
+                alert('Error al actualizar equipo: ' + error.message);
             });
     }
 
