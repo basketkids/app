@@ -56,6 +56,12 @@ class TeamApp extends BaseApp {
             const team = snap.val();
             this.teamNameSpan.textContent = team.nombre;
 
+            // Set team global matches link
+            const teamCalendarLink = document.getElementById('teamCalendarLink');
+            if (teamCalendarLink) {
+                teamCalendarLink.href = `public/index.html?teamId=${encodeURIComponent(this.currentTeamId)}`;
+            }
+
             // Load jersey color
             if (team.jerseyColor) {
                 this.selectJerseyColor.value = team.jerseyColor;

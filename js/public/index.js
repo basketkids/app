@@ -69,9 +69,12 @@ async function loadMatches() {
         // Let's check a sample match structure if possible. 
         // For now, I'll filter by `equipoId` property.
 
+        // Get team name from first filtered match
+        const teamName = filteredMatches.length > 0 ? filteredMatches[0].nombreEquipo : 'Equipo';
+
         // Also update UI to show filter is active
         const header = document.querySelector('h2');
-        header.innerHTML = `Partidos Públicos <span class="badge bg-info fs-6">Filtrado por equipo</span> <a href="index.html" class="btn btn-sm btn-outline-danger ms-2"><i class="bi bi-x"></i></a>`;
+        header.innerHTML = `Partidos Públicos <span class="badge bg-info fs-6">${teamName}</span> <a href="index.html" class="btn btn-sm btn-outline-danger ms-2"><i class="bi bi-x"></i></a>`;
       } else {
         filteredMatches = [...allMatches];
       }
