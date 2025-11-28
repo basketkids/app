@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Estadísticas - BasketKids Admin</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="icon" href="img/favicon.ico" type="image/x-icon" />
+</head>
+
+<body class="bg-light">
+
+    <!-- Header -->
+    <div id="header-container"></div>
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-bar-chart-fill"></i> Estadísticas de Usuarios</h2>
+            <a href="admin.html" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver al Panel</a>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Resumen de Actividad</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Usuario</th>
+                                <th class="text-center">Equipos</th>
+                                <th class="text-center">Partidos</th>
+                            </tr>
+                        </thead>
+                        <tbody id="statsTableBody">
+                            <!-- Stats will be loaded here -->
+                            <tr>
+                                <td colspan="3" class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Cargando...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="detailsModalLabel">Detalles</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="modalContent">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="modalBackBtn"
+                        style="display:none;">Volver</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div id="footer-container"></div>
+
+    <!-- Bootstrap Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
+
+    <!-- Config -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/load-header.js"></script>
+
+    <!-- Stats Logic -->
+    <script src="js/admin_stats.js"></script>
+
+</body>
+
+</html>

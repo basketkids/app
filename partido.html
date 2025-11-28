@@ -21,6 +21,12 @@
   <div class="container my-3">
 
     <h2 id="nombrePartido" class="mb-4">Gestión de Partido</h2>
+    <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
+      <div id="infoPartido" class="text-center"></div>
+      <button id="btnEditarPartido" class="btn btn-sm btn-outline-secondary" title="Editar partido">
+        <i class="bi bi-pencil"></i>
+      </button>
+    </div>
 
     <div class="mb-3 d-flex justify-content-center align-items-center gap-3">
       <label for="selectConfiguracion" class="form-label fw-semibold mb-0">Configuración de partido:</label>
@@ -58,12 +64,26 @@
           </div>
           <div id="marcadorEquipo" style="font-size: 3.5rem; font-weight: 900; line-height: 1;">0</div>
           <div id="faltasEquipo" style="font-size: 1.1rem; font-weight: 600; color: #f9a825;">F: 0</div>
+          <div class="foul-lights" id="foulLightsEquipo">
+            <span class="foul-dot"></span>
+            <span class="foul-dot"></span>
+            <span class="foul-dot"></span>
+            <span class="foul-dot"></span>
+            <span class="foul-dot"></span>
+          </div>
         </div>
 
-        <div class="text-center bg-danger text-white rounded px-1 py-1" style="min-width: 140px;">
-          <div id="nombreRivalMarcador" style="font-weight: 700; font-size: 1.2rem; margin-bottom: 0.25rem;">Rival</div>
+        <div class="text-center bg-secondary text-white rounded px-1 py-1" style="min-width: 140px;">
+          <div id="nombreEquipoRival" style="font-weight: 700; font-size: 1.2rem; margin-bottom: 0.25rem;">Rival</div>
           <div id="marcadorRival" style="font-size: 3.5rem; font-weight: 900; line-height: 1;">0</div>
           <div id="faltasRival" style="font-size: 1.1rem; font-weight: 600; color: #fff176;">F: 0</div>
+          <div class="foul-lights" id="foulLightsRival">
+            <span class="foul-dot"></span>
+            <span class="foul-dot"></span>
+            <span class="foul-dot"></span>
+            <span class="foul-dot"></span>
+            <span class="foul-dot"></span>
+          </div>
         </div>
 
       </div>
@@ -107,6 +127,10 @@
         <button class="nav-link" id="tab-pista" data-bs-toggle="tab" data-bs-target="#pista" type="button" role="tab"
           aria-controls="pista" aria-selected="false">Partido</button>
       </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-en-vivo" data-bs-toggle="tab" data-bs-target="#en-vivo" type="button"
+          role="tab" aria-controls="en-vivo" aria-selected="false">En Vivo</button>
+      </li>
     </ul>
 
     <div class="tab-content" id="tabsContent">
@@ -116,16 +140,26 @@
           data-bs-target="#modalConvocarJugadores">Cambiar convocatoria</button>
         <div id="tablaEstadisticasContainer"></div>
       </div>
-
       <!-- Tab: Partido -->
       <div class="tab-pane fade" id="pista" role="tabpanel" aria-labelledby="tab-pista">
         <button type="button" class="btn btn-warning mb-3" data-bs-toggle="modal"
           data-bs-target="#modalElegirPista">Cambiar jugadores en pista</button>
         <ul id="listaJugadoresPista" class="list-group"></ul>
       </div>
+      <!-- Tab: En Vivo -->
+      <div class="tab-pane fade" id="en-vivo" role="tabpanel" aria-labelledby="tab-en-vivo">
+        <div id="listaEventosEnVivo" class="list-group mt-3"></div>
+      </div>
     </div>
   </div>
-
+  <div class="d-flex justify-content-center">
+    <a href="" id="shareBtn" class="btn btn-success btn-sm" target="_blank" rel="noopener">
+      <i class="bi bi-whatsapp"></i> Compartir
+    </a>
+    <a href="" id="publicMatchBtn" class="btn btn-primary btn-sm" target="_blank" rel="noopener">
+      <i class="bi bi-eye-fill"></i> Ver partido público
+    </a>
+  </div>
   <!-- Modal Convocar Jugadores -->
   <div class="modal fade" id="modalConvocarJugadores" tabindex="-1" aria-labelledby="modalConvocarJugadoresLabel"
     aria-hidden="true">
@@ -166,6 +200,39 @@
     </div>
   </div>
 
+  <!-- Modal Editar Partido -->
+  <div class="modal fade" id="modalEditarPartido" tabindex="-1" aria-labelledby="modalEditarPartidoLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+      <form id="formEditarPartido" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalEditarPartidoLabel">Editar Partido</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="editFechaHora" class="form-label">Fecha y Hora</label>
+            <input type="datetime-local" class="form-control" id="editFechaHora" required>
+          </div>
+          <div class="mb-3">
+            <label for="editPabellon" class="form-label">Pabellón / Lugar</label>
+            <input type="text" class="form-control" id="editPabellon" placeholder="Nombre del pabellón">
+          </div>
+          <div class="mb-3">
+            <label for="editNombreRival" class="form-label">Nombre Rival</label>
+            <select class="form-select" id="editNombreRival">
+              <option value="">Seleccionar rival...</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div id="footer-container"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -174,9 +241,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
   <script src="js/firebase-config.js"></script>
   <script src="js/load-header.js"></script>
-  <script src="js/services/MatchService.js"></script>
-  <script src="js/services/PlayerService.js"></script>
-  <script src="js/common.js"></script>
+
+
+
+  <script src="js/services/DataService.js"></script>
+  <script src="js/apps/BaseApp.js"></script>
+  <script src="js/utils/MatchRenderer.js"></script>
+  <script src="js/apps/PartidoApp.js"></script>
   <script src="js/partido.js"></script>
 </body>
 

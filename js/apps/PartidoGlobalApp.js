@@ -5,6 +5,7 @@ class PartidosGlobalesApp {
     this.refrescoInterval = null;
     this.segundosRestantes = 0; // Para controlar display tiempo
     this.parteActual = 1;       // Para controlar el cuarto actual
+    this.matchRenderer = new MatchRenderer();
   }
 
   cargarPartidoGlobal(partidoId) {
@@ -89,146 +90,40 @@ class PartidosGlobalesApp {
       otherMatchesBtn.href = `index.html?teamId=${this.partido.equipoId}`;
       otherMatchesBtn.style.display = 'inline-flex';
     }
+    this.renderInfoPartido();
+  }
+
+  renderInfoPartido() {
+    const container = document.getElementById('infoPartido');
+    if (!container) return;
+
+    let html = '';
+
+    // Fecha y Hora
+    if (this.partido.fechaHora) {
+      const fechaObj = new Date(this.partido.fechaHora);
+      const fechaStr = fechaObj.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+      const horaStr = fechaObj.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+      html += `<div class="mb-1 fw-bold"><i class="bi bi-calendar-event"></i> ${fechaStr} - ${horaStr}</div>`;
+    }
+
+    // Ubicación
+    if (this.partido.pabellon) {
+      html += `
+        <div>
+          <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(this.partido.pabellon)}" 
+             target="_blank" class="text-decoration-none text-muted">
+            <i class="bi bi-geo-alt-fill"></i> ${this.partido.pabellon}
+          </a>
+        </div>
+      `;
+    }
+
+    container.innerHTML = html;
   }
 
   renderizarEstadisticas() {
-    const containerConvocados = document.getElementById('tablaEstadisticasContainer');
-    if (!containerConvocados) return;
-
-    containerConvocados.innerHTML = '';
-    if (!this.partido.convocados) return;
-
-    const columnas = ['Nombre', 'Puntos', 'Asist.', 'Rebotes', 'Robos', 'Tapones', 'Faltas', '+/-', 'Val.'];
-    // Campos clave para ordenar, en el mismo orden que columnas
-    const campos = ['nombre', 'puntos', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas', 'masMenos', 'Fantasy'];
-
-    // Convertir convocados a array para poder ordenar
-    const jugadoresArray = Object.entries(this.partido.convocados).map(([id, jug]) => {
-      return { id, ...jug };
-    });
-
-    let ordenColumna = 0; // índice de la columna que se está ordenando
-    let ascendente = true; // si es ascendente o descendente
-
-    // Función para renderizar la tabla con los datos ordenados
-    const renderTabla = (data, colIdx, asc) => {
-      containerConvocados.innerHTML = '';
-
-      const table = document.createElement('table');
-      table.className = 'table table-striped table-bordered table-sm';
-
-      const thead = document.createElement('thead');
-      const trHead = document.createElement('tr');
-
-      columnas.forEach((thText, i) => {
-        const th = document.createElement('th');
-        th.textContent = thText;
-        th.style.cursor = 'pointer';
-        // Añadimos indicativo de orden
-        if (i === colIdx) {
-          th.textContent += asc ? ' ↑' : ' ↓';
-        }
-        th.onclick = () => {
-          if (ordenColumna === i) {
-            ascendente = !ascendente; // invertir orden si es la misma columna
-          } else {
-            ordenColumna = i;
-            //   console.log(i);
-            // si es la primera columna (Nombre), orden asc al primer click, para el resto descendente
-            ascendente = (i === 0);
-          }
-          ordenarYRenderizar();
-        };
-        trHead.appendChild(th);
-      });
-
-      thead.appendChild(trHead);
-      table.appendChild(thead);
-
-      const tbody = document.createElement('tbody');
-      data.forEach(jug => {
-        const tr = document.createElement('tr');
-
-        // Nombre + dorsal
-        const tdNombre = document.createElement('td');
-        tdNombre.style.fontWeight = '600';
-        tdNombre.textContent = `${jug.nombre} (#${jug.dorsal})`;
-        tr.appendChild(tdNombre);
-
-        // Estadísticas
-        const stats = (this.partido.estadisticasJugadores && this.partido.estadisticasJugadores[jug.id]) || {};
-        ['puntos', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas', 'masMenos'].forEach(stat => {
-          const td = document.createElement('td');
-          let val = stats[stat] || 0;
-          if (stat === 'masMenos' && val > 0) val = `+${val}`;
-          td.textContent = val;
-          tr.appendChild(td);
-        });
-
-        const tdFanyasy = document.createElement('td');
-        tdFanyasy.style.fontWeight = '600';
-        tdFanyasy.textContent = this.calcularPuntosFantasy(this.partido.estadisticasJugadores[jug.id]);
-        tr.appendChild(tdFanyasy);
-        tbody.appendChild(tr);
-      });
-
-      table.appendChild(tbody);
-      containerConvocados.appendChild(table);
-    };
-
-    // Función que ordena según columna y dirección y llama render tabla
-    const ordenarYRenderizar = () => {
-      const campo = campos[ordenColumna];
-      //  console.log(campo);
-      jugadoresArray.sort((a, b) => {
-        let valA, valB;
-
-        if (campo === 'nombre') {
-          valA = a.nombre.toLowerCase();
-          valB = b.nombre.toLowerCase();
-        } else if (campo === 'Fantasy') {
-          //       console.log("sdfsdf")
-          valA = this.calcularPuntosFantasy((this.partido.estadisticasJugadores[a.id]));
-          valB = this.calcularPuntosFantasy((this.partido.estadisticasJugadores[b.id]));
-        } else {
-          const statsA = (this.partido.estadisticasJugadores && this.partido.estadisticasJugadores[a.id]) || {};
-          const statsB = (this.partido.estadisticasJugadores && this.partido.estadisticasJugadores[b.id]) || {};
-          valA = statsA[campo] || 0;
-          valB = statsB[campo] || 0;
-        }
-
-        if (valA < valB) return ascendente ? -1 : 1;
-        if (valA > valB) return ascendente ? 1 : -1;
-        return 0;
-      });
-
-      renderTabla(jugadoresArray, ordenColumna, ascendente);
-    };
-
-
-    // Primero render
-    ordenarYRenderizar();
-  }
-
-  calcularPuntosFantasy(stats) {
-    if (!stats) return 0;
-
-    const puntosPorPunto = 1;
-    const puntosPorRebote = 1;
-    const puntosPorAsistencia = 2;
-    const puntosPorBloqueo = 3;
-    const puntosPorRobo = 3;
-    const puntosPorFalta = -1;
-
-    const puntos =
-      (stats.puntos || 0) * puntosPorPunto +
-      (stats.rebotes || 0) * puntosPorRebote +
-      (stats.asistencias || 0) * puntosPorAsistencia +
-      (stats.tapones || 0) * puntosPorBloqueo +
-      (stats.robos || 0) * puntosPorRobo +
-      (stats.faltas || 0) * puntosPorFalta;
-
-    return puntos;
+    this.matchRenderer.renderEstadisticas('tablaEstadisticasContainer', this.partido);
   }
 
   actualizarDisplay() {
@@ -249,171 +144,7 @@ class PartidosGlobalesApp {
     }
   }
   renderEventosEnVivo() {
-    const cont = document.getElementById('listaEventosEnVivo');
-    if (!cont || !this.partido || !this.partido.eventos) return;
-
-    cont.innerHTML = '';
-
-    const eventosArray = Object.values(this.partido.eventos);
-
-    // Agrupar eventos por cuarto
-    const eventosPorCuarto = {};
-    eventosArray.forEach(evento => {
-      if (!eventosPorCuarto[evento.cuarto]) {
-        eventosPorCuarto[evento.cuarto] = [];
-      }
-      eventosPorCuarto[evento.cuarto].push(evento);
-    });
-
-    // Obtener los cuartos ordenados descendentemente para pestañas donde cuarto más alto primero
-    const cuartos = Object.keys(eventosPorCuarto).map(Number).sort((a, b) => b - a);
-
-    // Crear contenedor para pestañas nav y contenido tab panes
-    const tabsNav = document.createElement('ul');
-    tabsNav.className = 'nav nav-tabs';
-    tabsNav.id = 'cuartosTabs';
-    tabsNav.role = 'tablist';
-
-    const tabsContent = document.createElement('div');
-    tabsContent.className = 'tab-content mt-3';
-    tabsContent.id = 'cuartosTabContent';
-
-    cuartos.forEach((cuarto, index) => {
-      // Pestaña: crea botón tab
-      const tabId = `cuarto-tab-${cuarto}`;
-      const paneId = `cuarto-pane-${cuarto}`;
-
-      const liNav = document.createElement('li');
-      liNav.className = 'nav-item';
-      liNav.role = 'presentation';
-
-      const button = document.createElement('button');
-      button.className = 'nav-link' + (index === 0 ? ' active' : '');
-      button.id = tabId;
-      button.type = 'button';
-      button.dataset.bsToggle = 'tab';
-      button.dataset.bsTarget = `#${paneId}`;
-      button.role = 'tab';
-      button.ariaControls = paneId;
-      button.ariaSelected = index === 0 ? 'true' : 'false';
-      button.textContent = `Cuarto ${cuarto}`;
-
-      liNav.appendChild(button);
-      tabsNav.appendChild(liNav);
-
-      // Contenido pestaña
-      const pane = document.createElement('div');
-      pane.className = 'tab-pane fade' + (index === 0 ? ' show active' : '');
-      pane.id = paneId;
-      pane.role = 'tabpanel';
-      pane.ariaLabelledby = tabId;
-
-      // Obtener eventos de este cuarto y ordenarlos por tiempo descendiente
-      const eventosCuarto = eventosPorCuarto[cuarto].slice().sort((a, b) => b.tiempoSegundos - a.tiempoSegundos);
-
-      // Extraer jugadores únicos del cuarto (sin rival, dorsal < 0)
-      const jugadoresSet = new Map(); // key: jugadorId or nombre, value: jugador info
-      eventosCuarto.forEach(ev => {
-        if (ev.dorsal >= 0 && ev.jugadorId) {
-          if (!jugadoresSet.has(ev.jugadorId)) {
-            jugadoresSet.set(ev.jugadorId, { nombre: ev.nombre || 'Desconocido', dorsal: ev.dorsal || '' });
-          }
-        }
-      });
-
-      // Mostrar línea de jugadores en una fila
-      const lineaJugadores = document.createElement('div');
-      lineaJugadores.className = 'mb-3 d-flex flex-wrap gap-3';
-
-      jugadoresSet.forEach(jug => {
-        const spanJug = document.createElement('span');
-        spanJug.className = 'badge bg-primary';
-        spanJug.textContent = `${jug.nombre} (#${jug.dorsal})`;
-        lineaJugadores.appendChild(spanJug);
-      });
-
-      pane.appendChild(lineaJugadores);
-
-      // Mostrar eventos del cuarto
-      eventosCuarto.forEach(evento => {
-        const item = document.createElement('div');
-        item.className = 'list-group-item d-flex justify-content-between align-items-center';
-
-        let dorsalDisplay = evento.dorsal !== undefined ? `#${evento.dorsal}` : '';
-        if (evento.dorsal < 0) {
-          item.classList.add('bg-light', 'text-danger', 'fw-bold');
-          dorsalDisplay = '';
-        }
-
-        const tiempoRestante = (this.partido.duracionParte || 600) - evento.tiempoSegundos;
-        const min = Math.floor(tiempoRestante / 60);
-        const seg = tiempoRestante % 60;
-        const tiempoStr = `Q${evento.cuarto} ${min.toString().padStart(2, '0')}:${seg.toString().padStart(2, '0')}`;
-
-        const nombre = evento.nombre || 'Desconocido';
-
-        let iconHtml = '';
-        // Increased size, added white background and shadow for better contrast
-        const iconStyle = 'width: 60px; height: 60px; object-fit: contain; background: #fff; border-radius: 50%; padding: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);';
-
-        switch (evento.tipo) {
-          case 'puntos':
-            iconHtml = `<img src="../img/icons/canasta.png" alt="Puntos" style="${iconStyle}">`;
-            break;
-          case 'asistencias':
-            iconHtml = `<img src="../img/icons/asistencia.png" alt="Asistencia" style="${iconStyle}">`;
-            break;
-          case 'rebotes':
-            iconHtml = `<img src="../img/icons/rebote.png" alt="Rebote" style="${iconStyle}">`;
-            break;
-          case 'robos':
-            iconHtml = `<img src="../img/icons/robo.png" alt="Robo" style="${iconStyle}">`;
-            break;
-          case 'tapones':
-            iconHtml = `<img src="../img/icons/tapon.png" alt="Tapón" style="${iconStyle}">`;
-            break;
-          case 'faltas':
-            iconHtml = `<img src="../img/icons/falta.png" alt="Falta" style="${iconStyle}">`;
-            break;
-          case 'cambioPista':
-            iconHtml = '<i class="bi bi-arrow-left-right text-secondary" style="font-size: 1.2rem;"></i>';
-            break;
-          default:
-            iconHtml = '<i class="bi bi-circle text-secondary"></i>';
-        }
-
-        item.innerHTML = `
-            <div class="d-flex align-items-center gap-2">
-              ${iconHtml}
-              <div>
-                <span>${nombre} ${dorsalDisplay}</span>
-                <div><small>${evento.detalle || ''}</small></div>
-              </div>
-            </div>
-            <div class="d-flex align-items-center gap-2">
-              ${(evento.marcadorEquipo !== undefined && evento.marcadorRival !== undefined) ?
-            `<small class="text-muted fw-bold me-1" style="font-size: 0.8em">[${evento.marcadorEquipo}-${evento.marcadorRival}]</small>` : ''}
-              <small class="text-muted fw-monospace">${tiempoStr}</small>
-            </div>
-          `;
-
-        pane.appendChild(item);
-      });
-
-      tabsContent.appendChild(pane);
-    });
-
-    // Añadir las pestañas y contenido al contenedor principal
-    cont.appendChild(tabsNav);
-    cont.appendChild(tabsContent);
-
-    // Inicializar tabs con Bootstrap 5 JS si no está ya inicializado
-    if (typeof bootstrap !== 'undefined') {
-      const tabTriggerList = [].slice.call(cont.querySelectorAll('button[data-bs-toggle="tab"]'));
-      tabTriggerList.forEach(tabTriggerEl => {
-        new bootstrap.Tab(tabTriggerEl);
-      });
-    }
+    this.matchRenderer.renderEventosEnVivo('listaEventosEnVivo', this.partido);
   }
 
 

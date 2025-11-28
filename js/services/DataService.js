@@ -81,6 +81,20 @@ class DataService {
   }
 
   /**
+   * Carga la lista de rivales de la competición.
+   * Retorna un array de objetos: [{ id: string, nombre: string }, ...]
+   */
+  cargarRivales() {
+    return this.db.ref(`usuarios/${this.userId}/equipos/${this.teamId}/competiciones/${this.competitionId}/rivales`).once('value').then(snap => {
+      const lista = [];
+      snap.forEach(child => {
+        lista.push({ id: child.key, ...child.val() });
+      });
+      return lista;
+    });
+  }
+
+  /**
    * Guarda el objeto completo del partido.
    * @param {Object} partidoObj - Objeto completo del partido con toda la estructura.
    */

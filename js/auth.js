@@ -4,6 +4,7 @@ if (!firebase.apps.length) {
 }
 
 const auth = firebase.auth();
+const db = firebase.database();
 
 // DOM Elements
 const loginForm = document.getElementById('loginForm');
@@ -20,6 +21,28 @@ function showError(message) {
     }, 5000);
 }
 
+// Helper to save user data
+async function saveUserData(user) {
+    try {
+        const userRef = db.ref(`usuarios/${user.uid}/profile`);
+        const snapshot = await userRef.once('value');
+        const currentData = snapshot.val() || {};
+
+        const updates = {};
+        if (!currentData.email) updates.email = user.email;
+        if (!currentData.nombre && !currentData.displayName) {
+            updates.nombre = user.displayName || user.email.split('@')[0];
+            updates.displayName = user.displayName || user.email.split('@')[0];
+        }
+
+        if (Object.keys(updates).length > 0) {
+            await userRef.update(updates);
+        }
+    } catch (error) {
+        console.error("Error saving user data:", error);
+    }
+}
+
 // Login with Email/Password
 if (loginForm) {
     loginForm.addEventListener('submit', (e) => {
@@ -28,7 +51,9 @@ if (loginForm) {
         const password = document.getElementById('loginPassword').value;
 
         auth.signInWithEmailAndPassword(email, password)
-            .then((userCredential) => {
+            .then(async (userCredential) => {
+                // Save user data
+                await saveUserData(userCredential.user);
                 // Signed in
                 window.location.href = 'index.html';
             })
@@ -52,7 +77,9 @@ if (registerForm) {
         }
 
         auth.createUserWithEmailAndPassword(email, password)
-            .then((userCredential) => {
+            .then(async (userCredential) => {
+                // Save user data
+                await saveUserData(userCredential.user);
                 // Signed in
                 window.location.href = 'index.html';
             })
@@ -67,7 +94,9 @@ if (googleLoginBtn) {
     googleLoginBtn.addEventListener('click', () => {
         const provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider)
-            .then((result) => {
+            .then(async (result) => {
+                // Save user data
+                await saveUserData(result.user);
                 window.location.href = 'index.html';
             })
             .catch((error) => {

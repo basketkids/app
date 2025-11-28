@@ -35,6 +35,11 @@ class CompetitionApp extends BaseApp {
         this.currentTeamId = null;
         this.currentCompeticionId = null;
         this.elementoABorrar = null;
+
+        this.editRivalModal = new bootstrap.Modal(document.getElementById('editRivalModal'));
+        this.editRivalForm = document.getElementById('editRivalForm');
+        this.editInputNombreRival = document.getElementById('editInputNombreRival');
+        this.rivalAEditar = null;
     }
 
     onUserLoggedIn(user) {
@@ -86,7 +91,10 @@ class CompetitionApp extends BaseApp {
         this.addPartidoForm.addEventListener('submit', e => this.handleAddPartido(e));
         this.confirmDeleteBtn.addEventListener('click', () => this.handleDelete());
         this.setupCSVImport();
+        this.setupCSVImport();
         this.setupExportCalendar();
+
+        this.editRivalForm.addEventListener('submit', e => this.handleEditRival(e));
     }
 
     handleAddRival(e) {
@@ -100,6 +108,20 @@ class CompetitionApp extends BaseApp {
                 const modal = bootstrap.Modal.getOrCreateInstance(this.addRivalForm.closest('.modal'));
                 modal.hide();
             });
+    }
+
+    handleEditRival(e) {
+        e.preventDefault();
+        const nombre = this.editInputNombreRival.value.trim();
+        if (!nombre || !this.rivalAEditar) return;
+
+        this.competitionService.updateRival(this.currentUser.uid, this.currentTeamId, this.currentCompeticionId, this.rivalAEditar, nombre)
+            .then(() => {
+                this.editRivalModal.hide();
+                this.rivalAEditar = null;
+                // No need to reload everything, listener will update
+            })
+            .catch(err => alert('Error al actualizar: ' + err.message));
     }
 
     loadRivales() {
@@ -134,7 +156,22 @@ class CompetitionApp extends BaseApp {
                     this.elementoABorrar = { tipo: 'rival', id };
                     this.confirmDeleteModal.show();
                 };
-                li.appendChild(btnBorrar);
+
+                const btnEditar = document.createElement('button');
+                btnEditar.classList.add('btn', 'btn-sm', 'btn-outline-secondary', 'me-2');
+                btnEditar.title = 'Editar rival';
+                btnEditar.innerHTML = '<i class="bi bi-pencil"></i>';
+                btnEditar.onclick = () => {
+                    this.rivalAEditar = id;
+                    this.editInputNombreRival.value = rival.nombre;
+                    this.editRivalModal.show();
+                };
+
+                const divBtns = document.createElement('div');
+                divBtns.appendChild(btnEditar);
+                divBtns.appendChild(btnBorrar);
+
+                li.appendChild(divBtns);
 
                 this.rivalesList.appendChild(li);
             });
@@ -277,7 +314,7 @@ class CompetitionApp extends BaseApp {
         botonesContainer.appendChild(btnCalendar);
 
         const btnGestionar = document.createElement('a');
-        btnGestionar.href = `partidonew.html?idEquipo=${this.currentTeamId}&idCompeticion=${this.currentCompeticionId}&idPartido=${id}`;
+        btnGestionar.href = `partido.html?idEquipo=${this.currentTeamId}&idCompeticion=${this.currentCompeticionId}&idPartido=${id}`;
         btnGestionar.classList.add('btn', 'btn-sm', 'btn-warning');
         btnGestionar.title = 'Gestionar partido';
         btnGestionar.innerHTML = '<i class="bi bi-pencil-fill"></i>';

@@ -192,7 +192,7 @@ app/
 ├── equipos.html           # Lista de equipos
 ├── equipo.html            # Gestión de equipo
 ├── competicion.html       # Gestión de competición
-├── partidonew.html        # Partido en vivo
+├── partido.html        # Partido en vivo
 ├── partido-global.html    # Vista pública de partido
 ├── consulta.html          # Consulta de resultados
 ├── jugadores.html         # Gestión de jugadores

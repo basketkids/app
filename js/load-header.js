@@ -99,6 +99,20 @@ async function construirBreadcrumbDesdeParametros() {
     return;
   }
 
+  // Check for admin pages
+  if (path.includes('admin.html')) {
+    breadcrumbItems.push({ nombre: 'Administración', url: null });
+    cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
+    return;
+  }
+
+  if (path.includes('admin_stats.html')) {
+    breadcrumbItems.push({ nombre: 'Administración', url: 'admin.html' });
+    breadcrumbItems.push({ nombre: 'Estadísticas', url: null });
+    cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
+    return;
+  }
+
   // --- PUBLIC VIEW LOGIC ---
   // Check if we're viewing a global match (no teamId, but has partido id)
   if (!currentTeamId && globalPartidoId) {
@@ -232,19 +246,76 @@ async function inicializarAuth() {
         const profileSnap = await dbh.ref(`usuarios/${user.uid}/profile`).once('value');
         const profile = profileSnap.val();
 
-        if (profile && profile.displayName) {
-          userInfo.textContent = profile.displayName;
-        } else {
-          userInfo.textContent = user.displayName || user.email;
-        }
+        if (profile) {
+          userInfo.textContent = profile.displayName || profile.nombre || user.email;
 
-        // Load avatar
-        if (typeof DiceBearManager !== 'undefined') {
-          const diceBearManager = new DiceBearManager();
-          if (profile && profile.avatarConfig) {
-            userAvatar.src = diceBearManager.getImageForProfile(user.uid, profile.avatarConfig);
-          } else {
-            // Default avatar
+          // Load avatar
+          if (typeof DiceBearManager !== 'undefined') {
+            const diceBearManager = new DiceBearManager();
+            if (profile.avatarConfig) {
+              userAvatar.src = diceBearManager.getImageForProfile(user.uid, profile.avatarConfig);
+            } else {
+              // Default avatar
+              userAvatar.src = diceBearManager.getImageForProfile(user.uid, null);
+            }
+          }
+
+          // Show Admin link if user is admin
+          // Show Admin link if user is admin
+          if (profile.admin) {
+            // Check if link already exists to avoid duplicates
+            if (!document.querySelector(`a[href="${basePath}admin.html"]`)) {
+              const adminLinkItem = document.createElement('li');
+              adminLinkItem.innerHTML = `<a class="dropdown-item" href="${basePath}admin.html"><i class="bi bi-shield-lock"></i> Administrador</a>`;
+              const dropdownMenu = document.querySelector('#userDropdown .dropdown-menu');
+
+              // Find the divider
+              const divider = dropdownMenu.querySelector('.dropdown-divider');
+              if (divider) {
+                // The divider is inside an LI, so we need to insert before that LI
+                const dividerItem = divider.closest('li');
+                if (dividerItem) {
+                  dropdownMenu.insertBefore(adminLinkItem, dividerItem);
+                }
+              } else {
+                // If no divider, insert before the last child (logout)
+                const logoutItem = dropdownMenu.querySelector('#logoutBtn').closest('li');
+                if (logoutItem) {
+                  dropdownMenu.insertBefore(adminLinkItem, logoutItem);
+                } else {
+                  dropdownMenu.appendChild(adminLinkItem); // Fallback
+                }
+              }
+            }
+          }
+
+          // Sync data if missing (e.g. email)
+          if (!profile.email || (!profile.nombre && !profile.displayName)) {
+            const updates = {};
+            if (!profile.email) updates.email = user.email;
+            if (!profile.nombre && !profile.displayName) {
+              updates.nombre = user.displayName || user.email.split('@')[0];
+              updates.displayName = user.displayName || user.email.split('@')[0];
+            }
+            if (Object.keys(updates).length > 0) {
+              dbh.ref(`usuarios/${user.uid}/profile`).update(updates);
+            }
+          }
+
+        } else {
+          // If no profile data, use user.email
+          userInfo.textContent = user.displayName || user.email;
+
+          // Create profile with basic info
+          dbh.ref(`usuarios/${user.uid}/profile`).set({
+            email: user.email,
+            nombre: user.displayName || user.email.split('@')[0],
+            displayName: user.displayName || user.email.split('@')[0]
+          });
+
+          // Default avatar
+          if (typeof DiceBearManager !== 'undefined') {
+            const diceBearManager = new DiceBearManager();
             userAvatar.src = diceBearManager.getImageForProfile(user.uid, null);
           }
         }

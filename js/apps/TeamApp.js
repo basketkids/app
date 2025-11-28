@@ -30,7 +30,13 @@ class TeamApp extends BaseApp {
         this.editTeamModal = new bootstrap.Modal(document.getElementById('editTeamModal'));
         this.nombreJugadorConfirm = document.getElementById('nombreJugadorConfirm');
         this.btnConfirmDelete = document.getElementById('btnConfirmDelete');
+        this.btnConfirmDelete = document.getElementById('btnConfirmDelete');
         this.jugadorAEliminar = null;
+
+        this.editCompeticionModal = new bootstrap.Modal(document.getElementById('editCompeticionModal'));
+        this.editCompeticionForm = document.getElementById('editCompeticionForm');
+        this.editNombreCompeticion = document.getElementById('editNombreCompeticion');
+        this.competicionAEditar = null;
 
         this.currentTeamId = null;
         this.currentTeamName = '';
@@ -135,6 +141,8 @@ class TeamApp extends BaseApp {
 
         // Save team button in modal
         this.saveTeamBtn.addEventListener('click', () => this.handleSaveTeam());
+
+        this.editCompeticionForm.addEventListener('submit', e => this.handleEditCompetition(e));
     }
 
     handleAddPlayer(e) {
@@ -163,6 +171,20 @@ class TeamApp extends BaseApp {
                 bootstrap.Modal.getInstance(this.addCompeticionForm.closest('.modal')).hide();
                 this.loadCompeticiones(); // Reload list
             });
+    }
+
+    handleEditCompetition(e) {
+        e.preventDefault();
+        const nombre = this.editNombreCompeticion.value.trim();
+        if (!nombre || !this.competicionAEditar) return;
+
+        this.competitionService.update(this.currentUser.uid, this.currentTeamId, this.competicionAEditar, { nombre })
+            .then(() => {
+                this.editCompeticionModal.hide();
+                this.competicionAEditar = null;
+                this.loadCompeticiones();
+            })
+            .catch(err => alert('Error al actualizar: ' + err.message));
     }
 
     handleDeletePlayer() {
@@ -455,7 +477,21 @@ class TeamApp extends BaseApp {
                 btnAbrir.href = `competicion.html?idEquipo=${this.currentTeamId}&idCompeticion=${key}`;
                 btnAbrir.classList.add('btn', 'btn-sm', 'btn-primary');
                 btnAbrir.textContent = 'Abrir';
-                li.appendChild(btnAbrir);
+
+                const btnEditar = document.createElement('button');
+                btnEditar.classList.add('btn', 'btn-sm', 'btn-outline-secondary', 'ms-2');
+                btnEditar.innerHTML = '<i class="bi bi-pencil"></i>';
+                btnEditar.onclick = () => {
+                    this.competicionAEditar = key;
+                    this.editNombreCompeticion.value = competicion.nombre;
+                    this.editCompeticionModal.show();
+                };
+
+                const divBtns = document.createElement('div');
+                divBtns.appendChild(btnAbrir);
+                divBtns.appendChild(btnEditar);
+
+                li.appendChild(divBtns);
 
                 this.competicionesList.appendChild(li);
             });

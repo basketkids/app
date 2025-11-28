@@ -6,6 +6,7 @@ class PartidoApp extends BaseApp {
     // Estado centralizado único que contiene toda la información del partido
     this.partido = null;
     this.plantillaJugadores = [];
+    this.rivales = [];
 
     this.selectConfiguracion = document.getElementById('selectConfiguracion');
     this.selectCuarto = document.getElementById('selectCuarto');
@@ -14,6 +15,7 @@ class PartidoApp extends BaseApp {
     this.btnTerminar = document.getElementById('btnTerminar');
     this.contadorInterval = null;
     this.contadorActivo = false;
+    this.matchRenderer = new MatchRenderer();
   }
 
   onUserLoggedIn(user) {
@@ -39,6 +41,7 @@ class PartidoApp extends BaseApp {
       if (!this.partido) throw new Error('Partido no encontrado');
 
       this.plantillaJugadores = await this.dataService.cargarPlantilla();
+      this.rivales = await this.dataService.cargarRivales();
       // Ajustar configuración partido y temporizador según datos cargados
       this.configuracionPartido = this.partido.configuracion || '4x10';
       this.configurarPartido(this.configuracionPartido, false);
@@ -116,6 +119,11 @@ class PartidoApp extends BaseApp {
       }
 
       this.selectCuarto.value = this.partido.parteActual;
+      this.selectCuarto.value = this.partido.parteActual;
+    }
+
+    if (this.selectConfiguracion) {
+      this.selectConfiguracion.value = this.partido.configuracion;
     }
 
     if (guardarEnFirebase) {
@@ -132,6 +140,71 @@ class PartidoApp extends BaseApp {
     this.actualizarBotonesPorEstado();
     this.actualizarMarcadoryFaltas();
     this.renderNombresEquipos();
+    this.renderInfoPartido();
+    this.actualizarLinksPublicos();
+  }
+
+  actualizarLinksPublicos() {
+    const shareBtn = document.getElementById('shareBtn');
+    const publicMatchBtn = document.getElementById('publicMatchBtn');
+
+    // Construir URL pública absoluta
+    // Asumimos que public/partido.html está en ../public/partido.html relativo a la app admin
+    // Pero necesitamos la URL absoluta para compartir
+    const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
+    const publicUrl = `${baseUrl}/public/partido.html?id=${this.dataService.matchId}`;
+
+    if (shareBtn) {
+      shareBtn.href = `https://wa.me/?text=` + encodeURIComponent(`Sigue el partido en vivo: ${publicUrl}`);
+    }
+
+    if (publicMatchBtn) {
+      publicMatchBtn.href = publicUrl;
+    }
+  }
+
+  renderInfoPartido() {
+    const container = document.getElementById('infoPartido');
+    if (!container) return;
+
+    let html = '';
+
+    // Fecha y Hora
+    if (this.partido.fechaHora) {
+      const fechaObj = new Date(this.partido.fechaHora);
+      const fechaStr = fechaObj.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+      const horaStr = fechaObj.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+      html += `<div class="mb-1 fw-bold"><i class="bi bi-calendar-event"></i> ${fechaStr} - ${horaStr}</div>`;
+    }
+
+    // Ubicación
+    if (this.partido.pabellon) {
+      html += `
+        <div>
+          <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(this.partido.pabellon)}" 
+             target="_blank" class="text-decoration-none text-muted">
+            <i class="bi bi-geo-alt-fill"></i> ${this.partido.pabellon}
+          </a>
+        </div>
+      `;
+    }
+
+    container.innerHTML = html;
+  }
+  renderUbicacion() {
+    const container = document.getElementById('ubicacionPartido');
+    if (!container) return;
+
+    if (this.partido.pabellon) {
+      container.innerHTML = `
+        <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(this.partido.pabellon)}" 
+           target="_blank" class="text-decoration-none text-muted">
+          <i class="bi bi-geo-alt-fill"></i> ${this.partido.pabellon}
+        </a>
+      `;
+    } else {
+      container.innerHTML = '';
+    }
   }
 
   renderNombresEquipos() {
@@ -190,172 +263,94 @@ class PartidoApp extends BaseApp {
     if (btnFaltasRival) {
       btnFaltasRival.addEventListener('click', () => this.agregarEstadistica('', 'faltas', 1));
     }
+
+    document.getElementById('btnEditarPartido')?.addEventListener('click', () => this.abrirModalEditar());
+    document.getElementById('formEditarPartido')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      this.guardarDatosPartido();
+    });
+  }
+
+  abrirModalEditar() {
+    if (!this.partido) return;
+    const inputFecha = document.getElementById('editFechaHora');
+    const inputPabellon = document.getElementById('editPabellon');
+    const inputNombreRival = document.getElementById('editNombreRival');
+
+    if (this.partido.fechaHora) {
+      // Convertir fecha ISO a formato datetime-local (YYYY-MM-DDTHH:mm)
+      const date = new Date(this.partido.fechaHora);
+      // Ajustar a zona horaria local para el input
+      const offset = date.getTimezoneOffset() * 60000;
+      const localISOTime = (new Date(date.getTime() - offset)).toISOString().slice(0, 16);
+      inputFecha.value = localISOTime;
+    } else {
+      inputFecha.value = '';
+    }
+
+    inputPabellon.value = this.partido.pabellon || '';
+
+    // Popular select de rivales
+    inputNombreRival.innerHTML = '<option value="">Seleccionar rival...</option>';
+    this.rivales.forEach(rival => {
+      const option = document.createElement('option');
+      option.value = rival.id;
+      option.textContent = rival.nombre;
+      inputNombreRival.appendChild(option);
+    });
+
+    // Seleccionar el rival actual
+    if (this.partido.rivalId) {
+      inputNombreRival.value = this.partido.rivalId;
+    } else if (this.partido.nombreRival) {
+      // Intentar buscar por nombre si no hay ID (retrocompatibilidad)
+      const rivalEncontrado = this.rivales.find(r => r.nombre === this.partido.nombreRival);
+      if (rivalEncontrado) {
+        inputNombreRival.value = rivalEncontrado.id;
+      }
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('modalEditarPartido'));
+    modal.show();
+  }
+
+  guardarDatosPartido() {
+    const inputFecha = document.getElementById('editFechaHora');
+    const inputPabellon = document.getElementById('editPabellon');
+    const inputNombreRival = document.getElementById('editNombreRival');
+
+    if (inputFecha.value) {
+      this.partido.fechaHora = new Date(inputFecha.value).toISOString();
+    }
+    this.partido.pabellon = inputPabellon.value;
+
+    const rivalId = inputNombreRival.value;
+    if (rivalId) {
+      this.partido.rivalId = rivalId;
+      const rivalObj = this.rivales.find(r => r.id === rivalId);
+      this.partido.nombreRival = rivalObj ? rivalObj.nombre : '';
+    } else {
+      // Si no selecciona nada, mantenemos o limpiamos? 
+      // Asumimos que debe seleccionar uno. Si limpia, se queda vacio.
+      this.partido.rivalId = null;
+      this.partido.nombreRival = '';
+    }
+
+    this.dataService.guardarPartido(this.partido)
+      .then(() => {
+        bootstrap.Modal.getInstance(document.getElementById('modalEditarPartido')).hide();
+        this.renderInfoPartido();
+        this.renderNombresEquipos();
+        alert('Partido actualizado correctamente');
+      })
+      .catch(error => {
+        console.error('Error al guardar:', error);
+        alert('Error al guardar los cambios');
+      });
   }
 
   renderEventosEnVivo() {
-    const cont = document.getElementById('listaEventosEnVivo');
-    if (!cont || !this.partido || !this.partido.eventos) return;
-
-    cont.innerHTML = '';
-
-    const eventosArray = Object.entries(this.partido.eventos).map(([key, value]) => ({ ...value, id: key }));
-
-    // Agrupar eventos por cuarto
-    const eventosPorCuarto = eventosArray.reduce((acc, evento) => {
-      if (!acc[evento.cuarto]) {
-        acc[evento.cuarto] = [];
-      }
-      acc[evento.cuarto].push(evento);
-      return acc;
-    }, {});
-
-    // Ordenar cuartos de forma descendente
-    const cuartosOrdenados = Object.keys(eventosPorCuarto).sort((a, b) => b - a);
-
-    // Crear la estructura de pestañas de Bootstrap
-    const tabsNav = document.createElement('ul');
-    tabsNav.className = 'nav nav-tabs mb-3';
-    tabsNav.id = 'eventosTabs';
-    tabsNav.setAttribute('role', 'tablist');
-
-    const tabsContent = document.createElement('div');
-    tabsContent.className = 'tab-content';
-    tabsContent.id = 'eventosTabsContent';
-
-    cuartosOrdenados.forEach((cuarto, index) => {
-      const isActive = index === 0; // El primer cuarto (el más reciente) estará activo por defecto
-
-      // Crear el botón de la pestaña
-      const navItem = document.createElement('li');
-      navItem.className = 'nav-item';
-      navItem.setAttribute('role', 'presentation');
-
-      const button = document.createElement('button');
-      button.className = `nav-link ${isActive ? 'active' : ''}`;
-      button.id = `cuarto-${cuarto}-tab`;
-      button.setAttribute('data-bs-toggle', 'tab');
-      button.setAttribute('data-bs-target', `#cuarto-${cuarto}-pane`);
-      button.setAttribute('type', 'button');
-      button.setAttribute('role', 'tab');
-      button.setAttribute('aria-controls', `cuarto-${cuarto}-pane`);
-      button.setAttribute('aria-selected', isActive ? 'true' : 'false');
-      button.textContent = `Cuarto ${cuarto}`;
-      navItem.appendChild(button);
-      tabsNav.appendChild(navItem);
-
-      // Crear el contenido del panel de la pestaña
-      const pane = document.createElement('div');
-      pane.className = `tab-pane fade ${isActive ? 'show active' : ''}`;
-      pane.id = `cuarto-${cuarto}-pane`;
-      pane.setAttribute('role', 'tabpanel');
-      pane.setAttribute('aria-labelledby', `cuarto-${cuarto}-tab`);
-      pane.setAttribute('tabindex', '0');
-
-      // Ordenar eventos dentro de cada cuarto por tiempo descendente
-      const eventosCuarto = eventosPorCuarto[cuarto].sort((a, b) => b.tiempoSegundos - a.tiempoSegundos);
-
-      // Mostrar eventos del cuarto
-      eventosCuarto.forEach(evento => {
-        const item = document.createElement('div');
-        item.className = 'list-group-item d-flex justify-content-between align-items-center';
-
-        let dorsalDisplay = evento.dorsal !== undefined ? `#${evento.dorsal}` : '';
-        if (evento.dorsal < 0) {
-          item.classList.add('bg-light', 'text-danger', 'fw-bold');
-          dorsalDisplay = '';
-        }
-
-        const tiempoRestante = (this.partido.duracionParte || 600) - evento.tiempoSegundos;
-        const min = Math.floor(tiempoRestante / 60);
-        const seg = tiempoRestante % 60;
-        const tiempoStr = `Q${evento.cuarto} ${min.toString().padStart(2, '0')}:${seg.toString().padStart(2, '0')}`;
-
-        const nombre = evento.nombre || 'Desconocido';
-
-        let iconHtml = '';
-        // Increased size, added white background and shadow for better contrast
-        const iconStyle = 'width: 40px; height: 40px; object-fit: contain; background: #fff; border-radius: 50%; padding: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);';
-
-        switch (evento.tipo) {
-          case 'puntos':
-            iconHtml = `<img src="img/icons/canasta.png" alt="Puntos" style="${iconStyle}">`;
-            break;
-          case 'asistencias':
-            iconHtml = `<img src="img/icons/asistencia.png" alt="Asistencia" style="${iconStyle}">`;
-            break;
-          case 'rebotes':
-            iconHtml = `<img src="img/icons/rebote.png" alt="Rebote" style="${iconStyle}">`;
-            break;
-          case 'robos':
-            iconHtml = `<img src="img/icons/robo.png" alt="Robo" style="${iconStyle}">`;
-            break;
-          case 'tapones':
-            iconHtml = `<img src="img/icons/tapon.png" alt="Tapón" style="${iconStyle}">`;
-            break;
-          case 'faltas':
-            iconHtml = `<img src="img/icons/falta.png" alt="Falta" style="${iconStyle}">`;
-            break;
-          case 'cambioPista':
-            iconHtml = '<i class="bi bi-arrow-left-right text-secondary" style="font-size: 1.2rem;"></i>';
-            break;
-          default:
-            iconHtml = '<i class="bi bi-circle text-secondary"></i>';
-        }
-
-        const infoDiv = document.createElement('div');
-        infoDiv.className = 'd-flex align-items-center gap-2';
-        infoDiv.innerHTML = `
-        ${iconHtml}
-        <div>
-          <span>${nombre} ${dorsalDisplay}</span>
-          <div><small>${evento.detalle || ''}</small></div>
-        </div>
-      `;
-
-        const rightDiv = document.createElement('div');
-        rightDiv.className = 'd-flex align-items-center gap-2';
-
-        if (evento.marcadorEquipo !== undefined && evento.marcadorRival !== undefined) {
-          const scoreSmall = document.createElement('small');
-          scoreSmall.className = 'text-muted fw-bold me-1';
-          scoreSmall.style.fontSize = '0.8em';
-          scoreSmall.textContent = `[${evento.marcadorEquipo}-${evento.marcadorRival}]`;
-          rightDiv.appendChild(scoreSmall);
-        }
-
-        const timeSmall = document.createElement('small');
-        timeSmall.className = 'text-muted fw-monospace';
-        timeSmall.textContent = tiempoStr;
-        rightDiv.appendChild(timeSmall);
-
-        // Botón borrar
-        const btnBorrar = document.createElement('button');
-        btnBorrar.className = 'btn btn-sm btn-outline-danger';
-        btnBorrar.innerHTML = '<i class="bi bi-trash"></i>';
-        btnBorrar.title = 'Deshacer evento';
-        btnBorrar.onclick = () => this.borrarEvento(evento.id, evento);
-        rightDiv.appendChild(btnBorrar);
-
-        item.appendChild(infoDiv);
-        item.appendChild(rightDiv);
-
-        pane.appendChild(item);
-      });
-
-      tabsContent.appendChild(pane);
-    });
-
-    // Añadir las pestañas y contenido al contenedor principal
-    cont.appendChild(tabsNav);
-    cont.appendChild(tabsContent);
-
-    // Inicializar tabs con Bootstrap 5 JS si no está ya inicializado
-    if (typeof bootstrap !== 'undefined') {
-      const tabTriggerList = [].slice.call(cont.querySelectorAll('button[data-bs-toggle="tab"]'));
-      tabTriggerList.forEach(tabTriggerEl => {
-        new bootstrap.Tab(tabTriggerEl);
-      });
-    }
+    this.matchRenderer.renderEventosEnVivo('listaEventosEnVivo', this.partido, (id, evento) => this.borrarEvento(id, evento));
   }
 
   borrarEvento(eventoId, evento) {
@@ -415,47 +410,7 @@ class PartidoApp extends BaseApp {
   }
 
   renderListaJugadoresConvocados() {
-    const cont = document.getElementById('tablaEstadisticasContainer');
-    if (!cont) return;
-    cont.innerHTML = '';
-
-    const table = document.createElement('table');
-    table.className = 'table table-striped table-bordered table-sm';
-
-    const thead = document.createElement('thead');
-    const headerRow = document.createElement('tr');
-    ['Nombre', 'Puntos', 'Asist.', 'Rebotes', 'Robos', 'Tapones', 'Faltas', '+/-'].forEach(text => {
-      const th = document.createElement('th');
-      th.textContent = text;
-      headerRow.appendChild(th);
-    });
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-
-    const tbody = document.createElement('tbody');
-
-    if (this.partido.convocados) {
-      Object.entries(this.partido.convocados).forEach(([id, jug]) => {
-        const tr = document.createElement('tr');
-        const tdNombre = document.createElement('td');
-        tdNombre.style.fontWeight = '600';
-        tdNombre.textContent = `${jug.nombre} (#${jug.dorsal})`;
-        tr.appendChild(tdNombre);
-
-        const stats = (this.partido.estadisticasJugadores && this.partido.estadisticasJugadores[id]) || {};
-        ['puntos', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas', 'masMenos'].forEach(k => {
-          const td = document.createElement('td');
-          td.textContent = stats[k] || 0;
-          if (k === 'masMenos' && stats[k] > 0) td.textContent = `+${stats[k]}`;
-          tr.appendChild(td);
-        });
-
-        tbody.appendChild(tr);
-      });
-    }
-
-    table.appendChild(tbody);
-    cont.appendChild(table);
+    this.matchRenderer.renderEstadisticas('tablaEstadisticasContainer', this.partido);
     this.renderListaJugadoresConvocadosModal();
   }
 
@@ -492,14 +447,23 @@ class PartidoApp extends BaseApp {
       contStats.className = 'd-flex flex-wrap gap-1 mt-2';
 
       [1, 2, 3].forEach(p => {
+        // Botón Acierto
         const btn = document.createElement('button');
         btn.className = 'btn btn-sm btn-outline-primary stat-btn';
-
         btn.textContent = `+${p}`;
         btn.title = `Añadir ${p} punto${p > 1 ? 's' : ''}`;
         btn.type = 'button';
         btn.onclick = () => this.agregarEstadistica(jugador.id, 'puntos', p);
         contStats.appendChild(btn);
+
+        // Botón Fallo
+        const btnFallo = document.createElement('button');
+        btnFallo.className = 'btn btn-sm btn-outline-danger stat-btn';
+        btnFallo.textContent = `-${p}`; // O usar un icono de fallo
+        btnFallo.title = `Fallo de ${p} punto${p > 1 ? 's' : ''}`;
+        btnFallo.type = 'button';
+        btnFallo.onclick = () => this.registrarFallo(jugador.id, p);
+        contStats.appendChild(btnFallo);
       });
 
       [
@@ -608,8 +572,12 @@ class PartidoApp extends BaseApp {
         this.partido.estadisticasJugadores[jugadorId] = { puntos: 0, asistencias: 0, rebotes: 0, robos: 0, tapones: 0, faltas: 0 };
       }
       this.partido.estadisticasJugadores[jugadorId][tipo] += cantidad;
+
+      // Registrar tiros convertidos
       if (tipo === "puntos") {
         this.partido.puntosEquipo += cantidad;
+        const keyConvertidos = `t${cantidad}_convertidos`;
+        this.partido.estadisticasJugadores[jugadorId][keyConvertidos] = (this.partido.estadisticasJugadores[jugadorId][keyConvertidos] || 0) + 1;
       }
     } else {
       // Estadísticas de rival
@@ -658,6 +626,40 @@ class PartidoApp extends BaseApp {
 
     this.dataService.pushEvento(evento, key)
       .catch(e => console.error('Error agregando evento:', e));
+  }
+
+  registrarFallo(jugadorId, valor) {
+    if (!this.partido.estadisticasJugadores) this.partido.estadisticasJugadores = {};
+    if (!this.partido.estadisticasJugadores[jugadorId]) {
+      this.partido.estadisticasJugadores[jugadorId] = { puntos: 0, asistencias: 0, rebotes: 0, robos: 0, tapones: 0, faltas: 0 };
+    }
+
+    const keyFallados = `t${valor}_fallados`;
+    this.partido.estadisticasJugadores[jugadorId][keyFallados] = (this.partido.estadisticasJugadores[jugadorId][keyFallados] || 0) + 1;
+
+    const evento = {
+      tipo: 'fallo',
+      jugadorId: jugadorId,
+      nombre: this.partido.convocados && this.partido.convocados[jugadorId]?.nombre || 'Desconocido',
+      dorsal: this.partido.convocados && this.partido.convocados[jugadorId]?.dorsal || -1,
+      cuarto: this.partido.parteActual || 1,
+      tiempoSegundos: this.partido.duracionParte - this.segundosRestantes,
+      detalle: `Fallo de ${valor} punto${valor > 1 ? 's' : ''}`,
+      estadisticaTipo: 'fallo',
+      cantidad: 0,
+      valor: valor, // Para saber de cuánto era el tiro
+      marcadorEquipo: this.partido.puntosEquipo || 0,
+      marcadorRival: this.partido.puntosRival || 0,
+      jugadoresEnPista: this.partido.jugadoresEnPista ? Object.keys(this.partido.jugadoresEnPista) : []
+    };
+
+    const key = this.dataService.getNewEventKey();
+    if (!this.partido.eventos) this.partido.eventos = {};
+    this.partido.eventos[key] = evento;
+    this.renderizarTodo();
+
+    this.dataService.pushEvento(evento, key)
+      .catch(e => console.error('Error agregando evento de fallo:', e));
   }
 
 

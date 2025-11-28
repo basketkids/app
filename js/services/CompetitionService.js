@@ -31,6 +31,14 @@ class CompetitionService {
         return this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones/${compId}/rivales/${rivalId}`).remove();
     }
 
+    update(userId, teamId, compId, updates) {
+        return this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones/${compId}`).update(updates);
+    }
+
+    updateRival(userId, teamId, compId, rivalId, name) {
+        return this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones/${compId}/rivales/${rivalId}`).update({ nombre: name });
+    }
+
     getMatches(userId, teamId, compId, callback) {
         const ref = this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones/${compId}/partidos`);
         ref.on('value', callback);
