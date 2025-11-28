@@ -81,6 +81,14 @@ saveDisplayNameBtn.addEventListener('click', async () => {
 
     try {
         await db.ref(`usuarios/${currentUser.uid}/profile/displayName`).set(newDisplayName);
+
+        // If admin, update public profile
+        const profileSnap = await db.ref(`usuarios/${currentUser.uid}/profile`).once('value');
+        const profile = profileSnap.val();
+        if (profile && profile.admin) {
+            await db.ref(`public_admins/${currentUser.uid}/name`).set(newDisplayName);
+        }
+
         alert('Nombre actualizado correctamente.');
         // Reload header to update display
         location.reload();
@@ -181,6 +189,14 @@ saveAvatarBtn.addEventListener('click', async () => {
     try {
         const newConfig = diceBearManager.getConfigFromEditor();
         await db.ref(`usuarios/${currentUser.uid}/profile/avatarConfig`).set(newConfig);
+
+        // If admin, update public profile
+        const profileSnap = await db.ref(`usuarios/${currentUser.uid}/profile`).once('value');
+        const profile = profileSnap.val();
+        if (profile && profile.admin) {
+            await db.ref(`public_admins/${currentUser.uid}/avatarConfig`).set(newConfig);
+        }
+
         currentAvatarConfig = newConfig;
         updateAvatarDisplay();
         avatarEditorModal.hide();

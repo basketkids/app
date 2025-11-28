@@ -32,6 +32,17 @@
                 <p>
                     Si tienes alguna sugerencia o duda, no dudes en contactarnos.
                 </p>
+                <hr class="my-5">
+
+                <h2 class="mb-4 text-center">Nuestro Equipo</h2>
+                <div id="adminsContainer" class="row row-cols-1 row-cols-md-3 g-4 justify-content-center">
+                    <!-- Admins will be loaded here -->
+                    <div class="col text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -44,6 +55,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
     <script src="js/firebase-config.js"></script>
     <script src="js/load-header.js"></script>
+    <script src="js/utils/DiceBearManager.js"></script>
+    <script src="js/about.js"></script>
 </body>
 
 </html>

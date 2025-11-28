@@ -320,7 +320,12 @@ class PartidoApp extends BaseApp {
     const inputNombreRival = document.getElementById('editNombreRival');
 
     if (inputFecha.value) {
-      this.partido.fechaHora = new Date(inputFecha.value).toISOString();
+      const fechaPartido = new Date(inputFecha.value);
+      const fechaMinima = new Date('1891-12-21T00:00:00');
+      if (fechaPartido < fechaMinima) {
+        return alert('La fecha del partido no puede ser anterior al 21 de diciembre de 1891 (invención del baloncesto).');
+      }
+      this.partido.fechaHora = fechaPartido.toISOString();
     }
     this.partido.pabellon = inputPabellon.value;
 

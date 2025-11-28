@@ -144,6 +144,21 @@ async function handleToggleAdmin(e) {
     if (confirm(`¿Estás seguro de que quieres ${newStatus ? 'dar' : 'quitar'} permisos de administrador a este usuario?`)) {
         try {
             await db.ref(`usuarios/${uid}/profile/admin`).set(newStatus);
+
+            // Sync with public_admins
+            if (newStatus) {
+                // Get user profile to copy data
+                const userSnap = await db.ref(`usuarios/${uid}/profile`).once('value');
+                const userProfile = userSnap.val();
+                const publicData = {
+                    name: userProfile.displayName || userProfile.nombre || 'Admin',
+                    avatarConfig: userProfile.avatarConfig || null
+                };
+                await db.ref(`public_admins/${uid}`).set(publicData);
+            } else {
+                await db.ref(`public_admins/${uid}`).remove();
+            }
+
             // Reload list to reflect changes
             loadUsers();
         } catch (error) {
@@ -162,6 +177,7 @@ async function handleDeleteUser(e) {
     if (confirm('¿Estás seguro de que quieres borrar este usuario? Esta acción eliminará todos sus datos (equipos, partidos, perfil) de la base de datos. NO se puede deshacer.')) {
         try {
             await db.ref(`usuarios/${uid}`).remove();
+            await db.ref(`public_admins/${uid}`).remove(); // Also remove from public list
             // Reload list
             loadUsers();
         } catch (error) {

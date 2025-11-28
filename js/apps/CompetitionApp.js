@@ -370,6 +370,12 @@ class CompetitionApp extends BaseApp {
                 return;
             }
 
+            const fechaPartido = new Date(fechaHoraStr);
+            const fechaMinima = new Date('1891-12-21T00:00:00');
+            if (fechaPartido < fechaMinima) {
+                return alert('La fecha del partido no puede ser anterior al 21 de diciembre de 1891 (invención del baloncesto).');
+            }
+
             this.competitionService.getMatchRival(this.currentUser.uid, this.currentTeamId, this.currentCompeticionId, rivalId)
                 .then(rivalSnap => {
                     if (!rivalSnap.exists()) {

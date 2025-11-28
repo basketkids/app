@@ -149,7 +149,15 @@ class TeamApp extends BaseApp {
         e.preventDefault();
         const nombre = this.inputJugadorNombre.value.trim();
         const dorsal = this.inputJugadorDorsal.value.trim();
-        if (!nombre || !dorsal) return alert('Introduce nombre y dorsal');
+
+        if (!nombre) return alert('Introduce nombre');
+        if (!dorsal) return alert('Introduce dorsal');
+
+        // Validate dorsal: 0, 00, or 1-99
+        const validDorsalRegex = /^(0|00|[1-9][0-9]?)$/;
+        if (!validDorsalRegex.test(dorsal)) {
+            return alert('Dorsal inválido. Debe ser 0, 00 o un número entre 1 y 99.');
+        }
 
         this.playerService.add(this.currentUser.uid, this.currentTeamId, nombre, dorsal)
             .then(() => {

@@ -1,0 +1,29 @@
+{
+    "rules": {
+        "usuarios": {
+            // Allow reading the list of users ONLY if the requester is an admin
+            ".read": "auth != null && root.child('usuarios').child(auth.uid).child('profile').child('admin').val() === true",
+            "$uid": {
+                // Allow users to read/write their own data
+                // OR allow admins to read/write any user's data
+                ".read": "$uid === auth.uid || root.child('usuarios').child(auth.uid).child('profile').child('admin').val() === true",
+                ".write": "$uid === auth.uid || root.child('usuarios').child(auth.uid).child('profile').child('admin').val() === true"
+            }
+        },
+        "partidosGlobales": {
+            ".read": "true",
+            ".write": "auth != null"
+        },
+        "contact_messages": {
+            ".read": "root.child('usuarios').child(auth.uid).child('profile').child('admin').val() === true",
+            ".write": true,
+            ".indexOn": [
+                "timestamp"
+            ]
+        },
+        "public_admins": {
+            ".read": true,
+            ".write": "root.child('usuarios').child(auth.uid).child('profile').child('admin').val() === true"
+        }
+    }
+}
