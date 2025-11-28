@@ -21,25 +21,36 @@
 
 
   <div class="container my-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
       <h2>Partidos Públicos</h2>
 
       <div class="d-flex align-items-center gap-2">
-        <div class="btn-group me-3" role="group" aria-label="Vista">
+        <!-- Go to Date Button -->
+        <button id="goToDateBtn" class="btn btn-outline-secondary d-none d-sm-block" title="Ir a fecha">
+          <i class="bi bi-calendar-date"></i>
+        </button>
+
+        <div class="vr mx-2"></div>
+
+        <div class="btn-group" role="group" aria-label="Vista">
           <button type="button" class="btn btn-outline-primary active" id="viewWeekBtn">Semana</button>
           <button type="button" class="btn btn-outline-primary" id="viewMonthBtn">Mes</button>
         </div>
 
-        <button id="prevBtn" class="btn btn-outline-primary">
-          <i class="bi bi-chevron-left"></i>
-        </button>
-        <button id="todayBtn" class="btn btn-outline-secondary">Hoy</button>
-        <button id="nextBtn" class="btn btn-outline-primary">
-          <i class="bi bi-chevron-right"></i>
-        </button>
-        <span id="dateRange" class="fw-bold ms-3 fs-5"></span>
+        <div class="btn-group ms-2" role="group">
+          <button id="prevBtn" class="btn btn-outline-primary">
+            <i class="bi bi-chevron-left"></i>
+          </button>
+          <button id="todayBtn" class="btn btn-outline-secondary">Hoy</button>
+          <button id="nextBtn" class="btn btn-outline-primary">
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
       </div>
     </div>
+
+    <!-- Date Range Display (Centered) -->
+    <h4 id="dateRange" class="text-center mb-4 fw-bold text-primary"></h4>
 
     <div id="loadingSpinner" class="text-center my-5" style="display: none;">
       <div class="spinner-border text-primary" role="status">
@@ -126,6 +137,28 @@
       <!-- Month grid will be rendered here -->
       <div class="month-grid"></div>
       <div class="month-list d-md-none"></div> <!-- Mobile list view -->
+    </div>
+  </div>
+
+  <!-- Date Selection Modal -->
+  <div class="modal fade" id="dateModal" tabindex="-1" aria-labelledby="dateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="dateModalLabel">Ir a una fecha</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="dateInput" class="form-label">Selecciona la fecha:</label>
+            <input type="date" class="form-control" id="dateInput">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="confirmDateBtn">Ir</button>
+        </div>
+      </div>
     </div>
   </div>
 

@@ -38,6 +38,36 @@ function setupEventListeners() {
 
   document.getElementById('viewWeekBtn').addEventListener('click', () => switchView('week'));
   document.getElementById('viewMonthBtn').addEventListener('click', () => switchView('month'));
+
+  // Go to Date Modal
+  const dateModal = new bootstrap.Modal(document.getElementById('dateModal'));
+  const dateInput = document.getElementById('dateInput');
+
+  document.getElementById('goToDateBtn').addEventListener('click', () => {
+    // Set current date in input
+    const currentDate = currentView === 'week' ? currentWeekStart : currentMonthStart;
+    dateInput.value = currentDate.toISOString().split('T')[0];
+    dateModal.show();
+  });
+
+  document.getElementById('confirmDateBtn').addEventListener('click', () => {
+    const selectedDate = new Date(dateInput.value);
+    if (!isNaN(selectedDate.getTime())) {
+      if (currentView === 'week') {
+        // Calculate Monday of the selected date's week
+        const day = selectedDate.getDay();
+        const diff = selectedDate.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(selectedDate);
+        monday.setDate(diff);
+        currentWeekStart = monday;
+      } else {
+        // Set to 1st of the selected month
+        currentMonthStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+      }
+      render();
+      dateModal.hide();
+    }
+  });
 }
 
 async function loadMatches() {

@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     const messagesTableBody = document.getElementById('messagesTableBody');
     const contactService = new ContactService(firebase.database());
+    const btnInbox = document.getElementById('btnInbox');
+    const btnArchived = document.getElementById('btnArchived');
 
     // Check admin status (reusing logic from admin.js or similar check)
     // Check if user is admin
@@ -30,8 +32,33 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     let allMessages = [];
+    let currentFilter = 'inbox'; // 'inbox' or 'archived'
     let currentPage = 1;
     const itemsPerPage = 20;
+
+    // Filter buttons
+    btnInbox.addEventListener('click', () => {
+        setFilter('inbox');
+    });
+
+    btnArchived.addEventListener('click', () => {
+        setFilter('archived');
+    });
+
+    function setFilter(filter) {
+        currentFilter = filter;
+        currentPage = 1;
+
+        if (filter === 'inbox') {
+            btnInbox.classList.replace('btn-outline-primary', 'btn-primary');
+            btnArchived.classList.replace('btn-primary', 'btn-outline-primary');
+        } else {
+            btnInbox.classList.replace('btn-primary', 'btn-outline-primary');
+            btnArchived.classList.replace('btn-outline-primary', 'btn-primary');
+        }
+        renderMessages();
+        renderPagination();
+    }
 
     async function loadMessages() {
         try {
@@ -39,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
             messagesTableBody.innerHTML = '';
 
             if (!snapshot.exists()) {
-                messagesTableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4">No hay mensajes</td></tr>';
+                messagesTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4">No hay mensajes</td></tr>';
                 renderPagination();
                 return;
             }
@@ -60,19 +87,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('Error loading messages:', error);
-            messagesTableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-danger">Error al cargar mensajes</td></tr>';
+            messagesTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger">Error al cargar mensajes</td></tr>';
         }
     }
 
     function renderMessages() {
         messagesTableBody.innerHTML = '';
+
+        // Filter messages based on current view
+        const filteredMessages = allMessages.filter(msg => {
+            const isArchived = !!msg.archived;
+            return currentFilter === 'inbox' ? !isArchived : isArchived;
+        });
+
+        if (filteredMessages.length === 0) {
+            messagesTableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4">No hay mensajes en ${currentFilter === 'inbox' ? 'el buzón de entrada' : 'archivados'}</td></tr>`;
+            return;
+        }
+
         const start = (currentPage - 1) * itemsPerPage;
         const end = start + itemsPerPage;
-        const pageMessages = allMessages.slice(start, end);
+        const pageMessages = filteredMessages.slice(start, end);
 
         pageMessages.forEach(msg => {
             const date = new Date(msg.timestamp).toLocaleString();
             const tr = document.createElement('tr');
+
+            // Style for unread messages
+            if (!msg.read && !msg.archived) {
+                tr.classList.add('fw-bold', 'table-active');
+            }
 
             const fullMessage = escapeHtml(msg.message);
             const firstLine = fullMessage.split('\n')[0];
@@ -90,7 +134,33 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${isLong ? `<button class="btn btn-sm btn-link p-0 ms-1 toggle-msg" data-full="${fullMessage.replace(/"/g, '&quot;')}" data-truncated="${truncatedMessage.replace(/"/g, '&quot;')}"><i class="bi bi-chevron-down"></i></button>` : ''}
                     </div>
                 </td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        ${!msg.read ? `<button class="btn btn-outline-success btn-read" title="Marcar como leído"><i class="bi bi-check2"></i></button>` : ''}
+                        ${currentFilter === 'inbox'
+                    ? `<button class="btn btn-outline-secondary btn-archive" title="Archivar"><i class="bi bi-archive"></i></button>`
+                    : `<button class="btn btn-outline-primary btn-unarchive" title="Recuperar"><i class="bi bi-box-arrow-up"></i></button>`
+                }
+                    </div>
+                </td>
             `;
+
+            // Add event listeners for actions
+            const btnRead = tr.querySelector('.btn-read');
+            if (btnRead) {
+                btnRead.onclick = () => markAsRead(msg.id);
+            }
+
+            const btnArchive = tr.querySelector('.btn-archive');
+            if (btnArchive) {
+                btnArchive.onclick = () => archiveMessage(msg.id);
+            }
+
+            const btnUnarchive = tr.querySelector('.btn-unarchive');
+            if (btnUnarchive) {
+                btnUnarchive.onclick = () => unarchiveMessage(msg.id);
+            }
+
             messagesTableBody.appendChild(tr);
         });
 
@@ -113,11 +183,58 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    async function markAsRead(id) {
+        try {
+            await contactService.markAsRead(id);
+            // Update local state
+            const msg = allMessages.find(m => m.id === id);
+            if (msg) msg.read = true;
+            renderMessages();
+        } catch (error) {
+            console.error('Error marking as read:', error);
+            alert('Error al marcar como leído');
+        }
+    }
+
+    async function archiveMessage(id) {
+        if (!confirm('¿Estás seguro de que quieres archivar este mensaje?')) return;
+        try {
+            await contactService.archiveMessage(id);
+            // Update local state
+            const msg = allMessages.find(m => m.id === id);
+            if (msg) msg.archived = true;
+            renderMessages();
+            renderPagination();
+        } catch (error) {
+            console.error('Error archiving message:', error);
+            alert('Error al archivar mensaje');
+        }
+    }
+
+    async function unarchiveMessage(id) {
+        try {
+            await contactService.unarchiveMessage(id);
+            // Update local state
+            const msg = allMessages.find(m => m.id === id);
+            if (msg) msg.archived = false;
+            renderMessages();
+            renderPagination();
+        } catch (error) {
+            console.error('Error unarchiving message:', error);
+            alert('Error al recuperar mensaje');
+        }
+    }
+
     function renderPagination() {
         const paginationControls = document.getElementById('paginationControls');
         paginationControls.innerHTML = '';
 
-        const totalPages = Math.ceil(allMessages.length / itemsPerPage);
+        const filteredMessages = allMessages.filter(msg => {
+            const isArchived = !!msg.archived;
+            return currentFilter === 'inbox' ? !isArchived : isArchived;
+        });
+
+        const totalPages = Math.ceil(filteredMessages.length / itemsPerPage);
         if (totalPages <= 1) return;
 
         // Previous

@@ -113,6 +113,19 @@ async function construirBreadcrumbDesdeParametros() {
     return;
   }
 
+  if (path.includes('contact.html')) {
+    breadcrumbItems.push({ nombre: 'Contacto', url: null });
+    cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
+    return;
+  }
+
+  if (path.includes('admin_messages.html')) {
+    breadcrumbItems.push({ nombre: 'Administración', url: 'admin.html' });
+    breadcrumbItems.push({ nombre: 'Mensajes', url: null });
+    cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
+    return;
+  }
+
   // --- PUBLIC VIEW LOGIC ---
   // Check if we're viewing a global match (no teamId, but has partido id)
   if (!currentTeamId && globalPartidoId) {
@@ -300,6 +313,53 @@ async function inicializarAuth() {
             if (Object.keys(updates).length > 0) {
               dbh.ref(`usuarios/${user.uid}/profile`).update(updates);
             }
+          }
+
+          // Check for unread messages if admin
+          if (profile.admin) {
+            dbh.ref('contact_messages').on('value', snapshot => {
+              let unreadCount = 0;
+              snapshot.forEach(child => {
+                const val = child.val();
+                if (!val.read && !val.archived) {
+                  unreadCount++;
+                }
+              });
+
+              // Remove existing notification if any
+              const existingBadge = document.getElementById('adminMsgBadge');
+              if (existingBadge) existingBadge.remove();
+
+              if (unreadCount > 0) {
+                const badge = document.createElement('span');
+                badge.id = 'adminMsgBadge';
+                badge.className = 'position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle';
+                badge.style.width = '12px';
+                badge.style.height = '12px';
+
+                // Container for the envelope
+                const envelopeContainer = document.createElement('a');
+                envelopeContainer.href = `${basePath}admin_messages.html`;
+                envelopeContainer.className = 'btn btn-link nav-link position-relative me-3 text-white';
+                envelopeContainer.innerHTML = '<i class="bi bi-envelope-fill" style="font-size: 1.2rem;"></i>';
+                envelopeContainer.appendChild(badge);
+                envelopeContainer.title = `${unreadCount} mensajes sin leer`;
+
+                // Insert before user dropdown
+                const userDropdownContainer = document.getElementById('userDropdown');
+                if (userDropdownContainer && userDropdownContainer.parentNode) {
+                  // Check if we already added it
+                  const existingEnv = document.getElementById('adminMsgEnvelope');
+                  if (existingEnv) existingEnv.remove();
+
+                  envelopeContainer.id = 'adminMsgEnvelope';
+                  userDropdownContainer.parentNode.insertBefore(envelopeContainer, userDropdownContainer);
+                }
+              } else {
+                const existingEnv = document.getElementById('adminMsgEnvelope');
+                if (existingEnv) existingEnv.remove();
+              }
+            });
           }
 
         } else {
