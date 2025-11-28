@@ -294,3 +294,92 @@ body {
     font-size: 0.9rem;
   }
 }
+
+/* ===== Basketball Court Visualization ===== */
+.basketball-court {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  /* Aspect ratio based on standard half court or the image.
+     Assuming the image is roughly square or slightly vertical.
+     Let's use a standard ratio or auto height if possible, but for absolute positioning we need height.
+     Let's assume a ratio of roughly 1:0.94 (500px width / 470px height from before).
+     Or better, use aspect-ratio property. */
+  aspect-ratio: 500 / 470;
+  margin: 0 auto;
+  background-color: #d2b48c;
+  /* Try multiple paths to be safe */
+  background-image: url('../img/cancha.png');
+  background-size: cover;
+  background-position: center;
+  border: 2px solid #fff;
+  overflow: hidden;
+}
+
+/* Player Jersey on Court */
+.player-jersey {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  width: 60px;
+  /* Smaller width */
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+
+.jersey-svg {
+  width: 60px;
+  /* Smaller jersey */
+  height: 60px;
+  filter: drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.3));
+}
+
+.player-info {
+  background-color: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  /* Smaller font */
+  margin-top: -10px;
+  white-space: nowrap;
+}
+
+.player-stat {
+  font-weight: bold;
+  color: #ffc107;
+  font-size: 0.8rem;
+  /* Smaller font */
+  text-shadow: 1px 1px 1px #000;
+}
+
+/* Positions (2-2-1 Defensive Distribution around hoop) */
+/* Basket is at TOP (approx 5-10%) */
+
+/* Row 1: Closest to basket (Low Post) */
+.pos-1 {
+  top: 20%;
+  left: 30%;
+}
+
+.pos-2 {
+  top: 20%;
+  left: 70%;
+}
+
+/* Row 2: Middle (Elbows/Wings) */
+.pos-3 {
+  top: 45%;
+  left: 20%;
+}
+
+.pos-4 {
+  top: 45%;
+  left: 80%;
+}
+
+/* Row 3: Furthest (Top of Key) */
+.pos-5 {
+  top: 70%;
+  left: 50%;
+}

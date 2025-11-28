@@ -151,21 +151,21 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body">
-          <p>El archivo CSV debe tener el siguiente formato (separado por comas o punto y coma):</p>
+          <p>El archivo CSV debe tener el siguiente formato (separado por punto y coma <code>;</code>):</p>
+          <div class="alert alert-secondary font-monospace p-2 mb-3" style="font-size: 0.85rem;">
+            equipo_rival;fecha;hora;ubicacion;resultado;JuegoDeLocal
+          </div>
           <ul>
-            <li><strong>Fecha:</strong> YYYY-MM-DD HH:mm (Ej: 2023-10-28 18:30)</li>
-            <li><strong>Rival:</strong> Nombre del equipo rival</li>
-            <li><strong>EsLocal:</strong> true (si juegas en casa) o false (si eres visitante)</li>
-            <li><strong>Pabellon:</strong> Dirección o nombre del pabellón</li>
-          </ul>
-          <p class="mb-1">Opcionales:</p>
-          <ul>
-            <li><strong>PuntosEquipo:</strong> Puntos de tu equipo</li>
-            <li><strong>PuntosRival:</strong> Puntos del rival</li>
-            <li><strong>Estado:</strong> pendiente, en curso, finalizado</li>
+            <li><strong>equipo_rival:</strong> Nombre del equipo contrario.</li>
+            <li><strong>fecha:</strong> DD/MM/YYYY (Ej: 25/10/2025).</li>
+            <li><strong>hora:</strong> HH:MM (Ej: 16:00).</li>
+            <li><strong>ubicacion:</strong> Dirección o nombre del pabellón.</li>
+            <li><strong>resultado:</strong> "PuntosLocal-PuntosVisitante" (Ej: 45-59) o "PENDIENTE".</li>
+            <li><strong>JuegoDeLocal:</strong> "SI" (juegas en casa) o "NO" (visitante).</li>
           </ul>
           <div class="alert alert-info">
-            <small><i class="bi bi-info-circle"></i> La primera fila se ignora si contiene cabeceras.</small>
+            <small><i class="bi bi-info-circle"></i> La primera fila debe contener las cabeceras exactas mostradas
+              arriba.</small>
           </div>
         </div>
         <div class="modal-footer">

@@ -91,6 +91,7 @@ class PartidosGlobalesApp {
       otherMatchesBtn.style.display = 'inline-flex';
     }
     this.renderInfoPartido();
+    this.renderQuintetos();
   }
 
   renderInfoPartido() {
@@ -124,6 +125,30 @@ class PartidosGlobalesApp {
 
   renderizarEstadisticas() {
     this.matchRenderer.renderEstadisticas('tablaEstadisticasContainer', this.partido);
+  }
+
+  renderQuintetos() {
+    // Default to 'ataque' if not set
+    if (!this.vistaQuinteto) this.vistaQuinteto = 'ataque';
+    this.matchRenderer.renderQuintetos('quintetosContainer', this.partido, this.vistaQuinteto);
+  }
+
+  cambiarVistaQuinteto(tipo) {
+    this.vistaQuinteto = tipo;
+
+    // Update buttons
+    const btnAtaque = document.getElementById('btnQuintetoAtaque');
+    const btnDefensa = document.getElementById('btnQuintetoDefensa');
+
+    if (tipo === 'ataque') {
+      btnAtaque.classList.add('active');
+      btnDefensa.classList.remove('active');
+    } else {
+      btnAtaque.classList.remove('active');
+      btnDefensa.classList.add('active');
+    }
+
+    this.renderQuintetos();
   }
 
   actualizarDisplay() {

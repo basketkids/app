@@ -43,10 +43,11 @@ class CSVParser {
 
         // Verify expected columns
         const expectedColumns = ['equipo_rival', 'fecha', 'hora', 'ubicacion', 'resultado', 'JuegoDeLocal'];
+        // Check if all expected columns are present (order doesn't strictly matter for logic, but user emphasized it)
         const hasAllColumns = expectedColumns.every(col => header.includes(col));
 
         if (!hasAllColumns) {
-            throw new Error('El archivo CSV no tiene el formato correcto. Columnas esperadas: ' + expectedColumns.join(', '));
+            throw new Error('El archivo CSV no tiene el formato correcto. Columnas esperadas: ' + expectedColumns.join('; '));
         }
 
         // Parse data rows
@@ -113,25 +114,36 @@ class CSVParser {
         let puntosEquipo = 0;
         let puntosRival = 0;
         let hasResult = false;
+        let estado = 'pendiente';
 
-        if (resultado && resultado.trim() && resultado !== '0-0') {
-            const resultParts = resultado.split('-');
-            if (resultParts.length === 2) {
-                const teamPoints = parseInt(resultParts[0].trim());
-                const rivalPoints = parseInt(resultParts[1].trim());
+        if (resultado && resultado.trim()) {
+            if (resultado.toUpperCase() === 'PENDIENTE') {
+                estado = 'pendiente';
+            } else {
+                const resultParts = resultado.split('-');
+                if (resultParts.length === 2) {
+                    // Note: The user didn't specify which score is which, but usually it's Local - Visitor
+                    // However, we need to know if WE are local or visitor to assign points correctly.
+                    // Assuming the score in CSV is always "Home - Away" relative to the match location.
 
-                if (!isNaN(teamPoints) && !isNaN(rivalPoints)) {
-                    // Determine which score belongs to which team based on esLocal
-                    const esLocal = JuegoDeLocal && JuegoDeLocal.toLowerCase() === 'si';
-                    puntosEquipo = esLocal ? teamPoints : rivalPoints;
-                    puntosRival = esLocal ? rivalPoints : teamPoints;
-                    hasResult = true;
+                    const score1 = parseInt(resultParts[0].trim());
+                    const score2 = parseInt(resultParts[1].trim());
+
+                    if (!isNaN(score1) && !isNaN(score2)) {
+                        const esLocal = JuegoDeLocal && JuegoDeLocal.toUpperCase() === 'SI';
+
+                        // If we are local, score1 is ours. If we are visitor, score2 is ours.
+                        puntosEquipo = esLocal ? score1 : score2;
+                        puntosRival = esLocal ? score2 : score1;
+                        hasResult = true;
+                        estado = 'finalizado';
+                    }
                 }
             }
         }
 
         // Determine if it's a home game
-        const esLocal = JuegoDeLocal && JuegoDeLocal.toLowerCase() === 'si';
+        const esLocal = JuegoDeLocal && JuegoDeLocal.toUpperCase() === 'SI';
 
         return {
             nombreRival: equipo_rival,
@@ -141,7 +153,7 @@ class CSVParser {
             puntosEquipo: puntosEquipo,
             puntosRival: puntosRival,
             hasResult: hasResult,
-            estado: hasResult ? 'finalizado' : 'pendiente'
+            estado: estado
         };
     }
 

@@ -360,6 +360,7 @@ class MatchRenderer {
             Object.keys(partido.convocados).forEach(id => {
                 stats[id] = {
                     puntos: 0, asistencias: 0, rebotes: 0, robos: 0, tapones: 0, faltas: 0, masMenos: 0,
+                    puntos_favor_pista: 0, puntos_contra_pista: 0, // New stats
                     t1_convertidos: 0, t1_fallados: 0,
                     t2_convertidos: 0, t2_fallados: 0,
                     t3_convertidos: 0, t3_fallados: 0
@@ -371,54 +372,49 @@ class MatchRenderer {
 
         Object.values(partido.eventos).forEach(ev => {
             const pid = ev.jugadorId;
-            if (!pid || !stats[pid]) return; // Si es evento de equipo o jugador no convocado (raro)
+            // pid might be null for rival points, so check inside specific blocks or use optional chaining
 
             if (ev.tipo === 'puntos') {
-                stats[pid].puntos += (ev.cantidad || 0);
-                const val = ev.cantidad || 0;
-                if (val >= 1 && val <= 3) {
-                    stats[pid][`t${val}_convertidos`] = (stats[pid][`t${val}_convertidos`] || 0) + 1;
+                if (pid && stats[pid]) {
+                    stats[pid].puntos += (ev.cantidad || 0);
+                    const val = ev.cantidad || 0;
+                    if (val >= 1 && val <= 3) {
+                        stats[pid][`t${val}_convertidos`] = (stats[pid][`t${val}_convertidos`] || 0) + 1;
+                    }
                 }
-            } else if (ev.tipo === 'fallo') {
-                const val = ev.valor || 0;
-                if (val >= 1 && val <= 3) {
-                    stats[pid][`t${val}_fallados`] = (stats[pid][`t${val}_fallados`] || 0) + 1;
-                }
-            } else if (['asistencias', 'rebotes', 'robos', 'tapones', 'faltas'].includes(ev.tipo)) {
-                stats[pid][ev.tipo] = (stats[pid][ev.tipo] || 0) + (ev.cantidad || 1);
-            }
 
-            // Calcular +/- (simplificado, asumiendo que el evento tiene info de marcador o se recalcula)
-            // NOTA: El +/- es complejo de recalcular solo con eventos si no guardamos quién estaba en pista en cada evento.
-            // Por ahora, usaremos el +/- acumulado en el evento si existe, o lo dejaremos como estaba en estadisticasJugadores si queremos persistirlo.
-            // Pero el usuario pidió recalcular porcentajes. El +/- lo mantendremos del objeto original si es posible, o lo recalculamos si tenemos info.
-            // Dado que el +/- depende de los jugadores en pista en CADA evento, y eso se guarda en el evento (jugadoresEnPista), podemos recalcularlo.
-
-            if (ev.tipo === 'puntos') {
+                // Puntos a favor con jugador en pista
                 const puntos = ev.cantidad || 0;
-                // Sumar puntos a los de mi equipo en pista
                 if (ev.jugadoresEnPista) {
                     ev.jugadoresEnPista.forEach(pistaId => {
                         if (stats[pistaId]) {
                             stats[pistaId].masMenos += puntos;
+                            stats[pistaId].puntos_favor_pista += puntos;
                         }
                     });
                 }
-            }
-            // Falta restar puntos del rival. Pero los eventos de puntos del rival no tienen jugadoresEnPista del equipo usuario normalmente,
-            // a menos que lo hayamos guardado.
-            // En PartidoApp.js: agregarEstadistica para rival NO guarda jugadoresEnPista del equipo usuario actualmente en la lógica antigua,
-            // pero en la nueva lógica (ver PartidoApp.js) sí parece que `jugadoresEnPista` se añade al evento siempre.
-            // Vamos a asumir que si el evento es de puntos rival, resta.
 
-            // Espera, los eventos de puntos rival tienen jugadorId vacío o null.
-            // Si es punto rival:
+            } else if (ev.tipo === 'fallo') {
+                if (pid && stats[pid]) {
+                    const val = ev.valor || 0;
+                    if (val >= 1 && val <= 3) {
+                        stats[pid][`t${val}_fallados`] = (stats[pid][`t${val}_fallados`] || 0) + 1;
+                    }
+                }
+            } else if (['asistencias', 'rebotes', 'robos', 'tapones', 'faltas'].includes(ev.tipo)) {
+                if (pid && stats[pid]) {
+                    stats[pid][ev.tipo] = (stats[pid][ev.tipo] || 0) + (ev.cantidad || 1);
+                }
+            }
+
+            // Puntos en contra (rival)
             if (ev.tipo === 'puntos' && !ev.jugadorId) { // Punto rival
                 const puntos = ev.cantidad || 0;
                 if (ev.jugadoresEnPista) {
                     ev.jugadoresEnPista.forEach(pistaId => {
                         if (stats[pistaId]) {
                             stats[pistaId].masMenos -= puntos;
+                            stats[pistaId].puntos_contra_pista += puntos;
                         }
                     });
                 }
@@ -426,7 +422,6 @@ class MatchRenderer {
         });
 
         // SOBREESCRIBIR el +/- calculado con el valor de la base de datos si existe
-        // Esto es para cumplir con el requerimiento de que el +/- venga de 'estadisticasJugadores'
         if (partido.estadisticasJugadores) {
             Object.keys(stats).forEach(id => {
                 if (partido.estadisticasJugadores[id] && partido.estadisticasJugadores[id].masMenos !== undefined) {
@@ -448,5 +443,100 @@ class MatchRenderer {
             (stats.robos || 0) * 3 +
             (stats.faltas || 0) * -1;
         return puntos;
+    }
+
+    renderQuintetos(containerId, partido, tipo = 'ataque') {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        container.innerHTML = '';
+        if (!partido.convocados) {
+            container.innerHTML = '<div class="alert alert-warning">No hay datos de jugadores.</div>';
+            return;
+        }
+
+        const statsJugadores = this.calcularEstadisticasDesdeEventos(partido);
+
+        // Convert to array with player info
+        const jugadoresArray = Object.entries(partido.convocados).map(([id, jug]) => {
+            return {
+                id,
+                nombre: jug.nombre,
+                dorsal: jug.dorsal,
+                stats: statsJugadores[id] || {}
+            };
+        });
+
+        const top5 = this.calculateTop5(jugadoresArray, tipo);
+        const courtHtml = this.renderCourt(top5, tipo);
+        container.innerHTML = courtHtml;
+    }
+
+    calculateTop5(jugadores, tipo) {
+        return jugadores.sort((a, b) => {
+            let valA = 0, valB = 0;
+            if (tipo === 'ataque') {
+                // Puntos * 1 + Asistencias * 2 + PuntosFavorPista * 0.5
+                valA = (a.stats.puntos || 0) * 1 + (a.stats.asistencias || 0) * 2 + (a.stats.puntos_favor_pista || 0) * 0.5;
+                valB = (b.stats.puntos || 0) * 1 + (b.stats.asistencias || 0) * 2 + (b.stats.puntos_favor_pista || 0) * 0.5;
+            } else {
+                // Defensa: (Rebotes * 1 + Robos * 3 + Tapones * 3) - (PuntosContraPista * 0.5)
+                // Note: Subtracting points against because fewer is better, but we want higher score for sorting.
+                // Wait, if points against is bad, we subtract it. So high points against reduces the score. Correct.
+                valA = ((a.stats.rebotes || 0) * 1 + (a.stats.robos || 0) * 3 + (a.stats.tapones || 0) * 3) - ((a.stats.puntos_contra_pista || 0) * 0.5);
+                valB = ((b.stats.rebotes || 0) * 1 + (b.stats.robos || 0) * 3 + (b.stats.tapones || 0) * 3) - ((b.stats.puntos_contra_pista || 0) * 0.5);
+            }
+            return valB - valA; // Descending
+        }).slice(0, 5);
+    }
+
+    renderCourt(players, tipo) {
+        let playersHtml = '';
+
+        players.forEach((player, index) => {
+            // If fewer than 5 players, just fill available slots
+            const posClass = `pos-${index + 1}`;
+            let statValue = '';
+            let val = 0;
+
+            if (tipo === 'ataque') {
+                val = (player.stats.puntos || 0) * 1 + (player.stats.asistencias || 0) * 2 + (player.stats.puntos_favor_pista || 0) * 0.5;
+            } else {
+                val = ((player.stats.rebotes || 0) * 1 + (player.stats.robos || 0) * 3 + (player.stats.tapones || 0) * 3) - ((player.stats.puntos_contra_pista || 0) * 0.5);
+            }
+            // Round to 1 decimal place if needed, or integer
+            val = Math.round(val * 10) / 10;
+            statValue = `${val} val`;
+
+            // Jersey color based on type (Red for Attack, Blue for Defense to match buttons)
+            const jerseyColor = tipo === 'ataque' ? '#dc3545' : '#0d6efd';
+
+            playersHtml += `
+                <div class="player-jersey ${posClass}">
+                    <div class="jersey-svg">
+                        ${this.getJerseySVG(jerseyColor, player.dorsal)}
+                    </div>
+                    <div class="player-info">
+                        <div>${player.nombre}</div>
+                        <div class="player-stat">${statValue}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        return `
+            <div class="basketball-court">
+                ${playersHtml}
+            </div>
+        `;
+    }
+
+    getJerseySVG(color, number) {
+        return `
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20,20 L30,20 L35,35 L65,35 L70,20 L80,20 L90,40 L80,80 L20,80 L10,40 Z" fill="${color}" stroke="#fff" stroke-width="2"/>
+                <text x="50" y="60" font-family="Arial" font-size="30" fill="white" text-anchor="middle" font-weight="bold">${number}</text>
+            </svg>
+        `;
     }
 }

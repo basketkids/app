@@ -88,6 +88,10 @@
         <button class="nav-link" id="tab-en-vivo" data-bs-toggle="tab" data-bs-target="#en-vivo" type="button"
           role="tab" aria-controls="en-vivo" aria-selected="false">En Vivo</button>
       </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-quintetos" data-bs-toggle="tab" data-bs-target="#quintetos" type="button"
+          role="tab" aria-controls="quintetos" aria-selected="false">Quintetos</button>
+      </li>
     </ul>
     <div class="tab-content" id="tabsContent">
       <!-- Tab: Convocados -->
@@ -99,6 +103,20 @@
       <!-- Tab: En Vivo -->
       <div class="tab-pane fade" id="en-vivo" role="tabpanel" aria-labelledby="tab-en-vivo">
         <div id="listaEventosEnVivo" class="list-group mt-3"></div>
+      </div>
+
+      <!-- Tab: Quintetos -->
+      <div class="tab-pane fade" id="quintetos" role="tabpanel" aria-labelledby="tab-quintetos">
+        <div class="d-flex justify-content-center gap-3 my-3">
+          <button class="btn btn-outline-danger active" id="btnQuintetoAtaque"
+            onclick="app.cambiarVistaQuinteto('ataque')">
+            <i class="bi bi-lightning-fill"></i> Ataque
+          </button>
+          <button class="btn btn-outline-primary" id="btnQuintetoDefensa" onclick="app.cambiarVistaQuinteto('defensa')">
+            <i class="bi bi-shield-fill-check"></i> Defensa
+          </button>
+        </div>
+        <div id="quintetosContainer" class="text-center"></div>
       </div>
     </div>
   </div>
