@@ -422,13 +422,22 @@ class CompetitionApp extends BaseApp {
     setupCSVImport() {
         if (!this.importCSVBtn || !this.csvFileInput) return;
 
+        // Initialize modal
+        this.importCSVModal = new bootstrap.Modal(document.getElementById('importCSVModal'));
+        const btnSelectCSV = document.getElementById('btnSelectCSV');
+
         this.importCSVBtn.addEventListener('click', () => {
+            this.importCSVModal.show();
+        });
+
+        btnSelectCSV.addEventListener('click', () => {
             this.csvFileInput.click();
         });
 
         this.csvFileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
+                this.importCSVModal.hide();
                 this.handleCSVImport(file);
                 // Reset input so the same file can be selected again
                 e.target.value = '';

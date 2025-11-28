@@ -142,6 +142,42 @@
     </div>
   </div>
 
+  <!-- Modal Importar CSV -->
+  <div class="modal fade" id="importCSVModal" tabindex="-1" aria-labelledby="importCSVLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="importCSVLabel">Importar Calendario CSV</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p>El archivo CSV debe tener el siguiente formato (separado por comas o punto y coma):</p>
+          <ul>
+            <li><strong>Fecha:</strong> YYYY-MM-DD HH:mm (Ej: 2023-10-28 18:30)</li>
+            <li><strong>Rival:</strong> Nombre del equipo rival</li>
+            <li><strong>EsLocal:</strong> true (si juegas en casa) o false (si eres visitante)</li>
+            <li><strong>Pabellon:</strong> Dirección o nombre del pabellón</li>
+          </ul>
+          <p class="mb-1">Opcionales:</p>
+          <ul>
+            <li><strong>PuntosEquipo:</strong> Puntos de tu equipo</li>
+            <li><strong>PuntosRival:</strong> Puntos del rival</li>
+            <li><strong>Estado:</strong> pendiente, en curso, finalizado</li>
+          </ul>
+          <div class="alert alert-info">
+            <small><i class="bi bi-info-circle"></i> La primera fila se ignora si contiene cabeceras.</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btnSelectCSV">
+            <i class="bi bi-folder2-open"></i> Seleccionar archivo
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="footer-container"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
