@@ -9,7 +9,7 @@ class CompetitionService {
 
     getAll(userId, teamId, callback) {
         const ref = this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones`);
-        ref.on('value', callback);
+        if (callback) ref.on('value', callback);
         return ref;
     }
 
@@ -19,7 +19,7 @@ class CompetitionService {
 
     getRivals(userId, teamId, compId, callback) {
         const ref = this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones/${compId}/rivales`);
-        ref.on('value', callback);
+        if (callback) ref.on('value', callback);
         return ref;
     }
 
@@ -41,7 +41,7 @@ class CompetitionService {
 
     getMatches(userId, teamId, compId, callback) {
         const ref = this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones/${compId}/partidos`);
-        ref.on('value', callback);
+        if (callback) ref.on('value', callback);
         return ref;
     }
 

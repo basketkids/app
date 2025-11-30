@@ -118,6 +118,7 @@ btnStart.addEventListener('click', async () => {
                                 globalData.equipoId = equipoId;
                                 globalData.competicionId = compId;
                                 globalData.nombreEquipo = nombreEquipo;
+                                globalData.ownerUid = uid;
 
                                 // Add to multi-path update
                                 updates[`partidosGlobales/${partidoId}`] = globalData;

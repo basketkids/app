@@ -15,46 +15,37 @@ class CalendarService {
         const allMatches = [];
 
         try {
-            // Get all teams
+            // 1. Get own teams
             const teamsSnapshot = await this.db.ref(`usuarios/${userId}/equipos`).once('value');
             const teams = teamsSnapshot.val();
 
-            if (!teams) {
-                return allMatches;
+            if (teams) {
+                this._extractMatchesFromTeams(teams, allMatches, userId); // userId is owner
             }
 
-            // For each team, get all competitions and matches
-            for (const [teamId, teamData] of Object.entries(teams)) {
-                const teamName = teamData.nombre || 'Equipo sin nombre';
+            // 2. Get followed teams
+            const followingSnapshot = await this.db.ref(`usuarios/${userId}/following`).once('value');
+            const following = followingSnapshot.val();
 
-                // Check if competiciones exists and is an object
-                if (!teamData.competiciones || typeof teamData.competiciones !== 'object') {
-                    continue;
-                }
-
-                const competitions = teamData.competiciones;
-
-                for (const [compId, compData] of Object.entries(competitions)) {
-                    const compName = compData.nombre || 'Competición sin nombre';
-
-                    // Check if partidos exists and is an object
-                    if (!compData.partidos || typeof compData.partidos !== 'object') {
-                        continue;
-                    }
-
-                    const matches = compData.partidos;
-
-                    for (const [matchId, matchData] of Object.entries(matches)) {
-                        allMatches.push({
-                            matchId,
-                            teamId,
-                            teamName,
-                            compId,
-                            compName,
-                            ...matchData
-                        });
+            if (following) {
+                const promises = [];
+                for (const [teamId, followData] of Object.entries(following)) {
+                    const ownerUid = followData.ownerUid;
+                    if (ownerUid) {
+                        const p = this.db.ref(`usuarios/${ownerUid}/equipos/${teamId}`).once('value')
+                            .then(snap => {
+                                if (snap.exists()) {
+                                    const teamData = snap.val();
+                                    // Wrap in object to reuse extraction logic
+                                    const teamsObj = { [teamId]: teamData };
+                                    this._extractMatchesFromTeams(teamsObj, allMatches, ownerUid);
+                                }
+                            })
+                            .catch(err => console.error(`Error loading followed team ${teamId}:`, err));
+                        promises.push(p);
                     }
                 }
+                await Promise.all(promises);
             }
 
             // Sort by date/time
@@ -68,6 +59,40 @@ class CalendarService {
         } catch (error) {
             console.error('CalendarService: Error getting all user matches:', error);
             return [];
+        }
+    }
+
+    _extractMatchesFromTeams(teams, allMatches, ownerUid) {
+        for (const [teamId, teamData] of Object.entries(teams)) {
+            const teamName = teamData.nombre || 'Equipo sin nombre';
+
+            if (!teamData.competiciones || typeof teamData.competiciones !== 'object') {
+                continue;
+            }
+
+            const competitions = teamData.competiciones;
+
+            for (const [compId, compData] of Object.entries(competitions)) {
+                const compName = compData.nombre || 'Competición sin nombre';
+
+                if (!compData.partidos || typeof compData.partidos !== 'object') {
+                    continue;
+                }
+
+                const matches = compData.partidos;
+
+                for (const [matchId, matchData] of Object.entries(matches)) {
+                    allMatches.push({
+                        matchId,
+                        teamId,
+                        teamName,
+                        compId,
+                        compName,
+                        ownerUid, // Add ownerUid for correct linking
+                        ...matchData
+                    });
+                }
+            }
         }
     }
 

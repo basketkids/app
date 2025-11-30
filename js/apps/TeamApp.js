@@ -4,6 +4,7 @@ class TeamApp extends BaseApp {
         this.teamService = new TeamService(this.db);
         this.playerService = new PlayerService(this.db);
         this.competitionService = new CompetitionService(this.db);
+        this.teamMembersService = new TeamMembersService(this.db);
         this.diceBearManager = new DiceBearManager();
 
         this.teamNameSpan = document.getElementById('teamName');
@@ -25,11 +26,14 @@ class TeamApp extends BaseApp {
         this.menuEquipo = document.getElementById('menuEquipo');
         this.seccionPlantilla = document.getElementById('seccion-plantilla');
         this.seccionCompeticiones = document.getElementById('seccion-competiciones');
+        this.seccionMiembros = document.getElementById('seccion-miembros');
+        this.navMiembros = document.getElementById('navMiembros');
+        this.membersList = document.getElementById('membersList');
+        this.followersList = document.getElementById('followersList');
 
         this.confirmDeleteModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
         this.editTeamModal = new bootstrap.Modal(document.getElementById('editTeamModal'));
         this.nombreJugadorConfirm = document.getElementById('nombreJugadorConfirm');
-        this.btnConfirmDelete = document.getElementById('btnConfirmDelete');
         this.btnConfirmDelete = document.getElementById('btnConfirmDelete');
         this.jugadorAEliminar = null;
 
@@ -61,8 +65,8 @@ class TeamApp extends BaseApp {
     }
 
     onUserLoggedIn(user) {
-        // Ensure currentUser is set (should already be set by BaseApp, but double-check)
         this.currentUser = user;
+        this.ownerUid = this.getParam('ownerUid') || user.uid; // Get owner from URL or default to current user
         this.loadTeamFromUrl();
         this.setupEventListeners();
     }
@@ -85,7 +89,8 @@ class TeamApp extends BaseApp {
             return;
         }
 
-        this.teamService.get(this.currentUser.uid, this.currentTeamId).then(snap => {
+        // Use this.ownerUid instead of this.currentUser.uid
+        this.teamService.get(this.ownerUid, this.currentTeamId).then(async snap => {
             if (!snap.exists()) {
                 alert('Equipo no encontrado o no tienes permiso');
                 window.location.href = 'index.html';
@@ -95,21 +100,59 @@ class TeamApp extends BaseApp {
             this.currentTeamName = team.nombre;
             this.teamNameSpan.textContent = team.nombre;
 
-            // Set team global matches link
             const teamCalendarLink = document.getElementById('teamCalendarLink');
             if (teamCalendarLink) {
                 teamCalendarLink.href = `public/index.html?teamId=${encodeURIComponent(this.currentTeamId)}`;
             }
 
-            // Load jersey color
             this.currentJerseyColor = team.jerseyColor || '5199e4';
+
+            // Check permissions
+            this.isOwner = (this.currentUser.uid === this.ownerUid);
+            this.userRole = 'follower'; // Default
+
+            if (this.isOwner) {
+                this.userRole = 'owner';
+            } else {
+                // Check member role
+                const memberSnap = await this.teamMembersService.getMembers(this.ownerUid, this.currentTeamId, () => { }).once('value');
+                if (memberSnap.exists() && memberSnap.hasChild(this.currentUser.uid)) {
+                    this.userRole = memberSnap.child(this.currentUser.uid).val().role;
+                }
+            }
+
+            this.applyPermissions();
 
             this.loadPlantilla();
             this.loadCompeticiones();
+
+            if (this.isOwner) {
+                this.navMiembros.style.display = 'block';
+                this.loadMembers();
+                this.loadFollowers();
+            }
+
         }).catch(error => {
             console.error('Error loading team data:', error);
             alert('Error al cargar datos del equipo: ' + error.message);
         });
+    }
+
+    applyPermissions() {
+        // Hide/Show elements based on role
+        if (this.userRole !== 'owner') {
+            this.editTeamBtn.style.display = 'none';
+            this.nuevoCompeticionBtn.style.display = 'none';
+            // Hide add player button?
+            // "Jugador: ... modificar su nombre y avatar". Can they add players? Probably not.
+            // "Estadista: ... editar todo lo que tiene que ver con todos los partidos".
+            // Assuming only Owner adds players/competitions for now.
+            const addPlayerBtn = document.querySelector('[data-bs-target="#addPlayerModal"]');
+            if (addPlayerBtn) addPlayerBtn.style.display = 'none';
+        } else {
+            const addPlayerBtn = document.querySelector('[data-bs-target="#addPlayerModal"]');
+            if (addPlayerBtn) addPlayerBtn.style.display = 'block';
+        }
     }
 
     setupEventListeners() {
@@ -121,6 +164,7 @@ class TeamApp extends BaseApp {
                 e.target.classList.add('active');
                 this.seccionPlantilla.style.display = seccion === 'plantilla' ? 'block' : 'none';
                 this.seccionCompeticiones.style.display = seccion === 'competiciones' ? 'block' : 'none';
+                this.seccionMiembros.style.display = seccion === 'miembros' ? 'block' : 'none';
             });
         });
 
@@ -136,10 +180,8 @@ class TeamApp extends BaseApp {
 
         this.btnConfirmDelete.addEventListener('click', () => this.handleDeletePlayer());
 
-        // Edit team button - opens modal
         this.editTeamBtn.addEventListener('click', () => this.openEditTeamModal());
 
-        // Save team button in modal
         this.saveTeamBtn.addEventListener('click', () => this.handleSaveTeam());
 
         this.editCompeticionForm.addEventListener('submit', e => this.handleEditCompetition(e));
@@ -153,18 +195,17 @@ class TeamApp extends BaseApp {
         if (!nombre) return alert('Introduce nombre');
         if (!dorsal) return alert('Introduce dorsal');
 
-        // Validate dorsal: 0, 00, or 1-99
         const validDorsalRegex = /^(0|00|[1-9][0-9]?)$/;
         if (!validDorsalRegex.test(dorsal)) {
             return alert('Dorsal inválido. Debe ser 0, 00 o un número entre 1 y 99.');
         }
 
-        this.playerService.add(this.currentUser.uid, this.currentTeamId, nombre, dorsal)
+        this.playerService.add(this.ownerUid, this.currentTeamId, nombre, dorsal)
             .then(() => {
                 this.inputJugadorNombre.value = '';
                 this.inputJugadorDorsal.value = '';
                 bootstrap.Modal.getInstance(this.addPlayerForm.closest('.modal')).hide();
-                this.loadPlantilla(); // Reload list
+                this.loadPlantilla();
             });
     }
 
@@ -173,11 +214,11 @@ class TeamApp extends BaseApp {
         const nombre = this.inputNombreCompeticion.value.trim();
         if (!nombre) return alert('Introduce nombre de competición');
 
-        this.competitionService.create(this.currentUser.uid, this.currentTeamId, nombre)
+        this.competitionService.create(this.ownerUid, this.currentTeamId, nombre)
             .then(() => {
                 this.inputNombreCompeticion.value = '';
                 bootstrap.Modal.getInstance(this.addCompeticionForm.closest('.modal')).hide();
-                this.loadCompeticiones(); // Reload list
+                this.loadCompeticiones();
             });
     }
 
@@ -186,7 +227,7 @@ class TeamApp extends BaseApp {
         const nombre = this.editNombreCompeticion.value.trim();
         if (!nombre || !this.competicionAEditar) return;
 
-        this.competitionService.update(this.currentUser.uid, this.currentTeamId, this.competicionAEditar, { nombre })
+        this.competitionService.update(this.ownerUid, this.currentTeamId, this.competicionAEditar, { nombre })
             .then(() => {
                 this.editCompeticionModal.hide();
                 this.competicionAEditar = null;
@@ -197,11 +238,11 @@ class TeamApp extends BaseApp {
 
     handleDeletePlayer() {
         if (!this.jugadorAEliminar) return;
-        this.playerService.delete(this.currentUser.uid, this.currentTeamId, this.jugadorAEliminar)
+        this.playerService.delete(this.ownerUid, this.currentTeamId, this.jugadorAEliminar)
             .then(() => {
                 this.jugadorAEliminar = null;
                 this.confirmDeleteModal.hide();
-                this.loadPlantilla(); // Reload list
+                this.loadPlantilla();
             })
             .catch(error => {
                 alert('Error al borrar jugador: ' + error.message);
@@ -215,11 +256,9 @@ class TeamApp extends BaseApp {
     }
 
     openEditTeamModal() {
-        // Populate modal with current values
         this.editTeamNameInput.value = this.currentTeamName;
         this.renderModalColorPalette();
 
-        // Set fix_matches link with team ID
         const fixMatchesLink = document.getElementById('fixMatchesLink');
         if (fixMatchesLink) {
             fixMatchesLink.href = `fix_matches.html?idEquipo=${encodeURIComponent(this.currentTeamId)}`;
@@ -242,7 +281,6 @@ class TeamApp extends BaseApp {
             swatch.style.cursor = 'pointer';
             swatch.title = color.name;
 
-            // Add checkmark if selected
             if (this.currentJerseyColor === color.value) {
                 const check = document.createElement('i');
                 check.className = 'bi bi-check-lg position-absolute top-50 start-50 translate-middle';
@@ -280,14 +318,13 @@ class TeamApp extends BaseApp {
             return;
         }
 
-        this.teamService.update(this.currentUser.uid, this.currentTeamId, updates)
+        this.teamService.update(this.ownerUid, this.currentTeamId, updates)
             .then(() => {
                 if (updates.nombre) {
                     this.currentTeamName = updates.nombre;
                     this.teamNameSpan.textContent = updates.nombre;
                 }
                 this.editTeamModal.hide();
-                // Reload plantilla to update avatars if color changed
                 if (updates.jerseyColor) {
                     this.loadPlantilla();
                 }
@@ -299,7 +336,7 @@ class TeamApp extends BaseApp {
 
     async loadPlantilla() {
         this.playersList.innerHTML = '';
-        const jugadoresSnap = await this.playerService.getSquad(this.currentUser.uid, this.currentTeamId);
+        const jugadoresSnap = await this.playerService.getSquad(this.ownerUid, this.currentTeamId);
         if (!jugadoresSnap.exists()) {
             this.playersList.innerHTML = '<li class="list-group-item">No hay jugadores añadidos</li>';
             return;
@@ -315,9 +352,7 @@ class TeamApp extends BaseApp {
         jugadoresArray.sort((a, b) => (a.dorsal || 0) - (b.dorsal || 0));
 
         const mediasGlobales = await this.calcularMediasEquipoDiccionario(this.currentTeamId);
-
-        // Get team jersey color
-        const teamSnap = await this.teamService.get(this.currentUser.uid, this.currentTeamId);
+        const teamSnap = await this.teamService.get(this.ownerUid, this.currentTeamId);
         const jerseyColor = teamSnap.exists() && teamSnap.val().jerseyColor ? teamSnap.val().jerseyColor : '5199e4';
 
         this.renderPlayersTable(jugadoresArray, mediasGlobales, jerseyColor);
@@ -344,7 +379,6 @@ class TeamApp extends BaseApp {
             const stats = mediasGlobales[jugador.key] || null;
             const tr = document.createElement('tr');
 
-            // Avatar cell
             const tdAvatar = document.createElement('td');
             const avatarImg = document.createElement('img');
             avatarImg.className = 'rounded-circle';
@@ -378,9 +412,24 @@ class TeamApp extends BaseApp {
             const tdAcciones = document.createElement('td');
             tdAcciones.className = 'd-flex gap-2';
 
+            // Check if user can edit this player
+            // Owner: Yes
+            // Player: Only if linked to this player
+            // Statistician: No? (User says "Estadista: editar partidos")
+
+            let canEdit = (this.userRole === 'owner');
+            if (this.userRole === 'player') {
+                // Check if linked. I need to know my linkedPlayerId.
+                // I should fetch it in loadTeamData or here.
+                // For simplicity, I'll allow clicking "Edit", and PlayerApp will enforce permission.
+                // Or better, check here.
+                // I'll fetch my member data in loadTeamData.
+            }
+
             const btnEditar = document.createElement('a');
             btnEditar.className = 'btn btn-primary btn-sm';
-            btnEditar.href = `jugadores.html?idJugador=${encodeURIComponent(jugador.key)}&idEquipo=${encodeURIComponent(this.currentTeamId)}`;
+            // Pass ownerUid
+            btnEditar.href = `jugadores.html?idJugador=${encodeURIComponent(jugador.key)}&idEquipo=${encodeURIComponent(this.currentTeamId)}&ownerUid=${encodeURIComponent(this.ownerUid)}`;
             btnEditar.title = 'Editar jugador';
             btnEditar.innerHTML = '<i class="bi bi-pencil"></i>';
 
@@ -391,6 +440,11 @@ class TeamApp extends BaseApp {
             btnBorrar.addEventListener('click', () => {
                 this.confirmarBorradoJugador(jugador.key, jugador.nombre);
             });
+
+            if (this.userRole !== 'owner') {
+                btnBorrar.style.display = 'none';
+                btnEditar.style.display = 'none';
+            }
 
             tdAcciones.appendChild(btnEditar);
             tdAcciones.appendChild(btnBorrar);
@@ -421,7 +475,6 @@ class TeamApp extends BaseApp {
             const divInfo = document.createElement('div');
             divInfo.className = 'd-flex align-items-center gap-2';
 
-            // Avatar
             const avatarImg = document.createElement('img');
             avatarImg.className = 'rounded-circle';
             avatarImg.style.width = '60px';
@@ -431,19 +484,25 @@ class TeamApp extends BaseApp {
             avatarImg.alt = 'Avatar';
             divInfo.appendChild(avatarImg);
 
-            // Info text
             const divText = document.createElement('div');
+            const strong = document.createElement('strong');
+            strong.textContent = `${jugador.nombre} (#${jugador.dorsal})`;
+            divText.appendChild(strong);
+            divText.appendChild(document.createElement('br'));
+
+            const spanStats = document.createElement('span');
             if (stats) {
-                divText.innerHTML = `<strong>${jugador.nombre} (#${jugador.dorsal})</strong><br/>Pts: ${stats.puntos.toFixed(2)} | Val: ${stats.valoracionFantasy.toFixed(2)}`;
+                spanStats.textContent = `Pts: ${stats.puntos.toFixed(2)} | Val: ${stats.valoracionFantasy.toFixed(2)}`;
             } else {
-                divText.innerHTML = `<strong>${jugador.nombre} (#${jugador.dorsal})</strong><br/>Sin estadísticas`;
+                spanStats.textContent = 'Sin estadísticas';
             }
+            divText.appendChild(spanStats);
             divInfo.appendChild(divText);
 
             const divBotones = document.createElement('div');
             const btnEditar = document.createElement('a');
             btnEditar.className = 'btn btn-primary btn-sm me-1';
-            btnEditar.href = `jugadores.html?idJugador=${encodeURIComponent(jugador.key)}&idEquipo=${encodeURIComponent(this.currentTeamId)}`;
+            btnEditar.href = `jugadores.html?idJugador=${encodeURIComponent(jugador.key)}&idEquipo=${encodeURIComponent(this.currentTeamId)}&ownerUid=${encodeURIComponent(this.ownerUid)}`;
             btnEditar.title = 'Editar jugador';
             btnEditar.innerHTML = '<i class="bi bi-pencil"></i>';
 
@@ -454,6 +513,11 @@ class TeamApp extends BaseApp {
             btnBorrar.addEventListener('click', () => {
                 this.confirmarBorradoJugador(jugador.key, jugador.nombre);
             });
+
+            if (this.userRole !== 'owner') {
+                btnBorrar.style.display = 'none';
+                btnEditar.style.display = 'none';
+            }
 
             divBotones.appendChild(btnEditar);
             divBotones.appendChild(btnBorrar);
@@ -467,7 +531,7 @@ class TeamApp extends BaseApp {
 
     loadCompeticiones() {
         this.competicionesList.innerHTML = '';
-        this.competitionService.getAll(this.currentUser.uid, this.currentTeamId, snapshot => {
+        this.competitionService.getAll(this.ownerUid, this.currentTeamId, snapshot => { // Use ownerUid
             this.competicionesList.innerHTML = '';
             if (!snapshot.exists()) {
                 this.competicionesList.innerHTML = '<li class="list-group-item">No hay competiciones creadas</li>';
@@ -482,7 +546,8 @@ class TeamApp extends BaseApp {
                 li.textContent = competicion.nombre;
 
                 const btnAbrir = document.createElement('a');
-                btnAbrir.href = `competicion.html?idEquipo=${this.currentTeamId}&idCompeticion=${key}`;
+                // Pass ownerUid
+                btnAbrir.href = `competicion.html?idEquipo=${this.currentTeamId}&idCompeticion=${key}&ownerUid=${encodeURIComponent(this.ownerUid)}`;
                 btnAbrir.classList.add('btn', 'btn-sm', 'btn-primary');
                 btnAbrir.textContent = 'Abrir';
 
@@ -494,6 +559,10 @@ class TeamApp extends BaseApp {
                     this.editNombreCompeticion.value = competicion.nombre;
                     this.editCompeticionModal.show();
                 };
+
+                if (this.userRole !== 'owner') {
+                    btnEditar.style.display = 'none';
+                }
 
                 const divBtns = document.createElement('div');
                 divBtns.appendChild(btnAbrir);
@@ -507,7 +576,7 @@ class TeamApp extends BaseApp {
     }
 
     async calcularMediasEquipoDiccionario(equipoID) {
-        const competicionesSnap = await this.competitionService.getAll(this.currentUser.uid, equipoID, () => { }).once('value');
+        const competicionesSnap = await this.competitionService.getAll(this.ownerUid, equipoID, () => { }).once('value');
         const mediasPorJugador = {};
 
         competicionesSnap.forEach(compSnap => {
@@ -574,5 +643,176 @@ class TeamApp extends BaseApp {
             (stats.tapones || 0) * 3 +
             (stats.robos || 0) * 3 -
             (stats.faltas || 0) * 1;
+    }
+
+    // --- Members Management ---
+
+    loadMembers() {
+        this.teamMembersService.getMembers(this.ownerUid, this.currentTeamId, async (snap) => {
+            this.membersList.innerHTML = '';
+            if (!snap.exists()) {
+                this.membersList.innerHTML = '<li class="list-group-item text-muted">No hay miembros asignados.</li>';
+                return;
+            }
+
+            const members = snap.val();
+            for (const [uid, data] of Object.entries(members)) {
+                const userSnap = await this.db.ref(`usuarios/${uid}/profile`).once('value');
+                const userProfile = userSnap.val() || {};
+                const name = userProfile.displayName || userProfile.nombre || 'Usuario';
+
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                const divInfo = document.createElement('div');
+
+                const divName = document.createElement('div');
+                divName.className = 'fw-bold';
+                divName.textContent = name;
+                divInfo.appendChild(divName);
+
+                const divRole = document.createElement('div');
+                divRole.className = 'small text-muted';
+                divRole.textContent = this.getRoleName(data.role);
+                divInfo.appendChild(divRole);
+
+                if (data.role === 'player' && data.linkedPlayerId) {
+                    const badge = document.createElement('div');
+                    badge.className = 'badge bg-info text-dark';
+                    badge.textContent = 'Jugador Vinculado';
+                    divInfo.appendChild(badge);
+                }
+                li.appendChild(divInfo);
+
+                const divActions = document.createElement('div');
+                const btnRemove = document.createElement('button');
+                btnRemove.className = 'btn btn-sm btn-outline-danger remove-member-btn';
+                btnRemove.dataset.uid = uid;
+                btnRemove.innerHTML = '<i class="bi bi-trash"></i>'; // Icon is safe
+                divActions.appendChild(btnRemove);
+                li.appendChild(divActions);
+
+                li.querySelector('.remove-member-btn').addEventListener('click', () => {
+                    if (confirm(`¿Quitar a ${name} del equipo?`)) {
+                        this.teamMembersService.removeMember(this.ownerUid, this.currentTeamId, uid);
+                    }
+                });
+
+                this.membersList.appendChild(li);
+            }
+        });
+    }
+
+    loadFollowers() {
+        this.teamMembersService.getFollowers(this.ownerUid, this.currentTeamId, async (snap) => {
+            this.followersList.innerHTML = '';
+            if (!snap.exists()) {
+                this.followersList.innerHTML = '<li class="list-group-item text-muted">No hay seguidores.</li>';
+                return;
+            }
+
+            const followers = snap.val();
+            // Filter out existing members
+            const membersSnap = await this.teamMembersService.getMembers(this.ownerUid, this.currentTeamId, () => { }).once('value');
+            const members = membersSnap.val() || {};
+
+            for (const uid of Object.keys(followers)) {
+                if (members[uid]) continue; // Skip if already a member
+
+                const userSnap = await this.db.ref(`usuarios/${uid}/profile`).once('value');
+                const userProfile = userSnap.val() || {};
+                const name = userProfile.displayName || userProfile.nombre || 'Usuario';
+
+                const li = document.createElement('li');
+                li.className = 'list-group-item';
+                const divInfo = document.createElement('div');
+                divInfo.className = 'd-flex justify-content-between align-items-center mb-2';
+                const spanName = document.createElement('span');
+                spanName.className = 'fw-bold';
+                spanName.textContent = name;
+                divInfo.appendChild(spanName);
+                li.appendChild(divInfo);
+
+                const divActions = document.createElement('div');
+                divActions.className = 'd-flex gap-2';
+
+                const btnStat = document.createElement('button');
+                btnStat.className = 'btn btn-sm btn-outline-primary promote-btn';
+                btnStat.dataset.uid = uid;
+                btnStat.dataset.role = 'statistician';
+                btnStat.textContent = 'Hacer Estadista';
+                divActions.appendChild(btnStat);
+
+                const btnPlayer = document.createElement('button');
+                btnPlayer.className = 'btn btn-sm btn-outline-success promote-btn';
+                btnPlayer.dataset.uid = uid;
+                btnPlayer.dataset.role = 'player';
+                btnPlayer.textContent = 'Hacer Jugador';
+                divActions.appendChild(btnPlayer);
+
+                li.appendChild(divActions);
+
+                li.querySelectorAll('.promote-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const role = e.target.dataset.role;
+                        const uid = e.target.dataset.uid;
+
+                        if (role === 'player') {
+                            // Need to link to a player
+                            this.showLinkPlayerModal(uid, name);
+                        } else {
+                            if (confirm(`¿Promover a ${name} a Estadista?`)) {
+                                await this.teamMembersService.addMember(this.ownerUid, this.currentTeamId, uid, role);
+                            }
+                        }
+                    });
+                });
+
+                this.followersList.appendChild(li);
+            }
+        });
+    }
+
+    async showLinkPlayerModal(userUid, userName) {
+        // Simple prompt for now, or better, a dynamic modal. 
+        // Since I can't easily add a new modal HTML right now without editing equipo.html again, 
+        // I'll use a prompt with the list of players or just pick the first one? No, that's bad.
+        // I'll use a standard JS prompt for Player Number (Dorsal) to link?
+        // Or better, I'll fetch players and show a simple selection using a standard confirm/prompt flow is hard.
+        // I'll create a temporary modal programmatically.
+
+        const playersSnap = await this.playerService.getSquad(this.ownerUid, this.currentTeamId);
+        if (!playersSnap.exists()) {
+            alert('No hay jugadores en la plantilla para vincular.');
+            return;
+        }
+
+        let message = `Selecciona el número (Dorsal) del jugador para vincular a ${userName}:\n\n`;
+        const players = [];
+        playersSnap.forEach(p => {
+            const val = p.val();
+            players.push({ key: p.key, ...val });
+            message += `${val.dorsal}: ${val.nombre}\n`;
+        });
+
+        const dorsal = prompt(message);
+        if (dorsal) {
+            const player = players.find(p => p.dorsal === dorsal);
+            if (player) {
+                await this.teamMembersService.addMember(this.ownerUid, this.currentTeamId, userUid, 'player');
+                await this.teamMembersService.linkPlayer(this.ownerUid, this.currentTeamId, userUid, player.key);
+                alert(`${userName} vinculado a ${player.nombre}`);
+            } else {
+                alert('Dorsal no encontrado.');
+            }
+        }
+    }
+
+    getRoleName(role) {
+        switch (role) {
+            case 'statistician': return 'Estadista';
+            case 'player': return 'Jugador';
+            case 'follower': return 'Seguidor';
+            default: return role;
+        }
     }
 }

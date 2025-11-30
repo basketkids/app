@@ -47,6 +47,11 @@ class MatchService {
                     return refGlobal.remove();
                 }
                 const p = snapshot.val();
+                // Inject required fields for global context and security rules
+                p.ownerUid = userId;
+                p.equipoId = teamId;
+                p.competicionId = compId;
+
                 return refGlobal.set(p);
             });
         }).catch(error => {

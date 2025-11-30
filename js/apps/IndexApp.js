@@ -11,7 +11,116 @@ class IndexApp extends BaseApp {
 
     onUserLoggedIn(user) {
         this.listarEquipos();
+        this.loadNotifications();
         this.setupEventListeners();
+    }
+
+    loadNotifications() {
+        if (!this.currentUser) return;
+
+        const notificationsRef = this.db.ref(`usuarios/${this.currentUser.uid}/notifications`);
+        notificationsRef.on('value', snapshot => {
+            const notifications = snapshot.val() || {};
+            this.renderNotifications(notifications);
+        });
+    }
+
+    renderNotifications(notifications) {
+        const list = document.getElementById('listNotifications');
+        const badge = document.getElementById('badgeNotifications');
+        if (!list) return;
+
+        list.innerHTML = '';
+        const entries = Object.entries(notifications).sort((a, b) => b[1].timestamp - a[1].timestamp);
+        const count = entries.length;
+
+        if (badge) {
+            badge.textContent = count;
+            badge.style.display = count > 0 ? 'inline-block' : 'none';
+        }
+
+        if (count === 0) {
+            list.innerHTML = '<li class="list-group-item text-center text-muted">No tienes notificaciones</li>';
+            return;
+        }
+
+        entries.forEach(([key, notif]) => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+
+            const divContent = document.createElement('div');
+            const date = new Date(notif.timestamp).toLocaleDateString();
+
+            if (notif.type === 'new_follower') {
+                divContent.innerHTML = `
+                    <div class="fw-bold">Nuevo seguidor</div>
+                    <div class="small">Un usuario ha comenzado a seguir a tu equipo.</div>
+                    <div class="text-muted small" style="font-size: 0.75rem;">${date}</div>
+                `;
+            } else if (notif.type === 'scorer_request') {
+                divContent.innerHTML = `
+                    <div class="fw-bold">Solicitud de anotador</div>
+                    <div class="small">${notif.requesterName} quiere anotar en un partido.</div>
+                    <div class="text-muted small" style="font-size: 0.75rem;">${date}</div>
+                `;
+            } else {
+                divContent.textContent = 'Notificación desconocida';
+            }
+            li.appendChild(divContent);
+
+            const divActions = document.createElement('div');
+            divActions.className = 'd-flex gap-2';
+
+            if (notif.type === 'scorer_request') {
+                const btnApprove = document.createElement('button');
+                btnApprove.className = 'btn btn-sm btn-success';
+                btnApprove.innerHTML = '<i class="bi bi-check-lg"></i>';
+                btnApprove.title = 'Aprobar';
+                btnApprove.onclick = () => this.approveScorerRequest(key, notif);
+                divActions.appendChild(btnApprove);
+            }
+
+            const btnDismiss = document.createElement('button');
+            btnDismiss.className = 'btn btn-sm btn-outline-secondary';
+            btnDismiss.innerHTML = '<i class="bi bi-x-lg"></i>';
+            btnDismiss.title = 'Descartar';
+            btnDismiss.onclick = () => this.dismissNotification(key);
+            divActions.appendChild(btnDismiss);
+
+            li.appendChild(divActions);
+            list.appendChild(li);
+        });
+    }
+
+    async approveScorerRequest(notificationId, notif) {
+        if (!confirm(`¿Aprobar a ${notif.requesterName} como estadista?`)) return;
+
+        try {
+            // 1. Add as statistician
+            await this.db.ref(`usuarios/${this.currentUser.uid}/equipos/${notif.teamId}/members/${notif.requesterUid}`).set({
+                role: 'statistician',
+                addedAt: firebase.database.ServerValue.TIMESTAMP
+            });
+
+            // 2. Remove the original request from the match
+            await this.db.ref(`usuarios/${this.currentUser.uid}/equipos/${notif.teamId}/competiciones/${notif.compId}/partidos/${notif.matchId}/requests/${notif.requesterUid}`).remove();
+
+            // 3. Dismiss notification
+            await this.dismissNotification(notificationId);
+
+            alert(`${notif.requesterName} ha sido aprobado.`);
+        } catch (error) {
+            console.error('Error approving request:', error);
+            alert('Error al aprobar la solicitud');
+        }
+    }
+
+    async dismissNotification(notificationId) {
+        try {
+            await this.db.ref(`usuarios/${this.currentUser.uid}/notifications/${notificationId}`).remove();
+        } catch (error) {
+            console.error('Error dismissing notification:', error);
+        }
     }
 
     handleNoUser() {
@@ -62,17 +171,71 @@ class IndexApp extends BaseApp {
         this.teamsList.innerHTML = '';
         if (!this.currentUser) return;
 
+        // 1. Listar equipos propios
         this.teamService.getAll(this.currentUser.uid, snapshot => {
-            this.teamsList.innerHTML = '';
-            if (!snapshot.exists()) {
+            this.teamsList.innerHTML = ''; // Limpiar antes de repoblar
+            if (snapshot.exists()) {
+                snapshot.forEach(equipoSnap => {
+                    const equipo = equipoSnap.val();
+                    this.renderTeamItem(equipo, equipoSnap.key);
+                });
+            } else {
                 this.teamsList.innerHTML = '<li class="list-group-item">No tienes equipos creados</li>';
-                return;
             }
-            snapshot.forEach(equipoSnap => {
-                const equipo = equipoSnap.val();
-                this.renderTeamItem(equipo, equipoSnap.key);
-            });
         });
+
+        // 2. Listar equipos seguidos
+        const followedList = document.getElementById('followedTeamsList');
+        if (followedList) {
+            followedList.innerHTML = '';
+            this.db.ref(`usuarios/${this.currentUser.uid}/following`).on('value', async snapshot => {
+                followedList.innerHTML = '';
+                if (!snapshot.exists()) {
+                    followedList.innerHTML = '<li class="list-group-item">No sigues a ningún equipo</li>';
+                    return;
+                }
+
+                const promises = [];
+                snapshot.forEach(child => {
+                    const teamId = child.key;
+                    const data = child.val();
+                    const ownerUid = data.ownerUid;
+
+                    if (ownerUid) {
+                        const p = this.teamService.getName(ownerUid, teamId).then(nameSnap => {
+                            return {
+                                id: teamId,
+                                name: nameSnap.val() || 'Equipo sin nombre',
+                                ownerUid: ownerUid
+                            };
+                        }).catch(() => null);
+                        promises.push(p);
+                    }
+                });
+
+                const teams = await Promise.all(promises);
+                teams.filter(t => t).forEach(team => {
+                    this.renderFollowedTeamItem(team, followedList);
+                });
+            });
+        }
+    }
+
+    renderFollowedTeamItem(team, container) {
+        const li = document.createElement('li');
+        li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
+
+        const spanNombre = document.createElement('span');
+        spanNombre.textContent = team.name;
+        li.appendChild(spanNombre);
+
+        const btnVer = document.createElement('a');
+        btnVer.href = `equipo.html?idEquipo=${team.id}&ownerUid=${team.ownerUid}`; // View as read-only
+        btnVer.classList.add('btn', 'btn-sm', 'btn-info');
+        btnVer.innerHTML = '<i class="bi bi-eye-fill"></i>';
+
+        li.appendChild(btnVer);
+        container.appendChild(li);
     }
 
     renderTeamItem(equipo, key) {

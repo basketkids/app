@@ -6,6 +6,27 @@ class PartidosGlobalesApp {
     this.segundosRestantes = 0; // Para controlar display tiempo
     this.parteActual = 1;       // Para controlar el cuarto actual
     this.matchRenderer = new MatchRenderer();
+    this.teamService = new TeamService(firebase.database());
+    this.currentUser = null;
+
+    // Auth listener
+    firebase.auth().onAuthStateChanged(user => {
+      this.currentUser = user;
+      if (this.partido) {
+        this.updateFollowButton();
+        this.updateRequestButton();
+      }
+    });
+
+    // Bind events
+    const followBtn = document.getElementById('followBtn');
+    if (followBtn) {
+      followBtn.addEventListener('click', () => this.toggleFollow());
+    }
+    const requestAccessBtn = document.getElementById('requestAccessBtn');
+    if (requestAccessBtn) {
+      requestAccessBtn.addEventListener('click', () => this.requestAccess());
+    }
   }
 
   cargarPartidoGlobal(partidoId) {
@@ -35,11 +56,165 @@ class PartidosGlobalesApp {
         }
         this.renderizarPartido();
         this.iniciarRefrescoSiEnCurso();
+        this.updateFollowButton();
+        this.updateRequestButton();
       })
       .catch(error => {
         console.error('Error cargando partido global:', error);
         this.mostrarError('No se pudo cargar el partido global.');
       });
+  }
+
+  async updateRequestButton() {
+    const btn = document.getElementById('requestAccessBtn');
+    if (!btn || !this.partido || !this.currentUser) {
+      if (btn) btn.style.display = 'none';
+      return;
+    }
+
+    // Don't show if user is owner
+    if (this.currentUser.uid === this.partido.ownerUid) {
+      btn.style.display = 'none';
+      return;
+    }
+
+    // Check if already has permission (e.g. is statistician) - simplified check
+    // For now, just check if request exists
+    if (!this.partido.ownerUid || !this.partido.equipoId || !this.partido.competicionId) {
+      console.warn("Missing data for request check:", this.partido);
+      btn.style.display = 'none';
+      return;
+    }
+
+    const requestRef = firebase.database().ref(`usuarios/${this.partido.ownerUid}/equipos/${this.partido.equipoId}/competiciones/${this.partido.competicionId}/partidos/${this.partido.id}/requests/${this.currentUser.uid}`);
+
+    try {
+      const snap = await requestRef.once('value');
+      if (snap.exists()) {
+        btn.style.display = 'inline-block';
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-clock-history"></i> Solicitud enviada';
+        btn.classList.remove('btn-outline-warning');
+        btn.classList.add('btn-secondary');
+      } else {
+        btn.style.display = 'inline-block';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-pencil-square"></i> Solicitar ser anotador';
+        btn.classList.add('btn-outline-warning');
+        btn.classList.remove('btn-secondary');
+      }
+    } catch (e) {
+      console.error("Error checking request status", e);
+    }
+  }
+
+  async requestAccess() {
+    if (!this.currentUser || !this.partido) return;
+
+    if (!confirm("¿Quieres solicitar permiso al propietario para anotar estadísticas en este partido?")) return;
+
+    const db = firebase.database();
+    const updates = {};
+
+    // Path for the request itself
+    const requestPath = `usuarios/${this.partido.ownerUid}/equipos/${this.partido.equipoId}/competiciones/${this.partido.competicionId}/partidos/${this.partido.id}/requests/${this.currentUser.uid}`;
+    updates[requestPath] = {
+      email: this.currentUser.email,
+      displayName: this.currentUser.displayName || 'Usuario',
+      photoURL: this.currentUser.photoURL || null, // Add photoURL if available
+      timestamp: firebase.database.ServerValue.TIMESTAMP,
+      status: 'pending'
+    };
+
+    // Add notification for the owner
+    const notificationRef = db.ref(`usuarios/${this.partido.ownerUid}/notifications`).push();
+    updates[`usuarios/${this.partido.ownerUid}/notifications/${notificationRef.key}`] = {
+      type: 'scorer_request',
+      teamId: this.partido.equipoId,
+      compId: this.partido.competicionId,
+      matchId: this.partido.id,
+      requesterUid: this.currentUser.uid,
+      requesterName: this.currentUser.displayName || 'Usuario',
+      timestamp: firebase.database.ServerValue.TIMESTAMP,
+      read: false
+    };
+
+    try {
+      await db.ref().update(updates);
+      alert("Solicitud enviada. El propietario debe aprobarla.");
+      this.updateRequestButton();
+    } catch (e) {
+      console.error("Error sending request", e);
+      alert("Error al enviar solicitud: " + e.message);
+    }
+  }
+
+  async updateFollowButton() {
+    const followBtn = document.getElementById('followBtn');
+    // console.log("updateFollowButton check:", {
+    //     btn: !!followBtn,
+    //     partido: !!this.partido,
+    //     ownerUid: this.partido?.ownerUid,
+    //     equipoId: this.partido?.equipoId
+    // });
+
+    if (!followBtn || !this.partido || !this.partido.ownerUid || !this.partido.equipoId) {
+      if (followBtn && (!this.partido.ownerUid || !this.partido.equipoId)) {
+        console.warn("Follow button hidden because ownerUid or equipoId is missing in match data.");
+      }
+      return;
+    }
+
+    followBtn.style.display = 'inline-block';
+
+    if (!this.currentUser) {
+      followBtn.innerHTML = '<i class="bi bi-heart"></i> Seguir Equipo';
+      followBtn.classList.remove('btn-primary');
+      followBtn.classList.add('btn-outline-primary');
+      return;
+    }
+
+    try {
+      const isFollowing = await this.teamService.isFollowing(this.partido.ownerUid, this.partido.equipoId, this.currentUser.uid);
+      if (isFollowing) {
+        followBtn.innerHTML = '<i class="bi bi-heart-fill"></i> Siguiendo';
+        followBtn.classList.remove('btn-outline-primary');
+        followBtn.classList.add('btn-primary');
+      } else {
+        followBtn.innerHTML = '<i class="bi bi-heart"></i> Seguir Equipo';
+        followBtn.classList.remove('btn-primary');
+        followBtn.classList.add('btn-outline-primary');
+      }
+    } catch (error) {
+      console.error('Error checking follow status:', error);
+    }
+  }
+
+  async toggleFollow() {
+    if (!this.partido) return;
+
+    if (!this.currentUser) {
+      alert("Debes iniciar sesión para seguir a un equipo.");
+      return;
+    }
+
+    const followBtn = document.getElementById('followBtn');
+    followBtn.disabled = true;
+
+    try {
+      const isFollowing = await this.teamService.isFollowing(this.partido.ownerUid, this.partido.equipoId, this.currentUser.uid);
+      if (isFollowing) {
+        await this.teamService.unfollowTeam(this.partido.ownerUid, this.partido.equipoId, this.currentUser.uid);
+      } else {
+        await this.teamService.followTeam(this.partido.ownerUid, this.partido.equipoId, this.currentUser.uid);
+      }
+      this.updateFollowButton();
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+      alert('Error al actualizar seguimiento: ' + error.message);
+    } finally {
+      followBtn.disabled = false;
+    }
   }
 
   renderizarPartido() {

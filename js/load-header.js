@@ -65,6 +65,7 @@ async function construirBreadcrumbDesdeParametros() {
   const currentPartidoId = params.get('idPartido');
   const currrentJugadorId = params.get('idJugador');
   const globalPartidoId = params.get('id'); // For global matches in public view
+  const paramOwnerUid = params.get('ownerUid');
 
   const indexUrl = isPublic ? '../index.html' : 'index.html';
   const breadcrumbItems = [{ nombre: 'Inicio', url: indexUrl }];
@@ -88,6 +89,11 @@ async function construirBreadcrumbDesdeParametros() {
   }
   if (path.includes('profile.html')) {
     breadcrumbItems.push({ nombre: 'Mi Perfil', url: null });
+    cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
+    return;
+  }
+  if (path.includes('notifications.html')) {
+    breadcrumbItems.push({ nombre: 'Notificaciones', url: null });
     cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
     return;
   }
@@ -165,10 +171,14 @@ async function construirBreadcrumbDesdeParametros() {
     return;
   }
 
+  // Determine target UID (owner or current user)
+  const targetUid = paramOwnerUid || uid;
+  const ownerParam = paramOwnerUid ? `&ownerUid=${encodeURIComponent(paramOwnerUid)}` : '';
+
   // Traer nombre equipo
-  const equipoSnap = await dbh.ref(`usuarios/${uid}/equipos/${currentTeamId}/nombre`).once('value');
+  const equipoSnap = await dbh.ref(`usuarios/${targetUid}/equipos/${currentTeamId}/nombre`).once('value');
   const nombreEquipo = equipoSnap.exists() ? equipoSnap.val() : 'Equipo desconocido';
-  breadcrumbItems.push({ nombre: nombreEquipo, url: `${basePath}equipo.html?idEquipo=${currentTeamId}` });
+  breadcrumbItems.push({ nombre: nombreEquipo, url: `${basePath}equipo.html?idEquipo=${currentTeamId}${ownerParam}` });
 
   if (!currentCompeticionId && !currrentJugadorId) {
     cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
@@ -177,7 +187,7 @@ async function construirBreadcrumbDesdeParametros() {
 
   // If we have a player but no competition, handle player view
   if (currrentJugadorId && !currentCompeticionId) {
-    const jugadorSnap = await dbh.ref(`usuarios/${uid}/equipos/${currentTeamId}/plantilla/${currrentJugadorId}/nombre`).once('value');
+    const jugadorSnap = await dbh.ref(`usuarios/${targetUid}/equipos/${currentTeamId}/plantilla/${currrentJugadorId}/nombre`).once('value');
     const nombreJugador = jugadorSnap.exists() ? jugadorSnap.val() : 'Jugador';
     breadcrumbItems.push({ nombre: nombreJugador, url: null });
     cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
@@ -185,9 +195,9 @@ async function construirBreadcrumbDesdeParametros() {
   }
 
   // Traer nombre competición
-  const compSnap = await dbh.ref(`usuarios/${uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/nombre`).once('value');
+  const compSnap = await dbh.ref(`usuarios/${targetUid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/nombre`).once('value');
   const nombreCompeticion = compSnap.exists() ? compSnap.val() : 'Competición desconocida';
-  breadcrumbItems.push({ nombre: nombreCompeticion, url: `${basePath}competicion.html?idEquipo=${currentTeamId}&idCompeticion=${currentCompeticionId}` });
+  breadcrumbItems.push({ nombre: nombreCompeticion, url: `${basePath}competicion.html?idEquipo=${currentTeamId}&idCompeticion=${currentCompeticionId}${ownerParam}` });
 
   if (!currentPartidoId) {
     cont.innerHTML = renderBreadcrumbHTML(breadcrumbItems);
@@ -195,7 +205,7 @@ async function construirBreadcrumbDesdeParametros() {
   }
 
   // Traer nombre partido
-  const partidoSnap = await dbh.ref(`usuarios/${uid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/rival`).once('value');
+  const partidoSnap = await dbh.ref(`usuarios/${targetUid}/equipos/${currentTeamId}/competiciones/${currentCompeticionId}/partidos/${currentPartidoId}/rival`).once('value');
   const nombrePartido = partidoSnap.exists() ? partidoSnap.val() : 'Partido';
   breadcrumbItems.push({ nombre: nombrePartido, url: null });
 
@@ -253,6 +263,20 @@ async function inicializarAuth() {
     if (user) {
       loginBtn.style.display = 'none';
       userDropdown.style.display = 'block';
+
+      // Fix profile link and add notifications link
+      const profileLink = document.querySelector('a[href="profile.html"]');
+      if (profileLink) {
+        // Fix profile link path
+        profileLink.setAttribute('href', `${basePath}profile.html`);
+
+        // Add Notifications link if not exists
+        if (!document.querySelector(`a[href="${basePath}notifications.html"]`)) {
+          const notifItem = document.createElement('li');
+          notifItem.innerHTML = `<a class="dropdown-item" href="${basePath}notifications.html"><i class="bi bi-bell"></i> Notificaciones</a>`;
+          profileLink.parentNode.parentNode.insertBefore(notifItem, profileLink.parentNode.nextSibling);
+        }
+      }
 
       // Load user profile data
       try {
@@ -314,6 +338,58 @@ async function inicializarAuth() {
               dbh.ref(`usuarios/${user.uid}/profile`).update(updates);
             }
           }
+
+          // Check for unread notifications (for all users, not just admin)
+          dbh.ref(`usuarios/${user.uid}/notifications`).on('value', snapshot => {
+            let unreadCount = 0;
+            snapshot.forEach(child => {
+              const val = child.val();
+              if (!val.read) {
+                unreadCount++;
+              }
+            });
+
+            // Remove existing notification if any
+            const existingBadge = document.getElementById('userNotifBadge');
+            if (existingBadge) existingBadge.remove();
+
+            if (unreadCount > 0) {
+              const badge = document.createElement('span');
+              badge.id = 'userNotifBadge';
+              badge.className = 'position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle';
+              badge.style.width = '12px';
+              badge.style.height = '12px';
+
+              // Container for the bell
+              const bellContainer = document.createElement('a');
+              bellContainer.href = `${basePath}notifications.html`; // Go to notifications page
+              bellContainer.className = 'btn btn-link nav-link position-relative me-3 text-white';
+              bellContainer.innerHTML = '<i class="bi bi-bell-fill text-white" style="font-size: 1.2rem;"></i>';
+              bellContainer.appendChild(badge);
+              bellContainer.title = `${unreadCount} notificaciones nuevas`;
+
+              // Insert before user dropdown (and before admin envelope if exists)
+              const userDropdownContainer = document.getElementById('userDropdown');
+              if (userDropdownContainer && userDropdownContainer.parentNode) {
+                // Check if we already added it
+                const existingBell = document.getElementById('userNotifBell');
+                if (existingBell) existingBell.remove();
+
+                bellContainer.id = 'userNotifBell';
+
+                // If admin envelope exists, insert before it, otherwise before dropdown
+                const adminEnvelope = document.getElementById('adminMsgEnvelope');
+                if (adminEnvelope) {
+                  userDropdownContainer.parentNode.insertBefore(bellContainer, adminEnvelope);
+                } else {
+                  userDropdownContainer.parentNode.insertBefore(bellContainer, userDropdownContainer);
+                }
+              }
+            } else {
+              const existingBell = document.getElementById('userNotifBell');
+              if (existingBell) existingBell.remove();
+            }
+          });
 
           // Check for unread messages if admin
           if (profile.admin) {

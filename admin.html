@@ -12,7 +12,7 @@
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
 
-    <link rel="stylesheet" href="css/styles.css?v=1.0.1" />
+    <link rel="stylesheet" href="css/styles.css?v=dev-no-cache" />
     <link rel="icon" href="img/favicon.ico" type="image/x-icon" />
 </head>
 
@@ -35,7 +35,18 @@
 
         <div class="card shadow-sm">
             <div class="card-header bg-white">
-                <h5 class="mb-0">Gestión de Usuarios</h5>
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Gestión de Usuarios</h5>
+                    <button class="btn btn-outline-primary position-relative" id="btnNotifications"
+                        data-bs-toggle="modal" data-bs-target="#modalNotifications">
+                        <i class="bi bi-bell"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                            id="badgeNotifications" style="display: none;">
+                            0
+                            <span class="visually-hidden">unread messages</span>
+                        </span>
+                    </button>
+                </div>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -65,6 +76,27 @@
     </div>
 
     <!-- Footer -->
+    <!-- Modal Notifications -->
+    <div class="modal fade" id="modalNotifications" tabindex="-1" aria-labelledby="modalNotificationsLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalNotificationsLabel">Notificaciones</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="list-group" id="listNotifications">
+                        <li class="list-group-item text-center text-muted">Cargando...</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="footer-container"></div>
 
     <!-- Bootstrap Bundle JS -->

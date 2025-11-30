@@ -33,29 +33,34 @@ class PlayerApp extends BaseApp {
     }
 
     onUserLoggedIn(user) {
+        this.currentUser = user;
+        this.ownerUid = this.getParam('ownerUid') || user.uid;
         this.initAvatarEditor();
         this.loadParamsUrl();
     }
 
     initAvatarEditor() {
-        this.diceBearManager.initEditor({
+        const elements = {
             selects: this.selects,
             checkFacialHair: this.checkFacialHair,
             checkAccessories: this.checkAccessories
-        }, () => this.updateAvatarPreview());
+        };
+
+        this.diceBearManager.initEditor(elements, () => {
+            this.updateAvatarPreview();
+        });
     }
 
     updateAvatarPreview() {
-        const config = this.diceBearManager.getObject();
-        this.avatarConfig = config;
-
-        // Generate seed with player ID and current date
-        const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-        const seed = `${this.jugadorId}-${currentDate}`;
-
-        const url = this.diceBearManager.getImage(seed, config, this.teamJerseyColor);
-        this.avatarPreview.src = url;
+        this.avatarConfig = this.diceBearManager.getObject();
+        const seed = this.jugadorId || 'temp';
+        const url = this.diceBearManager.getImage(seed, this.avatarConfig, this.teamJerseyColor);
+        if (this.avatarPreview) {
+            this.avatarPreview.src = url;
+        }
     }
+
+
 
     loadParamsUrl() {
         const idJugador = this.getParam('idJugador');
@@ -69,19 +74,40 @@ class PlayerApp extends BaseApp {
         this.jugadorId = idJugador;
         this.currentTeamId = idEquipo;
 
-        this.cargarDatosJugador();
-        this.cargarInfoEquipo();
-        this.cargarEstadisticasTotales();
-        this.cargarColorCamisetaEquipo();
-        this.setupEventListeners();
+        this.checkPermissions().then(allowed => {
+            if (allowed) {
+                this.cargarDatosJugador();
+                this.cargarInfoEquipo();
+                this.cargarEstadisticasTotales();
+                this.cargarColorCamisetaEquipo();
+                this.setupEventListeners();
+            } else {
+                alert('No tienes permiso para editar este jugador');
+                window.location.href = 'index.html';
+            }
+        });
     }
 
-    setupEventListeners() {
-        this.formEditarJugador.addEventListener('submit', e => this.guardarCambiosJugador(e));
+    async checkPermissions() {
+        if (this.currentUser.uid === this.ownerUid) return true; // Owner
+
+        // Check if member
+        const teamMembersService = new TeamMembersService(this.db);
+        const memberSnap = await teamMembersService.getMembers(this.ownerUid, this.currentTeamId, () => { }).once('value');
+
+        if (memberSnap.exists() && memberSnap.hasChild(this.currentUser.uid)) {
+            const memberData = memberSnap.child(this.currentUser.uid).val();
+            if (memberData.role === 'player' && memberData.linkedPlayerId === this.jugadorId) {
+                return true; // Linked player
+            }
+        }
+        return false;
     }
+
+    // ...
 
     cargarColorCamisetaEquipo() {
-        this.teamService.get(this.currentUser.uid, this.currentTeamId)
+        this.teamService.get(this.ownerUid, this.currentTeamId)
             .then(snap => {
                 if (snap.exists() && snap.val().jerseyColor) {
                     this.teamJerseyColor = snap.val().jerseyColor;
@@ -92,7 +118,7 @@ class PlayerApp extends BaseApp {
     }
 
     cargarDatosJugador() {
-        this.playerService.get(this.currentUser.uid, this.currentTeamId, this.jugadorId)
+        this.playerService.get(this.ownerUid, this.currentTeamId, this.jugadorId)
             .then(snap => {
                 if (snap.exists()) {
                     const data = snap.val();
@@ -112,10 +138,10 @@ class PlayerApp extends BaseApp {
     }
 
     cargarInfoEquipo() {
-        this.teamService.getName(this.currentUser.uid, this.currentTeamId)
+        this.teamService.getName(this.ownerUid, this.currentTeamId)
             .then(snap => {
                 const nombreEquipo = snap.exists() ? snap.val() : 'Equipo desconocido';
-                this.competitionService.getAll(this.currentUser.uid, this.currentTeamId, () => { }).once('value').then(cSnap => {
+                this.competitionService.getAll(this.ownerUid, this.currentTeamId, () => { }).once('value').then(cSnap => {
                     let competiciones = [];
                     if (cSnap.exists()) {
                         competiciones = Object.values(cSnap.val()).map(c => c.nombre || 'Nombre desconocido');
@@ -135,7 +161,7 @@ class PlayerApp extends BaseApp {
                 partidos: 0, puntos: 0, rebotes: 0, asistencias: 0, faltas: 0, tapones: 0, robos: 0
             };
 
-            const competicionesSnap = await this.competitionService.getAll(this.currentUser.uid, this.currentTeamId, () => { }).once('value');
+            const competicionesSnap = await this.competitionService.getAll(this.ownerUid, this.currentTeamId, () => { }).once('value');
             if (!competicionesSnap.exists()) {
                 this.mostrarEstadisticas(totales);
                 return;
@@ -144,13 +170,13 @@ class PlayerApp extends BaseApp {
             const competiciones = competicionesSnap.val();
 
             for (const competicionId in competiciones) {
-                const partidosSnap = await this.competitionService.getMatches(this.currentUser.uid, this.currentTeamId, competicionId, () => { }).once('value');
+                const partidosSnap = await this.competitionService.getMatches(this.ownerUid, this.currentTeamId, competicionId, () => { }).once('value');
                 if (!partidosSnap.exists()) continue;
 
                 const partidos = partidosSnap.val();
 
                 for (const partidoId in partidos) {
-                    const statsSnap = await this.db.ref(`usuarios/${this.currentUser.uid}/equipos/${this.currentTeamId}/competiciones/${competicionId}/partidos/${partidoId}/estadisticasJugadores/${this.jugadorId}`).once('value');
+                    const statsSnap = await this.db.ref(`usuarios/${this.ownerUid}/equipos/${this.currentTeamId}/competiciones/${competicionId}/partidos/${partidoId}/estadisticasJugadores/${this.jugadorId}`).once('value');
                     if (statsSnap.exists()) {
                         totales.partidos++;
                         const stats = statsSnap.val();
@@ -170,39 +196,7 @@ class PlayerApp extends BaseApp {
         }
     }
 
-    mostrarEstadisticas(totales) {
-        const partidos = totales.partidos || 1;
-        const promedio = {
-            puntos: (totales.puntos / partidos).toFixed(2),
-            rebotes: (totales.rebotes / partidos).toFixed(2),
-            asistencias: (totales.asistencias / partidos).toFixed(2),
-            faltas: (totales.faltas / partidos).toFixed(2),
-            tapones: (totales.tapones / partidos).toFixed(2),
-            robos: (totales.robos / partidos).toFixed(2)
-        };
-
-        this.statsTotales.innerHTML = `
-            <h5>Totales</h5>
-            <table class="table table-bordered table-sm mb-4">
-                <thead>
-                    <tr>
-                        <th>Estadística</th>
-                        <th>Total</th>
-                        <th>Promedio</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td>Partidos jugados</td><td>${totales.partidos}</td><td>${totales.partidos}</td></tr>
-                    <tr><td>Puntos</td><td>${totales.puntos}</td><td>${promedio.puntos}</td></tr>
-                    <tr><td>Rebotes</td><td>${totales.rebotes}</td><td>${promedio.rebotes}</td></tr>
-                    <tr><td>Asistencias</td><td>${totales.asistencias}</td><td>${promedio.asistencias}</td></tr>
-                    <tr><td>Faltas</td><td>${totales.faltas}</td><td>${promedio.faltas}</td></tr>
-                    <tr><td>Tapones</td><td>${totales.tapones}</td><td>${promedio.tapones}</td></tr>
-                    <tr><td>Robos</td><td>${totales.robos}</td><td>${promedio.robos}</td></tr>
-                </tbody>
-            </table>
-        `;
-    }
+    // ...
 
     guardarCambiosJugador(e) {
         e.preventDefault();
@@ -224,7 +218,7 @@ class PlayerApp extends BaseApp {
 
         console.log('Guardando avatar config:', this.avatarConfig);
 
-        this.playerService.update(this.currentUser.uid, this.currentTeamId, this.jugadorId, data)
+        this.playerService.update(this.ownerUid, this.currentTeamId, this.jugadorId, data)
             .then(() => alert('Datos actualizados correctamente'))
             .catch(err => {
                 alert('Error al actualizar: ' + err.message);

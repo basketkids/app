@@ -3,7 +3,9 @@ firebase.initializeApp(window.firebaseConfig);
 const db = firebase.database();
 
 // Initialize services
+// Initialize services
 const calendarService = new CalendarService(db);
+const teamService = new TeamService(db);
 
 let currentWeekStart = null;
 let currentMonthStart = null;
@@ -11,6 +13,7 @@ let allMatches = [];
 let filteredMatches = [];
 let currentView = 'week'; // 'week' or 'month'
 let teamFilter = null;
+let currentUser = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
@@ -28,6 +31,19 @@ async function initApp() {
   currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
   setupEventListeners();
+
+  // Auth listener
+  firebase.auth().onAuthStateChanged(user => {
+    currentUser = user;
+    if (teamFilter && filteredMatches.length > 0) {
+      // Refresh button state if matches are already loaded
+      const firstMatch = filteredMatches[0];
+      if (firstMatch.ownerUid) {
+        updateFollowButtonState(firstMatch.ownerUid, teamFilter);
+      }
+    }
+  });
+
   await loadMatches();
 }
 
@@ -90,21 +106,31 @@ async function loadMatches() {
 
       // Apply filter if exists
       if (teamFilter) {
-        filteredMatches = allMatches.filter(m => m.equipoId === teamFilter || m.rivalId === teamFilter); // Assuming rivalId exists or we check names? 
-        // Actually, we might not have rivalId easily if it's just text. 
-        // Let's check if we can filter by teamId (which is usually the owner of the match in some contexts, but here 'partidosGlobales' might have 'equipoId').
-        // If not, we might need to filter by name? But ID is safer.
-        // Let's assume matches have equipoId. If not, we will see empty results.
-        // Wait, in PartidoGlobalApp, we saw `this.partido.equipoId` isn't explicitly used, but `this.partido` has `nombreEquipo`.
-        // Let's check a sample match structure if possible. 
-        // For now, I'll filter by `equipoId` property.
+        filteredMatches = allMatches.filter(m => m.equipoId === teamFilter || m.rivalId === teamFilter);
 
         // Get team name from first filtered match
-        const teamName = filteredMatches.length > 0 ? filteredMatches[0].nombreEquipo : 'Equipo';
+        const firstMatch = filteredMatches.length > 0 ? filteredMatches[0] : null;
+        const teamName = firstMatch ? firstMatch.nombreEquipo : 'Equipo';
+        const ownerUid = firstMatch ? firstMatch.ownerUid : null;
 
         // Also update UI to show filter is active
         const header = document.querySelector('h2');
-        header.innerHTML = `Partidos Públicos <span class="badge bg-info fs-6">${teamName}</span> <a href="index.html" class="btn btn-sm btn-outline-danger ms-2"><i class="bi bi-x"></i></a>`;
+        header.innerHTML = `Partidos Públicos <span class="badge bg-info fs-6">${teamName}</span> 
+            <button id="followBtn" class="btn btn-sm btn-outline-primary ms-2" style="display:none">
+                <i class="bi bi-heart"></i> Seguir
+            </button>
+            <a href="index.html" class="btn btn-sm btn-outline-danger ms-2"><i class="bi bi-x"></i></a>`;
+
+        if (ownerUid) {
+          const followBtn = document.getElementById('followBtn');
+          followBtn.style.display = 'inline-block';
+          followBtn.onclick = () => toggleFollow(ownerUid, teamFilter);
+          // Check initial state if user is already loaded
+          if (currentUser) {
+            updateFollowButtonState(ownerUid, teamFilter);
+          }
+        }
+
       } else {
         filteredMatches = [...allMatches];
       }
@@ -119,6 +145,43 @@ async function loadMatches() {
     alert('Error al cargar los partidos');
   } finally {
     hideLoading();
+  }
+}
+
+async function updateFollowButtonState(ownerUid, teamId) {
+  if (!currentUser || !ownerUid || !teamId) return;
+  const followBtn = document.getElementById('followBtn');
+  if (!followBtn) return;
+
+  const isFollowing = await teamService.isFollowing(ownerUid, teamId, currentUser.uid);
+  if (isFollowing) {
+    followBtn.innerHTML = '<i class="bi bi-heart-fill text-danger"></i> Siguiendo';
+    followBtn.classList.remove('btn-outline-primary');
+    followBtn.classList.add('btn-outline-danger');
+  } else {
+    followBtn.innerHTML = '<i class="bi bi-heart"></i> Seguir';
+    followBtn.classList.add('btn-outline-primary');
+    followBtn.classList.remove('btn-outline-danger');
+  }
+}
+
+async function toggleFollow(ownerUid, teamId) {
+  if (!currentUser) return alert('Debes iniciar sesión para seguir equipos');
+
+  const followBtn = document.getElementById('followBtn');
+  // Optimistic UI update
+  const isFollowing = followBtn.classList.contains('btn-outline-danger');
+
+  try {
+    if (isFollowing) {
+      await teamService.unfollowTeam(ownerUid, teamId, currentUser.uid);
+    } else {
+      await teamService.followTeam(ownerUid, teamId, currentUser.uid);
+    }
+    updateFollowButtonState(ownerUid, teamId);
+  } catch (error) {
+    console.error(error);
+    alert('Error al actualizar seguimiento');
   }
 }
 

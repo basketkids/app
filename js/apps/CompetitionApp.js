@@ -3,6 +3,7 @@ class CompetitionApp extends BaseApp {
         super();
         this.competitionService = new CompetitionService(this.db);
         this.matchService = new MatchService(this.db);
+        this.teamMembersService = new TeamMembersService(this.db);
 
         this.competitionNameSpan = document.getElementById('competitionName');
         this.menuCompeticion = document.getElementById('menuCompeticion');
@@ -43,6 +44,8 @@ class CompetitionApp extends BaseApp {
     }
 
     onUserLoggedIn(user) {
+        this.currentUser = user;
+        this.ownerUid = this.getParam('ownerUid') || user.uid;
         this.loadParamsUrl();
     }
 
@@ -56,16 +59,56 @@ class CompetitionApp extends BaseApp {
         }
         this.currentTeamId = idEquipo;
         this.currentCompeticionId = idCompeticion;
-        this.loadCompeticionData();
-        this.setupEventListeners();
+
+        this.checkPermissions().then(() => {
+            this.loadCompeticionData();
+            this.setupEventListeners();
+            this.applyPermissions();
+        });
+    }
+
+    async checkPermissions() {
+        this.userRole = 'follower'; // Default
+        if (this.currentUser.uid === this.ownerUid) {
+            this.userRole = 'owner';
+            return;
+        }
+
+        const memberSnap = await this.teamMembersService.getMembers(this.ownerUid, this.currentTeamId).once('value');
+        if (memberSnap.exists() && memberSnap.hasChild(this.currentUser.uid)) {
+            this.userRole = memberSnap.child(this.currentUser.uid).val().role;
+        }
+    }
+
+    applyPermissions() {
+        // Owner: All access
+        // Statistician: Can manage matches (add/edit/delete match), but maybe not Rivals? 
+        // User said: "Estadista: ... editar todo lo que tiene que ver con todos los partidos"
+        // So Statistician can add matches. Can they add rivals? Usually needed for adding matches.
+        // Let's allow Statistician to add Rivals too for convenience.
+        // Follower/Player: Read only.
+
+        const canEdit = (this.userRole === 'owner' || this.userRole === 'statistician');
+
+        if (!canEdit) {
+            // Hide Add buttons
+            const addRivalButton = this.seccionRivales.querySelector('.btn-primary');
+            if (addRivalButton) addRivalButton.style.display = 'none';
+
+            const addPartidoButton = this.seccionPartidos.querySelector('.btn-primary');
+            if (addPartidoButton) addPartidoButton.style.display = 'none';
+
+            // Hide Import CSV
+            if (this.importCSVBtn) this.importCSVBtn.style.display = 'none';
+        }
     }
 
     loadCompeticionData() {
-        this.competitionService.get(this.currentUser.uid, this.currentTeamId, this.currentCompeticionId)
+        this.competitionService.get(this.ownerUid, this.currentTeamId, this.currentCompeticionId)
             .then(snap => {
                 if (!snap.exists()) {
                     alert('Competición no encontrada o sin permiso');
-                    window.location.href = `equipo.html?id=${this.currentTeamId}`;
+                    window.location.href = `equipo.html?idEquipo=${this.currentTeamId}&ownerUid=${encodeURIComponent(this.ownerUid)}`;
                     return;
                 }
                 const competicion = snap.val();
@@ -91,7 +134,6 @@ class CompetitionApp extends BaseApp {
         this.addPartidoForm.addEventListener('submit', e => this.handleAddPartido(e));
         this.confirmDeleteBtn.addEventListener('click', () => this.handleDelete());
         this.setupCSVImport();
-        this.setupCSVImport();
         this.setupExportCalendar();
 
         this.editRivalForm.addEventListener('submit', e => this.handleEditRival(e));
@@ -102,7 +144,7 @@ class CompetitionApp extends BaseApp {
         const nombre = this.inputNombreRival.value.trim();
         if (!nombre) return alert('Introduce nombre de rival');
 
-        this.competitionService.addRival(this.currentUser.uid, this.currentTeamId, this.currentCompeticionId, nombre)
+        this.competitionService.addRival(this.ownerUid, this.currentTeamId, this.currentCompeticionId, nombre)
             .then(() => {
                 this.inputNombreRival.value = '';
                 const modal = bootstrap.Modal.getOrCreateInstance(this.addRivalForm.closest('.modal'));
@@ -115,7 +157,7 @@ class CompetitionApp extends BaseApp {
         const nombre = this.editInputNombreRival.value.trim();
         if (!nombre || !this.rivalAEditar) return;
 
-        this.competitionService.updateRival(this.currentUser.uid, this.currentTeamId, this.currentCompeticionId, this.rivalAEditar, nombre)
+        this.competitionService.updateRival(this.ownerUid, this.currentTeamId, this.currentCompeticionId, this.rivalAEditar, nombre)
             .then(() => {
                 this.editRivalModal.hide();
                 this.rivalAEditar = null;
@@ -126,7 +168,7 @@ class CompetitionApp extends BaseApp {
 
     loadRivales() {
         this.rivalesList.innerHTML = '';
-        this.competitionService.getRivals(this.currentUser.uid, this.currentTeamId, this.currentCompeticionId, snapshot => {
+        this.competitionService.getRivals(this.ownerUid, this.currentTeamId, this.currentCompeticionId, snapshot => {
             this.rivalesList.innerHTML = '';
             this.inputRivalSelect.innerHTML = '<option value="">Selecciona rival</option>';
 
@@ -134,6 +176,8 @@ class CompetitionApp extends BaseApp {
                 this.rivalesList.innerHTML = '<li class="list-group-item">No hay rivales añadidos</li>';
                 return;
             }
+
+            const canEdit = (this.userRole === 'owner' || this.userRole === 'statistician');
 
             snapshot.forEach(rivalSnap => {
                 const rival = rivalSnap.val();
@@ -148,31 +192,32 @@ class CompetitionApp extends BaseApp {
                 li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
                 li.textContent = rival.nombre;
 
-                const btnBorrar = document.createElement('button');
-                btnBorrar.classList.add('btn', 'btn-sm', 'btn-danger');
-                btnBorrar.title = 'Borrar rival';
-                btnBorrar.innerHTML = '<i class="bi bi-trash-fill"></i>';
-                btnBorrar.onclick = () => {
-                    this.elementoABorrar = { tipo: 'rival', id };
-                    this.confirmDeleteModal.show();
-                };
-
-                const btnEditar = document.createElement('button');
-                btnEditar.classList.add('btn', 'btn-sm', 'btn-outline-secondary', 'me-2');
-                btnEditar.title = 'Editar rival';
-                btnEditar.innerHTML = '<i class="bi bi-pencil"></i>';
-                btnEditar.onclick = () => {
-                    this.rivalAEditar = id;
-                    this.editInputNombreRival.value = rival.nombre;
-                    this.editRivalModal.show();
-                };
-
                 const divBtns = document.createElement('div');
-                divBtns.appendChild(btnEditar);
-                divBtns.appendChild(btnBorrar);
+
+                if (canEdit) {
+                    const btnEditar = document.createElement('button');
+                    btnEditar.classList.add('btn', 'btn-sm', 'btn-outline-secondary', 'me-2');
+                    btnEditar.title = 'Editar rival';
+                    btnEditar.innerHTML = '<i class="bi bi-pencil"></i>';
+                    btnEditar.onclick = () => {
+                        this.rivalAEditar = id;
+                        this.editInputNombreRival.value = rival.nombre;
+                        this.editRivalModal.show();
+                    };
+                    divBtns.appendChild(btnEditar);
+
+                    const btnBorrar = document.createElement('button');
+                    btnBorrar.classList.add('btn', 'btn-sm', 'btn-danger');
+                    btnBorrar.title = 'Borrar rival';
+                    btnBorrar.innerHTML = '<i class="bi bi-trash-fill"></i>';
+                    btnBorrar.onclick = () => {
+                        this.elementoABorrar = { tipo: 'rival', id };
+                        this.confirmDeleteModal.show();
+                    };
+                    divBtns.appendChild(btnBorrar);
+                }
 
                 li.appendChild(divBtns);
-
                 this.rivalesList.appendChild(li);
             });
         });
@@ -180,14 +225,14 @@ class CompetitionApp extends BaseApp {
 
     loadPartidos() {
         this.partidosList.innerHTML = '';
-        this.competitionService.getMatches(this.currentUser.uid, this.currentTeamId, this.currentCompeticionId, snapshot => {
+        this.competitionService.getMatches(this.ownerUid, this.currentTeamId, this.currentCompeticionId, snapshot => {
             this.partidosList.innerHTML = '';
             if (!snapshot.exists()) {
                 this.partidosList.innerHTML = '<li class="list-group-item">No hay partidos añadidos</li>';
                 return;
             }
 
-            this.db.ref(`usuarios/${this.currentUser.uid}/equipos/${this.currentTeamId}/nombre`).once('value').then(nombreSnap => {
+            this.db.ref(`usuarios/${this.ownerUid}/equipos/${this.currentTeamId}/nombre`).once('value').then(nombreSnap => {
                 const nombreEquipo = nombreSnap.exists() ? nombreSnap.val() : 'Mi equipo';
 
                 // Convert to array and sort by date
@@ -250,7 +295,11 @@ class CompetitionApp extends BaseApp {
         mapsLink.target = '_blank';
         mapsLink.style.color = '#666';
         mapsLink.style.textDecoration = 'none';
-        mapsLink.innerHTML = `<i class="bi bi-geo-alt"></i> ${partido.pabellon || 'Ubicación no especificada'}`;
+        mapsLink.textContent = '';
+        const icon = document.createElement('i');
+        icon.className = 'bi bi-geo-alt';
+        mapsLink.appendChild(icon);
+        mapsLink.appendChild(document.createTextNode(' ' + (partido.pabellon || 'Ubicación no especificada')));
         mapsLink.onmouseover = () => mapsLink.style.color = '#0d6efd';
         mapsLink.onmouseout = () => mapsLink.style.color = '#666';
         divPabellon.appendChild(mapsLink);
@@ -313,22 +362,26 @@ class CompetitionApp extends BaseApp {
         };
         botonesContainer.appendChild(btnCalendar);
 
-        const btnGestionar = document.createElement('a');
-        btnGestionar.href = `partido.html?idEquipo=${this.currentTeamId}&idCompeticion=${this.currentCompeticionId}&idPartido=${id}`;
-        btnGestionar.classList.add('btn', 'btn-sm', 'btn-warning');
-        btnGestionar.title = 'Gestionar partido';
-        btnGestionar.innerHTML = '<i class="bi bi-pencil-fill"></i>';
-        botonesContainer.appendChild(btnGestionar);
+        const canEdit = (this.userRole === 'owner' || this.userRole === 'statistician');
 
-        const btnBorrar = document.createElement('button');
-        btnBorrar.classList.add('btn', 'btn-sm', 'btn-danger');
-        btnBorrar.title = 'Borrar partido';
-        btnBorrar.innerHTML = '<i class="bi bi-trash-fill"></i>';
-        btnBorrar.onclick = () => {
-            this.elementoABorrar = { tipo: 'partido', id };
-            this.confirmDeleteModal.show();
-        };
-        botonesContainer.appendChild(btnBorrar);
+        if (canEdit) {
+            const btnGestionar = document.createElement('a');
+            btnGestionar.href = `partido.html?idEquipo=${this.currentTeamId}&idCompeticion=${this.currentCompeticionId}&idPartido=${id}&ownerUid=${encodeURIComponent(this.ownerUid)}`;
+            btnGestionar.classList.add('btn', 'btn-sm', 'btn-warning');
+            btnGestionar.title = 'Gestionar partido';
+            btnGestionar.innerHTML = '<i class="bi bi-pencil-fill"></i>';
+            botonesContainer.appendChild(btnGestionar);
+
+            const btnBorrar = document.createElement('button');
+            btnBorrar.classList.add('btn', 'btn-sm', 'btn-danger');
+            btnBorrar.title = 'Borrar partido';
+            btnBorrar.innerHTML = '<i class="bi bi-trash-fill"></i>';
+            btnBorrar.onclick = () => {
+                this.elementoABorrar = { tipo: 'partido', id };
+                this.confirmDeleteModal.show();
+            };
+            botonesContainer.appendChild(btnBorrar);
+        }
 
         li.appendChild(botonesContainer);
         this.partidosList.appendChild(li);
@@ -338,13 +391,13 @@ class CompetitionApp extends BaseApp {
         if (!this.elementoABorrar) return;
 
         if (this.elementoABorrar.tipo === 'rival') {
-            this.competitionService.deleteRival(this.currentUser.uid, this.currentTeamId, this.currentCompeticionId, this.elementoABorrar.id)
+            this.competitionService.deleteRival(this.ownerUid, this.currentTeamId, this.currentCompeticionId, this.elementoABorrar.id)
                 .then(() => {
                     this.elementoABorrar = null;
                     this.confirmDeleteModal.hide();
                 }).catch(err => alert('Error al borrar rival: ' + err.message));
         } else if (this.elementoABorrar.tipo === 'partido') {
-            this.competitionService.deleteMatch(this.currentUser.uid, this.currentTeamId, this.currentCompeticionId, this.elementoABorrar.id)
+            this.competitionService.deleteMatch(this.ownerUid, this.currentTeamId, this.currentCompeticionId, this.elementoABorrar.id)
                 .then(() => {
                     this.matchService.deleteGlobal(this.elementoABorrar.id).then(() => {
                         this.elementoABorrar = null;
@@ -363,7 +416,7 @@ class CompetitionApp extends BaseApp {
         const esLocal = this.inputLocalVisitante.value === 'local';
         const pabellon = this.inputPabellon.value.trim();
 
-        this.db.ref(`usuarios/${this.currentUser.uid}/equipos/${this.currentTeamId}/nombre`).once('value').then(equipoSnap => {
+        this.db.ref(`usuarios/${this.ownerUid}/equipos/${this.currentTeamId}/nombre`).once('value').then(equipoSnap => {
             const nombreEquipo = equipoSnap.exists() ? equipoSnap.val() : 'Equipo desconocido';
             if (!fechaHoraStr || !rivalId || !pabellon) {
                 alert('Rellena todos los campos para crear el partido');
@@ -376,7 +429,7 @@ class CompetitionApp extends BaseApp {
                 return alert('La fecha del partido no puede ser anterior al 21 de diciembre de 1891 (invención del baloncesto).');
             }
 
-            this.competitionService.getMatchRival(this.currentUser.uid, this.currentTeamId, this.currentCompeticionId, rivalId)
+            this.competitionService.getMatchRival(this.ownerUid, this.currentTeamId, this.currentCompeticionId, rivalId)
                 .then(rivalSnap => {
                     if (!rivalSnap.exists()) {
                         alert('Rival no válido');
@@ -399,10 +452,10 @@ class CompetitionApp extends BaseApp {
                         estado: 'pendiente'
                     };
 
-                    this.competitionService.createMatch(this.currentUser.uid, this.currentTeamId, this.currentCompeticionId, matchData)
+                    this.competitionService.createMatch(this.ownerUid, this.currentTeamId, this.currentCompeticionId, matchData)
                         .then((newRef) => {
                             const partidoId = newRef.key;
-                            this.matchService.syncGlobal(this.currentUser.uid, this.currentTeamId, this.currentCompeticionId, partidoId);
+                            this.matchService.syncGlobal(this.ownerUid, this.currentTeamId, this.currentCompeticionId, partidoId);
 
                             this.inputFechaHora.value = '';
                             this.inputRivalSelect.value = '';
@@ -459,12 +512,12 @@ class CompetitionApp extends BaseApp {
             }
 
             // Get team name
-            const teamNameSnap = await this.db.ref(`usuarios/${this.currentUser.uid}/equipos/${this.currentTeamId}/nombre`).once('value');
+            const teamNameSnap = await this.db.ref(`usuarios/${this.ownerUid}/equipos/${this.currentTeamId}/nombre`).once('value');
             const nombreEquipo = teamNameSnap.exists() ? teamNameSnap.val() : 'Equipo desconocido';
 
             // Get existing matches for duplicate checking
             const existingMatchesSnap = await this.matchService.getAllMatches(
-                this.currentUser.uid,
+                this.ownerUid,
                 this.currentTeamId,
                 this.currentCompeticionId
             );
@@ -490,7 +543,7 @@ class CompetitionApp extends BaseApp {
 
                     // Find or create rival
                     const rivalId = await this.competitionService.findOrCreateRival(
-                        this.currentUser.uid,
+                        this.ownerUid,
                         this.currentTeamId,
                         this.currentCompeticionId,
                         csvMatch.nombreRival
@@ -514,7 +567,7 @@ class CompetitionApp extends BaseApp {
 
                     // Create match in Firebase
                     const newRef = await this.competitionService.createMatch(
-                        this.currentUser.uid,
+                        this.ownerUid,
                         this.currentTeamId,
                         this.currentCompeticionId,
                         matchData
@@ -522,7 +575,7 @@ class CompetitionApp extends BaseApp {
 
                     // Sync to global matches
                     await this.matchService.syncGlobal(
-                        this.currentUser.uid,
+                        this.ownerUid,
                         this.currentTeamId,
                         this.currentCompeticionId,
                         newRef.key
