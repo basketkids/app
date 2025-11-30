@@ -7,7 +7,7 @@
   <title>BasketKids - Partido</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
-  <link href="../css/styles.css?v=1.0.1" rel="stylesheet" />
+  <link href="../css/styles.css?v=dev-no-cache" rel="stylesheet" />
   <link rel="icon" href="../img/favicon.ico" type="image/x-icon" />
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#2B2B2B" />
@@ -20,6 +20,7 @@
 
     <h2 id="nombrePartido" class="mb-4">Partido</h2>
     <div id="infoPartido" class="text-center mb-3"></div>
+
 
 
 
@@ -126,12 +127,18 @@
 
 
   </div>
-  <div class="d-flex justify-content-center gap-2">
+  <div class="d-flex justify-content-center gap-2 flex-wrap">
     <a href="" id="shareBtn" class="btn btn-success btn-sm" target="_blank" rel="noopener">
       <i class="bi bi-whatsapp"></i> Compartir
     </a>
+    <button id="followBtn" class="btn btn-outline-primary btn-sm" style="display: none;">
+      <i class="bi bi-heart"></i> Seguir Equipo
+    </button>
+    <button id="requestAccessBtn" class="btn btn-outline-warning btn-sm" style="display: none;">
+      <i class="bi bi-pencil-square"></i> Solicitar ser anotador
+    </button>
     <a href="#" id="otherMatchesBtn" class="btn btn-primary btn-sm" style="display: none;">
-      <i class="bi bi-calendar3"></i> Ver otros partidos de este equipo
+      <i class="bi bi-calendar3"></i> Ver otros partidos
     </a>
   </div>
 
@@ -146,6 +153,7 @@
   <script src="../js/load-header.js"></script>
 
   <script src="../js/services/DataService.js"></script>
+  <script src="../js/services/TeamService.js?v=2"></script>
   <script src="../js/utils/MatchRenderer.js"></script>
   <script src="../js/apps/PartidoGlobalApp.js"></script>
   <script src="../js/public/partido.js"></script>

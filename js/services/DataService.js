@@ -299,9 +299,10 @@ class DataService {
       .then(snapshot => {
         if (!snapshot.exists()) return refGlobal.remove();
         const data = snapshot.val();
-        // Inject teamId and competitionId for global context
+        // Inject teamId, competitionId, and ownerUid for global context
         data.equipoId = this.teamId;
         data.competicionId = this.competitionId;
+        data.ownerUid = this.userId;
         return refGlobal.set(data);
       });
   }

@@ -8,7 +8,7 @@
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
-  <link rel="stylesheet" href="css/styles.css?v=1.0.1" />
+  <link rel="stylesheet" href="css/styles.css?v=dev-no-cache" />
   <link rel="icon" href="img/favicon.ico" type="image/x-icon" />
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#2B2B2B" />
@@ -38,6 +38,8 @@
       <ul class="nav nav-tabs" id="menuEquipo">
         <li class="nav-item"><a class="nav-link active" href="#" data-seccion="plantilla">Plantilla</a></li>
         <li class="nav-item"><a class="nav-link" href="#" data-seccion="competiciones">Competiciones</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-seccion="miembros" id="navMiembros"
+            style="display:none">Miembros</a></li>
       </ul>
     </nav>
 
@@ -53,6 +55,27 @@
         Nueva Competición
       </button>
       <ul id="competicionesList" class="list-group"></ul>
+    </section>
+
+    <section id="seccion-miembros" style="display:none">
+      <div class="alert alert-info">
+        Gestiona los permisos de tu equipo. Puedes asignar roles a tus seguidores.
+      </div>
+      <div class="row">
+        <div class="col-md-6">
+          <h5 class="mb-3">Miembros con Permisos</h5>
+          <ul id="membersList" class="list-group mb-4">
+            <li class="list-group-item text-center text-muted">Cargando miembros...</li>
+          </ul>
+        </div>
+        <div class="col-md-6">
+          <h5 class="mb-3">Seguidores (Candidatos)</h5>
+          <p class="small text-muted">Usuarios que siguen a tu equipo y pueden ser promovidos.</p>
+          <ul id="followersList" class="list-group">
+            <li class="list-group-item text-center text-muted">Cargando seguidores...</li>
+          </ul>
+        </div>
+      </div>
     </section>
 
   </div>
@@ -191,11 +214,12 @@
   <script src="js/load-header.js"></script>
   <script src="js/utils/DiceBearManager.js"></script>
   <script src="js/services/TeamService.js"></script>
+  <script src="js/services/TeamMembersService.js"></script>
   <script src="js/services/PlayerService.js"></script>
   <script src="js/services/CompetitionService.js"></script>
   <script src="js/apps/BaseApp.js"></script>
-  <script src="js/apps/TeamApp.js"></script>
-  <script src="js/equipo.js"></script>
+  <script src="js/apps/TeamApp.js?v=3"></script>
+  <script src="js/equipo.js?v=3"></script>
 
 </body>
 

@@ -190,7 +190,7 @@ class CalendarApp extends BaseApp {
         // Manage Button
         const manageBtn = `
             <button class="btn btn-sm btn-warning ms-auto" 
-                onclick="event.stopPropagation(); window.location.href='partido.html?idEquipo=${match.teamId}&idCompeticion=${match.compId}&idPartido=${match.matchId}'"
+                onclick="event.stopPropagation(); window.location.href='partido.html?idEquipo=${match.teamId}&idCompeticion=${match.compId}&idPartido=${match.matchId}&ownerUid=${match.ownerUid}'"
                 title="Gestionar partido">
                 <i class="bi bi-pencil-fill"></i>
             </button>
@@ -227,7 +227,7 @@ class CalendarApp extends BaseApp {
     // getStatusBadge removed as it is integrated into createMatchCard
 
     goToMatch(match) {
-        window.location.href = `partido.html?idEquipo=${match.teamId}&idCompeticion=${match.compId}&idPartido=${match.matchId}`;
+        window.location.href = `partido.html?idEquipo=${match.teamId}&idCompeticion=${match.compId}&idPartido=${match.matchId}&ownerUid=${match.ownerUid}`;
     }
 
     updateMatchCount() {

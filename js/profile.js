@@ -197,10 +197,60 @@ saveAvatarBtn.addEventListener('click', async () => {
             await db.ref(`public_admins/${currentUser.uid}/avatarConfig`).set(newConfig);
         }
 
+        // Sync with linked players in followed teams
+        try {
+            const followingSnap = await db.ref(`usuarios/${currentUser.uid}/following`).once('value');
+            if (followingSnap.exists()) {
+                const updates = [];
+                const following = followingSnap.val();
+
+                for (const teamId in following) {
+                    const teamData = following[teamId];
+                    const ownerUid = teamData.ownerUid;
+
+                    if (ownerUid) {
+                        // Check if member and has linked player
+                        const memberSnap = await db.ref(`usuarios/${ownerUid}/equipos/${teamId}/members/${currentUser.uid}`).once('value');
+                        if (memberSnap.exists()) {
+                            const memberData = memberSnap.val();
+                            if (memberData.linkedPlayerId) {
+                                // Get existing player config to preserve team settings
+                                const playerRef = db.ref(`usuarios/${ownerUid}/equipos/${teamId}/plantilla/${memberData.linkedPlayerId}/avatarConfig`);
+                                const playerSnap = await playerRef.once('value');
+                                const playerConfig = playerSnap.val() || {};
+
+                                // Merge new config but preserve team-specific fields (clothing)
+                                const mergedConfig = { ...newConfig };
+
+                                // Fields to preserve from the player's existing config (team set)
+                                const preservedFields = ['clothing', 'clothesColor', 'clothingGraphic'];
+                                preservedFields.forEach(field => {
+                                    if (playerConfig[field]) {
+                                        mergedConfig[field] = playerConfig[field];
+                                    }
+                                });
+
+                                // Update player avatar
+                                updates.push(playerRef.set(mergedConfig));
+                            }
+                        }
+                    }
+                }
+
+                if (updates.length > 0) {
+                    await Promise.all(updates);
+                    console.log(`Synced avatar to ${updates.length} linked players.`);
+                }
+            }
+        } catch (syncError) {
+            console.error('Error syncing avatar to linked players:', syncError);
+            // Don't block the main save if sync fails, but maybe warn?
+        }
+
         currentAvatarConfig = newConfig;
         updateAvatarDisplay();
         avatarEditorModal.hide();
-        alert('Avatar guardado correctamente.');
+        alert('Avatar guardado correctamente y sincronizado con tus equipos.');
         // Reload to update header
         location.reload();
     } catch (error) {

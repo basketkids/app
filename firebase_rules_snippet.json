@@ -1,22 +1,77 @@
 {
     "rules": {
         "usuarios": {
-            // Allow reading the list of users ONLY if the requester is an admin
             ".read": "auth != null && root.child('usuarios').child(auth.uid).child('profile').child('admin').val() === true",
             "$uid": {
-                // Allow users to read/write their own data
-                // OR allow admins to read/write any user's data
                 ".read": "$uid === auth.uid || root.child('usuarios').child(auth.uid).child('profile').child('admin').val() === true",
-                ".write": "$uid === auth.uid || root.child('usuarios').child(auth.uid).child('profile').child('admin').val() === true"
+                ".write": "($uid === auth.uid && (!newData.child('profile').child('admin').exists() || newData.child('profile').child('admin').val() === data.child('profile').child('admin').val())) || root.child('usuarios').child(auth.uid).child('profile').child('admin').val() === true",
+                "following": {
+                    ".read": "$uid === auth.uid",
+                    ".write": "$uid === auth.uid"
+                },
+                "profile": {
+                    ".read": true,
+                    ".write": "$uid === auth.uid",
+                    "admin": {
+                        ".validate": "root.child('usuarios').child(auth.uid).child('profile').child('admin').val() === true"
+                    }
+                },
+                "equipos": {
+                    "$teamId": {
+                        ".read": "root.child('usuarios').child($uid).child('equipos').child($teamId).child('members').child(auth.uid).exists() || root.child('usuarios').child($uid).child('equipos').child($teamId).child('followers').child(auth.uid).exists()",
+                        "members": {
+                            ".write": "$uid === auth.uid"
+                        },
+                        "competiciones": {
+                            "$compId": {
+                                "partidos": {
+                                    "$matchId": {
+                                        ".write": "$uid === auth.uid || (root.child('usuarios').child($uid).child('equipos').child($teamId).child('members').child(auth.uid).child('role').val() === 'statistician') || root.child('usuarios').child($uid).child('equipos').child($teamId).child('competiciones').child($compId).child('partidos').child($matchId).child('permitted_editors').child(auth.uid).exists()",
+                                        "requests": {
+                                            "$requesterId": {
+                                                ".read": "auth != null && $requesterId === auth.uid",
+                                                ".write": "auth != null && $requesterId === auth.uid"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "plantilla": {
+                            "$playerId": {
+                                ".write": "$uid === auth.uid || (root.child('usuarios').child($uid).child('equipos').child($teamId).child('members').child(auth.uid).child('role').val() === 'player' && root.child('usuarios').child($uid).child('equipos').child($teamId).child('members').child(auth.uid).child('linkedPlayerId').val() === $playerId)"
+                            }
+                        },
+                        "followers": {
+                            ".read": true,
+                            "$followerId": {
+                                ".write": "$followerId === auth.uid || $uid === auth.uid"
+                            }
+                        }
+                    }
+                },
+                "notifications": {
+                    ".read": "$uid === auth.uid",
+                    ".write": "auth != null",
+                    "$notificationId": {
+                        ".validate": "newData.hasChildren(['type', 'timestamp'])"
+                    }
+                }
             }
         },
         "partidosGlobales": {
-            ".read": "true",
-            ".write": "auth != null"
+            ".read": true,
+            "$matchId": {
+                ".write": "auth != null && ((data.exists() ? data.child('ownerUid').val() === auth.uid : newData.child('ownerUid').val() === auth.uid) || root.child('usuarios').child(data.exists() ? data.child('ownerUid').val() : newData.child('ownerUid').val()).child('equipos').child(data.exists() ? data.child('equipoId').val() : newData.child('equipoId').val()).child('members').child(auth.uid).child('role').val() === 'statistician')"
+            },
+            ".indexOn": [
+                "fechaHora",
+                "equipoId"
+            ]
         },
         "contact_messages": {
             ".read": "root.child('usuarios').child(auth.uid).child('profile').child('admin').val() === true",
-            ".write": true,
+            ".write": "auth != null",
             ".indexOn": [
                 "timestamp"
             ]

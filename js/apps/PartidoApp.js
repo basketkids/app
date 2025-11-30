@@ -2,6 +2,7 @@ class PartidoApp extends BaseApp {
   constructor() {
     super();
     this.dataService = null;
+    this.teamMembersService = new TeamMembersService(this.db);
 
     // Estado centralizado único que contiene toda la información del partido
     this.partido = null;
@@ -16,12 +17,15 @@ class PartidoApp extends BaseApp {
     this.contadorInterval = null;
     this.contadorActivo = false;
     this.matchRenderer = new MatchRenderer();
+    this.userRole = 'follower';
   }
 
   onUserLoggedIn(user) {
+    this.currentUser = user;
     const teamId = this.getParam('idEquipo');
     const competitionId = this.getParam('idCompeticion');
     const matchId = this.getParam('idPartido');
+    this.ownerUid = this.getParam('ownerUid') || user.uid;
 
     if (!teamId || !competitionId || !matchId) {
       alert('Faltan parámetros en la URL');
@@ -29,8 +33,22 @@ class PartidoApp extends BaseApp {
       return;
     }
 
-    this.dataService = new DataService(this.db, user.uid, teamId, competitionId, matchId);
-    this.initMatch();
+    this.checkPermissions(teamId).then(() => {
+      this.dataService = new DataService(this.db, this.ownerUid, teamId, competitionId, matchId);
+      this.initMatch();
+    });
+  }
+
+  async checkPermissions(teamId) {
+    if (this.currentUser.uid === this.ownerUid) {
+      this.userRole = 'owner';
+      return;
+    }
+
+    const memberSnap = await this.teamMembersService.getMembers(this.ownerUid, teamId, () => { }).once('value');
+    if (memberSnap.exists() && memberSnap.hasChild(this.currentUser.uid)) {
+      this.userRole = memberSnap.child(this.currentUser.uid).val().role;
+    }
   }
 
   async initMatch() {
@@ -57,9 +75,30 @@ class PartidoApp extends BaseApp {
       this.renderizarTodo();
       this.prepararEventos();
       this.inicializarTemporizador();
+      this.applyPermissions();
+      this.loadRequests();
     } catch (error) {
       console.error(error);
       alert('Error cargando los datos del partido');
+    }
+  }
+
+  applyPermissions() {
+    const canEdit = (this.userRole === 'owner' || this.userRole === 'statistician');
+
+    if (!canEdit) {
+      // Disable all controls except navigation tabs and share buttons
+      const controls = document.querySelectorAll('button, select, input');
+      controls.forEach(el => {
+        if (el.id !== 'shareBtn' && el.id !== 'publicMatchBtn' && !el.classList.contains('nav-link') && !el.classList.contains('btn-close')) {
+          el.disabled = true;
+          el.style.pointerEvents = 'none';
+        }
+      });
+
+      // Hide edit button
+      const btnEditar = document.getElementById('btnEditarPartido');
+      if (btnEditar) btnEditar.style.display = 'none';
     }
   }
   calcularTiempoRestante() {
@@ -889,6 +928,103 @@ class PartidoApp extends BaseApp {
       if (this.btnStartPause) this.btnStartPause.disabled = true;
       if (this.btnTerminarCuarto) this.btnTerminarCuarto.disabled = true;
       if (this.btnTerminar) this.btnTerminar.disabled = true;
+    }
+  }
+  loadRequests() {
+    if (this.userRole !== 'owner') {
+      const tabSolicitudes = document.getElementById('tab-solicitudes');
+      if (tabSolicitudes) tabSolicitudes.parentElement.style.display = 'none';
+      return;
+    }
+
+    const requestsRef = this.db.ref(`usuarios/${this.ownerUid}/equipos/${this.dataService.teamId}/competiciones/${this.dataService.competitionId}/partidos/${this.dataService.matchId}/requests`);
+
+    requestsRef.on('value', snapshot => {
+      const requests = snapshot.val() || {};
+      this.renderRequests(requests);
+    });
+  }
+
+  renderRequests(requests) {
+    const ul = document.getElementById('listaSolicitudes');
+    const badge = document.getElementById('badgeSolicitudes');
+    if (!ul) return;
+
+    ul.innerHTML = '';
+    const numRequests = Object.keys(requests).length;
+
+    if (badge) {
+      badge.textContent = numRequests;
+      badge.style.display = numRequests > 0 ? 'inline-block' : 'none';
+    }
+
+    if (numRequests === 0) {
+      ul.innerHTML = '<li class="list-group-item text-muted text-center">No hay solicitudes pendientes</li>';
+      return;
+    }
+
+    Object.entries(requests).forEach(([uid, data]) => {
+      const li = document.createElement('li');
+      li.className = 'list-group-item d-flex justify-content-between align-items-center';
+
+      const divInfo = document.createElement('div');
+      const name = document.createElement('div');
+      name.className = 'fw-bold';
+      name.textContent = data.displayName || 'Usuario desconocido';
+      divInfo.appendChild(name);
+
+      const email = document.createElement('div');
+      email.className = 'small text-muted';
+      email.textContent = data.email || '';
+      divInfo.appendChild(email);
+
+      li.appendChild(divInfo);
+
+      const divActions = document.createElement('div');
+      divActions.className = 'd-flex gap-2';
+
+      const btnApprove = document.createElement('button');
+      btnApprove.className = 'btn btn-sm btn-success';
+      btnApprove.innerHTML = '<i class="bi bi-check-lg"></i>';
+      btnApprove.title = 'Aprobar como estadista';
+      btnApprove.onclick = () => this.approveRequest(uid, data);
+      divActions.appendChild(btnApprove);
+
+      const btnReject = document.createElement('button');
+      btnReject.className = 'btn btn-sm btn-danger';
+      btnReject.innerHTML = '<i class="bi bi-x-lg"></i>';
+      btnReject.title = 'Rechazar';
+      btnReject.onclick = () => this.rejectRequest(uid);
+      divActions.appendChild(btnReject);
+
+      li.appendChild(divActions);
+      ul.appendChild(li);
+    });
+  }
+
+  async approveRequest(uid, data) {
+    if (!confirm(`¿Aprobar a ${data.displayName} como estadista para este equipo?`)) return;
+
+    try {
+      // Add as statistician to the team
+      await this.teamMembersService.addMember(this.ownerUid, this.dataService.teamId, uid, 'statistician');
+
+      // Remove request
+      await this.rejectRequest(uid); // Reuse delete logic
+
+      alert(`${data.displayName} ha sido añadido como estadista.`);
+    } catch (error) {
+      console.error('Error approving request:', error);
+      alert('Error al aprobar la solicitud');
+    }
+  }
+
+  async rejectRequest(uid) {
+    try {
+      await this.db.ref(`usuarios/${this.ownerUid}/equipos/${this.dataService.teamId}/competiciones/${this.dataService.competitionId}/partidos/${this.dataService.matchId}/requests/${uid}`).remove();
+    } catch (error) {
+      console.error('Error rejecting request:', error);
+      alert('Error al rechazar la solicitud');
     }
   }
 }
