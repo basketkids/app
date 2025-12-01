@@ -649,16 +649,24 @@ class TeamApp extends BaseApp {
 
     loadMembers() {
         this.teamMembersService.getMembers(this.ownerUid, this.currentTeamId, async (snap) => {
-            this.membersList.innerHTML = '';
             if (!snap.exists()) {
                 this.membersList.innerHTML = '<li class="list-group-item text-muted">No hay miembros asignados.</li>';
                 return;
             }
 
             const members = snap.val();
-            for (const [uid, data] of Object.entries(members)) {
+            const memberPromises = Object.entries(members).map(async ([uid, data]) => {
                 const userSnap = await this.db.ref(`usuarios/${uid}/profile`).once('value');
                 const userProfile = userSnap.val() || {};
+                return { uid, data, userProfile };
+            });
+
+            const membersData = await Promise.all(memberPromises);
+
+            // Render atomically
+            this.membersList.innerHTML = '';
+
+            membersData.forEach(({ uid, data, userProfile }) => {
                 const name = userProfile.displayName || userProfile.nombre || 'Usuario';
 
                 const li = document.createElement('li');
@@ -698,7 +706,7 @@ class TeamApp extends BaseApp {
                 });
 
                 this.membersList.appendChild(li);
-            }
+            });
         });
     }
 
@@ -796,7 +804,9 @@ class TeamApp extends BaseApp {
 
         const dorsal = prompt(message);
         if (dorsal) {
-            const player = players.find(p => p.dorsal === dorsal);
+            const dorsalClean = dorsal.trim();
+            // Use loose equality or string comparison to handle "7" vs 7
+            const player = players.find(p => String(p.dorsal) === dorsalClean);
             if (player) {
                 await this.teamMembersService.addMember(this.ownerUid, this.currentTeamId, userUid, 'player');
                 await this.teamMembersService.linkPlayer(this.ownerUid, this.currentTeamId, userUid, player.key);
