@@ -242,14 +242,9 @@ class PartidosGlobalesApp {
     const marcadorRival = document.getElementById('marcadorRival');
     if (marcadorRival) marcadorRival.textContent = this.partido.puntosRival || 0;
 
-    // Renderizar faltas equipo
-    //  console.log(this.partido)
-    const faltasEquipo = document.getElementById('faltasEquipo');
-    if (faltasEquipo) faltasEquipo.textContent = `F: ${this.partido.faltasEquipo || 0}`;
-
     // Renderizar faltas rival
-    const faltasRival = document.getElementById('faltasRival');
-    if (faltasRival) faltasRival.textContent = `F: ${this.partido.faltasRival || 0}`;
+    // const faltasRival = document.getElementById('faltasRival');
+    // if (faltasRival) faltasRival.textContent = `F: ${this.partido.faltasRival || 0}`;
 
     this.actualizarLucesFaltas();
     this.actualizarDisplay();

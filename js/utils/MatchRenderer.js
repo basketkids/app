@@ -352,7 +352,8 @@ class MatchRenderer {
                 totals.robos += s.robos || 0;
                 totals.tapones += s.tapones || 0;
                 totals.faltas += s.faltas || 0;
-                totals.masMenos += s.masMenos || 0;
+                totals.faltas += s.faltas || 0;
+                // totals.masMenos += s.masMenos || 0; // No sumar +/- individual
                 // Valoración se calcula por jugador, no se suma directamente para el total
                 totals.valoracion += this.calcularValoracion(s);
                 totals.t1_conv += s.t1_convertidos || 0;
@@ -405,7 +406,8 @@ class MatchRenderer {
             // Faltas (Visible)
             createTotalCell(totals.faltas, true);
             // +/-
-            createTotalCell(totals.masMenos > 0 ? `+${totals.masMenos}` : totals.masMenos);
+            const teamMasMenos = (partido.puntosEquipo || 0) - (partido.puntosRival || 0);
+            createTotalCell(teamMasMenos > 0 ? `+${teamMasMenos}` : teamMasMenos);
             // Val (Visible)
             createTotalCell(totals.valoracion, true);
 

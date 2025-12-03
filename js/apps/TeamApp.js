@@ -936,8 +936,8 @@ class TeamApp extends BaseApp {
                     <td>${match.rival}</td>
                     <td class="text-center fw-bold">${match.points}</td>
                     <td class="text-end">
-                        <a href="partido.html?idPartido=${match.matchId}&idCompeticion=${match.competitionId}&idEquipo=${this.currentTeamId}&ownerUid=${this.ownerUid}" class="btn btn-sm btn-outline-primary" target="_blank">
-                            Ver Partido
+                        <a href="partido.html?idPartido=${match.matchId}&idCompeticion=${match.competitionId}&idEquipo=${this.currentTeamId}&ownerUid=${this.ownerUid}" class="btn btn-sm btn-success" target="_blank" title="Ver partido">
+                            <i class="bi bi-eye-fill"></i>
                         </a>
                     </td>
                 `;
