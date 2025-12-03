@@ -40,6 +40,7 @@
         <li class="nav-item"><a class="nav-link" href="#" data-seccion="competiciones">Competiciones</a></li>
         <li class="nav-item"><a class="nav-link" href="#" data-seccion="miembros" id="navMiembros"
             style="display:none">Miembros</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-seccion="fantasy">Fantasy</a></li>
       </ul>
     </nav>
 
@@ -77,6 +78,15 @@
           </ul>
         </div>
       </div>
+    </section>
+
+    <section id="seccion-fantasy" style="display:none">
+      <div class="alert alert-light border" style="cursor: pointer;" data-bs-toggle="modal"
+        data-bs-target="#modalFantasyInfo">
+        <i class="bi bi-info-circle me-2"></i>Aquí puedes ver el rendimiento Fantasy acumulado de tus jugadores en todos
+        los partidos. <strong>(Haz clic para ver cómo se calcula)</strong>
+      </div>
+      <div id="fantasyTableContainer" class="table-responsive"></div>
     </section>
 
   </div>
@@ -205,6 +215,85 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
           <button type="button" id="saveTeamBtn" class="btn btn-primary">Guardar Cambios</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detalle Fantasy -->
+  <div class="modal fade" id="modalFantasyPlayer" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Detalle Fantasy - <span id="fantasyPlayerName"></span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Competición</th>
+                  <th>Rival</th>
+                  <th class="text-center">Puntos Fantasy</th>
+                  <th class="text-end">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="fantasyMatchList"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Info Fantasy -->
+  <div class="modal fade" id="modalFantasyInfo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Cálculo Puntuación Fantasy</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p>La puntuación Fantasy se calcula sumando las siguientes acciones:</p>
+          <table class="table table-bordered">
+            <thead class="table-light">
+              <tr>
+                <th>Acción</th>
+                <th class="text-center">Puntos</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Puntos anotados</td>
+                <td class="text-center text-success fw-bold">+1</td>
+              </tr>
+              <tr>
+                <td>Rebotes</td>
+                <td class="text-center text-success fw-bold">+1</td>
+              </tr>
+              <tr>
+                <td>Asistencias</td>
+                <td class="text-center text-success fw-bold">+2</td>
+              </tr>
+              <tr>
+                <td>Robos</td>
+                <td class="text-center text-success fw-bold">+3</td>
+              </tr>
+              <tr>
+                <td>Tapones</td>
+                <td class="text-center text-success fw-bold">+3</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Entendido</button>
         </div>
       </div>
     </div>

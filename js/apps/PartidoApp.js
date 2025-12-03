@@ -380,12 +380,231 @@ class PartidoApp extends BaseApp {
     }
 
     this.configureApiKeyUI();
+
+    document.getElementById('csvFileInput')?.addEventListener('change', (e) => this.handleFileUpload(e));
+  }
+
+  handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target.result;
+      this.detectTeamsAndShowSelection(content);
+    };
+    reader.readAsText(file);
+  }
+
+  detectTeamsAndShowSelection(csvContent) {
+    const lines = csvContent.split('\n');
+    const teams = [];
+
+    // Heurística simple: buscar líneas que no sean cabeceras y tengan pocas comas o estructura de nombre de equipo
+    // En el ejemplo: "CB CAREBA,,,,,,,,,,,,,,,,,,,,,"
+    // La línea tiene un nombre y luego muchas comas vacías.
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      // Ignorar líneas conocidas
+      if (line.includes('FEDERACIÓN ANDALUZA') || line.includes('Estadisticas -') || line.startsWith('Num.,Nombre') || line.startsWith(',TOTALES')) continue;
+
+      // Si la línea empieza con texto y luego tiene muchas comas (indicando celdas vacías a la derecha)
+      // Ejemplo: CB CAREBA,,,,,,,,,,,,,,,,,,,,,
+      // Regex: Empieza con texto (no coma), seguido de al menos 5 comas consecutivas
+      if (/^[^,]+,{5,}/.test(line)) {
+        const teamName = line.split(',')[0].trim();
+        if (teamName && !teams.includes(teamName)) {
+          teams.push(teamName);
+        }
+      }
+    }
+
+    if (teams.length === 0) {
+      alert('No se detectaron equipos en el archivo CSV. Verifica el formato.');
+      return;
+    }
+
+    const container = document.getElementById('importTeamSelection');
+    const buttonsContainer = document.getElementById('importTeamButtons');
+    container.classList.remove('d-none');
+    buttonsContainer.innerHTML = '';
+
+    teams.forEach(team => {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-outline-primary';
+      btn.textContent = team;
+      btn.onclick = () => this.procesarStatsEquipo(team, lines);
+      buttonsContainer.appendChild(btn);
+    });
+  }
+
+  procesarStatsEquipo(teamName, lines) {
+    let startIndex = -1;
+    let endIndex = -1;
+
+    // Buscar el bloque del equipo
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.startsWith(teamName)) {
+        // Encontramos el nombre del equipo.
+        // Buscar la siguiente cabecera "Num.,Nombre"
+        for (let j = i + 1; j < lines.length; j++) {
+          if (lines[j].trim().startsWith('Num.,Nombre')) {
+            startIndex = j + 1;
+            break;
+          }
+        }
+        break; // Solo procesamos el primer match del equipo (asumiendo que no se repite)
+      }
+    }
+
+    if (startIndex === -1) {
+      alert(`No se encontró la tabla de estadísticas para ${teamName}.`);
+      return;
+    }
+
+    let importedCount = 0;
+    const statsUpdate = {};
+    const nuevosConvocados = {};
+
+    for (let i = startIndex; i < lines.length; i++) {
+      const line = lines[i].trim();
+      // Si llegamos a TOTALES o fin de bloque (otra cabecera o equipo), paramos
+      if (!line || line.startsWith(',TOTALES') || line.startsWith('TOTALES')) break;
+      // Si encontramos otro nombre de equipo (heurística de muchas comas), paramos
+      if (/^[^,]+,{5,}/.test(line) && !line.startsWith(teamName)) break;
+
+      // Parsear línea (reutilizando lógica anterior)
+      const rawParts = line.split(',');
+      const cleanParts = [];
+      let buffer = null;
+      for (const p of rawParts) {
+        if (buffer !== null) {
+          buffer += ',' + p;
+          if (p.trim().endsWith('"')) {
+            cleanParts.push(buffer.replace(/^"|"$/g, '').trim());
+            buffer = null;
+          }
+        } else {
+          if (p.trim().startsWith('"') && !p.trim().endsWith('"')) {
+            buffer = p;
+          } else {
+            cleanParts.push(p.replace(/^"|"$/g, '').trim());
+          }
+        }
+      }
+      if (buffer !== null) cleanParts.push(buffer.replace(/^"|"$/g, '').trim());
+
+      if (cleanParts.length < 20) continue;
+
+      const dorsalStr = cleanParts[0].trim();
+      if (dorsalStr === '' || isNaN(dorsalStr)) continue;
+      const dorsal = parseInt(dorsalStr, 10);
+      const nombreJugadorCSV = cleanParts[1].trim();
+
+      // Buscar jugador
+      let jugadorId = null;
+
+      // 1. Buscar en convocados
+      if (this.partido.convocados) {
+        const convocadoId = Object.keys(this.partido.convocados).find(id =>
+          parseInt(this.partido.convocados[id].dorsal) === dorsal
+        );
+        if (convocadoId) jugadorId = convocadoId;
+      }
+
+      // 2. Si no está en convocados, buscar en plantilla completa
+      if (!jugadorId && this.plantillaJugadores) {
+        const jugadorPlantilla = this.plantillaJugadores.find(j => parseInt(j.dorsal) === dorsal);
+        if (jugadorPlantilla) {
+          jugadorId = jugadorPlantilla.id;
+          // Añadir a convocados para que se guarden sus stats
+          if (!this.partido.convocados) this.partido.convocados = {};
+          this.partido.convocados[jugadorId] = {
+            dorsal: jugadorPlantilla.dorsal,
+            nombre: jugadorPlantilla.nombre,
+            avatarConfig: jugadorPlantilla.avatarConfig || null
+          };
+          nuevosConvocados[jugadorId] = true;
+        }
+      }
+
+      if (!jugadorId) {
+        console.warn(`Jugador con dorsal ${dorsal} (${nombreJugadorCSV}) no encontrado en plantilla. Saltando.`);
+        continue;
+      }
+
+      // Extraer stats
+      const getVal = (idx) => parseInt(cleanParts[idx]) || 0;
+      const getSplit = (idx) => {
+        const s = cleanParts[idx].split('/');
+        return {
+          conv: parseInt(s[0]) || 0,
+          int: parseInt(s[1]) || 0
+        };
+      };
+
+      const pts = getVal(3);
+      const t2 = getSplit(4);
+      const t3 = getSplit(6);
+      const t1 = getSplit(8);
+      const reb = getVal(12);
+      const ast = getVal(13);
+      const rob = getVal(14);
+      const tap = getVal(16);
+      const fal = getVal(18);
+      const masMenos = parseInt(cleanParts[21]) || 0;
+
+      statsUpdate[jugadorId] = {
+        puntos: pts,
+        asistencias: ast,
+        rebotes: reb,
+        robos: rob,
+        tapones: tap,
+        faltas: fal,
+        masMenos: masMenos,
+        t1_convertidos: t1.conv,
+        t1_fallados: t1.int - t1.conv,
+        t2_convertidos: t2.conv,
+        t2_fallados: t2.int - t2.conv,
+        t3_convertidos: t3.conv,
+        t3_fallados: t3.int - t3.conv,
+        _loadedFromStorage: true
+      };
+      importedCount++;
+    }
+
+    if (importedCount > 0) {
+      if (!this.partido.estadisticasJugadores) this.partido.estadisticasJugadores = {};
+
+      Object.keys(statsUpdate).forEach(jid => {
+        this.partido.estadisticasJugadores[jid] = statsUpdate[jid];
+      });
+
+      let totalPuntos = 0;
+      Object.values(this.partido.estadisticasJugadores).forEach(s => totalPuntos += (s.puntos || 0));
+      this.partido.puntosEquipo = totalPuntos;
+
+      this.guardarPartido().then(() => {
+        const msgNuevos = Object.keys(nuevosConvocados).length > 0 ? `\nSe añadieron ${Object.keys(nuevosConvocados).length} jugadores de la plantilla a la convocatoria.` : '';
+        alert(`Se importaron estadísticas para ${importedCount} jugadores del equipo ${teamName}.${msgNuevos}`);
+        bootstrap.Modal.getInstance(document.getElementById('modalImportarStats')).hide();
+        // Reset UI
+        document.getElementById('csvFileInput').value = '';
+        document.getElementById('importTeamSelection').classList.add('d-none');
+        this.renderizarTodo();
+      });
+    } else {
+      alert(`No se encontraron jugadores coincidentes para el equipo ${teamName}.`);
+    }
   }
 
   downloadMatchData() {
     if (!this.partido) return;
     const dataStr = JSON.stringify(this.partido, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -544,8 +763,33 @@ class PartidoApp extends BaseApp {
 
   renderListaJugadoresPlantilla() {
     const ul = document.getElementById('listaJugadoresPlantilla');
+    const checkAll = document.getElementById('checkSeleccionarTodos');
     if (!ul) return;
     ul.innerHTML = '';
+
+    const updateCheckAllState = () => {
+      if (!checkAll) return;
+      const allChecked = this.plantillaJugadores.length > 0 && this.plantillaJugadores.every(j => this.partido.convocados && this.partido.convocados[j.id]);
+      checkAll.checked = allChecked;
+    };
+
+    if (checkAll) {
+      checkAll.onclick = () => {
+        const isChecked = checkAll.checked;
+        if (!this.partido.convocados) this.partido.convocados = {};
+
+        this.plantillaJugadores.forEach(j => {
+          if (isChecked) {
+            this.partido.convocados[j.id] = { dorsal: j.dorsal, nombre: j.nombre, avatarConfig: j.avatarConfig };
+          } else {
+            delete this.partido.convocados[j.id];
+          }
+        });
+        this.renderListaJugadoresPlantilla(); // Re-render to update individual checkboxes
+        this.guardarPartido();
+      };
+    }
+
     this.plantillaJugadores.forEach(j => {
       const li = document.createElement('li');
       li.className = 'list-group-item';
@@ -556,11 +800,12 @@ class PartidoApp extends BaseApp {
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
       checkbox.className = 'form-check-input';
-      checkbox.checked = this.partido.convocados && this.partido.convocados[j.id];
+      checkbox.checked = this.partido.convocados && !!this.partido.convocados[j.id];
       checkbox.onchange = () => {
         if (!this.partido.convocados) this.partido.convocados = {};
         if (checkbox.checked) this.partido.convocados[j.id] = { dorsal: j.dorsal, nombre: j.nombre, avatarConfig: j.avatarConfig };
         else delete this.partido.convocados[j.id];
+        updateCheckAllState();
         this.guardarPartido();
       };
 
@@ -569,6 +814,8 @@ class PartidoApp extends BaseApp {
       li.appendChild(label);
       ul.appendChild(li);
     });
+
+    updateCheckAllState();
   }
 
   renderListaJugadoresConvocados() {
@@ -845,11 +1092,6 @@ class PartidoApp extends BaseApp {
       .catch(e => console.error('Error guardando evento:', e));
   }
   actualizarMarcadoryFaltas() {
-    const fr = document.getElementById('faltasRival');
-    if (fr) fr.textContent = `F: ${this.partido.faltasRival || 0}`;
-
-    const fe = document.getElementById('faltasEquipo');
-    if (fe) fe.textContent = `F: ${this.partido.faltasEquipo || 0}`;
     const me = document.getElementById('marcadorEquipo');
     if (me) me.textContent = this.partido.puntosEquipo || 0;
     const mr = document.getElementById('marcadorRival');
@@ -1030,7 +1272,7 @@ class PartidoApp extends BaseApp {
 
   guardarPartido() {
     // console.log('Guardando partido', this.partido);
-    this.dataService.guardarPartido(this.partido).catch(console.error);
+    return this.dataService.guardarPartido(this.partido).catch(console.error);
   }
 
   actualizarBotonesPorEstado() {

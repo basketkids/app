@@ -323,6 +323,95 @@ class MatchRenderer {
                 tbody.appendChild(tr);
             });
             table.appendChild(tbody);
+
+            // --- Totals Row ---
+            const tfoot = document.createElement('tfoot');
+            const trTotal = document.createElement('tr');
+            trTotal.className = 'table-secondary fw-bold';
+
+            // Calculate totals
+            const totals = {
+                puntos: 0,
+                asistencias: 0,
+                rebotes: 0,
+                robos: 0,
+                tapones: 0,
+                faltas: 0,
+                masMenos: 0,
+                valoracion: 0,
+                t1_conv: 0, t1_fail: 0,
+                t2_conv: 0, t2_fail: 0,
+                t3_conv: 0, t3_fail: 0
+            };
+
+            jugadoresArray.forEach(jug => {
+                const s = statsJugadores[jug.id] || {};
+                totals.puntos += s.puntos || 0;
+                totals.asistencias += s.asistencias || 0;
+                totals.rebotes += s.rebotes || 0;
+                totals.robos += s.robos || 0;
+                totals.tapones += s.tapones || 0;
+                totals.faltas += s.faltas || 0;
+                totals.masMenos += s.masMenos || 0;
+                // Valoración se calcula por jugador, no se suma directamente para el total
+                totals.valoracion += this.calcularValoracion(s);
+                totals.t1_conv += s.t1_convertidos || 0;
+                totals.t1_fail += s.t1_fallados || 0;
+                totals.t2_conv += s.t2_convertidos || 0;
+                totals.t2_fail += s.t2_fallados || 0;
+                totals.t3_conv += s.t3_convertidos || 0;
+                totals.t3_fail += s.t3_fallados || 0;
+            });
+
+            // Helper to create total cell
+            const createTotalCell = (text, isMobileVisible = false) => {
+                const td = document.createElement('td');
+                td.textContent = text;
+                if (!isMobileVisible) td.className = 'd-none d-sm-table-cell';
+                trTotal.appendChild(td);
+            };
+
+            // Name column
+            const tdName = document.createElement('td');
+            tdName.textContent = 'TOTAL';
+            trTotal.appendChild(tdName);
+
+            // Puntos (Visible)
+            createTotalCell(totals.puntos, true);
+
+            // % T1
+            const t1Total = totals.t1_conv + totals.t1_fail;
+            const t1Pct = t1Total > 0 ? Math.round((totals.t1_conv / t1Total) * 100) : 0;
+            createTotalCell(t1Total > 0 ? `${t1Pct}% (${totals.t1_conv}/${t1Total})` : '-');
+
+            // % T2
+            const t2Total = totals.t2_conv + totals.t2_fail;
+            const t2Pct = t2Total > 0 ? Math.round((totals.t2_conv / t2Total) * 100) : 0;
+            createTotalCell(t2Total > 0 ? `${t2Pct}% (${totals.t2_conv}/${t2Total})` : '-');
+
+            // % T3
+            const t3Total = totals.t3_conv + totals.t3_fail;
+            const t3Pct = t3Total > 0 ? Math.round((totals.t3_conv / t3Total) * 100) : 0;
+            createTotalCell(t3Total > 0 ? `${t3Pct}% (${totals.t3_conv}/${t3Total})` : '-');
+
+            // Asistencias
+            createTotalCell(totals.asistencias);
+            // Rebotes
+            createTotalCell(totals.rebotes);
+            // Robos
+            createTotalCell(totals.robos);
+            // Tapones
+            createTotalCell(totals.tapones);
+            // Faltas (Visible)
+            createTotalCell(totals.faltas, true);
+            // +/-
+            createTotalCell(totals.masMenos > 0 ? `+${totals.masMenos}` : totals.masMenos);
+            // Val (Visible)
+            createTotalCell(totals.valoracion, true);
+
+            tfoot.appendChild(trTotal);
+            table.appendChild(tfoot);
+
             container.appendChild(table);
         };
 
