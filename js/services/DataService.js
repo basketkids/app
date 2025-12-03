@@ -53,6 +53,10 @@ class DataService {
 
         partido.eventos = partido.eventos || {};
 
+        // Ensure IDs are present
+        partido.equipoId = this.teamId;
+        partido.competicionId = this.competitionId;
+
         // Ensure global data is synced (e.g. to add teamId if missing)
         this._sincronizarPartidoGlobal();
 

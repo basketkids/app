@@ -54,7 +54,7 @@ class PartidoApp extends BaseApp {
   async initMatch() {
     try {
       this.partido = await this.dataService.cargarPartido();
-      console.log(this.partido);
+      //  console.log(this.partido);
 
       if (!this.partido) throw new Error('Partido no encontrado');
 
@@ -65,8 +65,8 @@ class PartidoApp extends BaseApp {
       this.configurarPartido(this.configuracionPartido, false);
 
       this.parteActual = this.partido.parteActual || 1;
-      console.log(this.partido.parteActual);
-      console.log(this.parteActual);
+      // console.log(this.partido.parteActual);
+      // console.log(this.parteActual);
       this.segundosRestantes = this.partido.duracionParte || (this.configuracionPartido === '6x8' ? 8 * 60 : 10 * 60);
 
       this.estadoPartido = this.partido.estado || 'no empezado';
@@ -102,8 +102,8 @@ class PartidoApp extends BaseApp {
     }
   }
   calcularTiempoRestante() {
-    console.log(this.parteActual);
-    console.log(this.partido.parteActual);
+    //  console.log(this.parteActual);
+    // console.log(this.partido.parteActual);
     // Aquí actualizar cuarto y segundos al último evento si existen eventos
     const eventosArray = this.partido.eventos ? Object.values(this.partido.eventos) : [];
     if (eventosArray.length > 0) {
@@ -115,7 +115,7 @@ class PartidoApp extends BaseApp {
         }
       });
       const ultimaJugada = eventosArray[0];
-      console.log(ultimaJugada);
+      // console.log(ultimaJugada);
       this.partido.parteActual = ultimaJugada.cuarto || this.partido.parteActual || 1;
       const duracionParte = this.partido.duracionParte || (this.configuracionPartido === '6x8' ? 8 * 60 : 10 * 60);
       this.segundosRestantes = duracionParte - (ultimaJugada.tiempoSegundos || 0);
@@ -124,8 +124,8 @@ class PartidoApp extends BaseApp {
       this.partido.parteActual = this.partido.parteActual || 1;
       this.segundosRestantes = this.partido.duracionParte || (this.configuracionPartido === '6x8' ? 8 * 60 : 10 * 60);
     }
-    console.log(this.parteActual);
-    console.log(this.partido.parteActual);
+    // console.log(this.parteActual);
+    // console.log(this.partido.parteActual);
 
   }
 
@@ -181,6 +181,8 @@ class PartidoApp extends BaseApp {
     this.renderNombresEquipos();
     this.renderInfoPartido();
     this.actualizarLinksPublicos();
+    this.renderCronica();
+    this.actualizarOrdenMarcador();
   }
 
   actualizarLinksPublicos() {
@@ -246,15 +248,33 @@ class PartidoApp extends BaseApp {
     }
   }
 
-  renderNombresEquipos() {
+  async renderNombresEquipos() {
     const nombreEquipo = document.getElementById('nombreEquipoMarcador');
     const nombreRival = document.getElementById('nombreEquipoRival') || document.getElementById('nombreRivalMarcador');
+    const nombreEntrenadorDisplay = document.getElementById('nombreEntrenadorConvocados');
 
     if (nombreEquipo && this.partido.nombreEquipo) {
       nombreEquipo.textContent = this.partido.nombreEquipo;
     }
     if (nombreRival && this.partido.nombreRival) {
       nombreRival.textContent = this.partido.nombreRival;
+    }
+
+    if (nombreEntrenadorDisplay && this.partido.equipoId && this.ownerUid) {
+      try {
+        const teamSnap = await this.db.ref(`usuarios/${this.ownerUid}/equipos/${this.partido.equipoId}`).once('value');
+        if (teamSnap.exists()) {
+          const entrenador = teamSnap.val().entrenador;
+          if (entrenador) {
+            nombreEntrenadorDisplay.textContent = `Entrenador/a: ${entrenador}`;
+            nombreEntrenadorDisplay.style.display = 'block';
+          } else {
+            nombreEntrenadorDisplay.style.display = 'none';
+          }
+        }
+      } catch (e) {
+        console.error('Error fetching coach name for display:', e);
+      }
     }
   }
 
@@ -308,6 +328,33 @@ class PartidoApp extends BaseApp {
       e.preventDefault();
       this.guardarDatosPartido();
     });
+
+    document.getElementById('btnBorrarCronica')?.addEventListener('click', () => this.borrarCronica());
+
+    const btnDownload = document.getElementById('btnDownloadMatch');
+    if (btnDownload) {
+      if (this.userRole === 'owner') {
+        btnDownload.style.display = 'inline-block';
+        btnDownload.addEventListener('click', () => this.downloadMatchData());
+      }
+    }
+
+    this.configureApiKeyUI();
+  }
+
+  downloadMatchData() {
+    if (!this.partido) return;
+    const dataStr = JSON.stringify(this.partido, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const dateStr = new Date().toISOString().split('T')[0];
+    a.download = `partido_${this.dataService.matchId}_${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   abrirModalEditar() {
@@ -315,6 +362,7 @@ class PartidoApp extends BaseApp {
     const inputFecha = document.getElementById('editFechaHora');
     const inputPabellon = document.getElementById('editPabellon');
     const inputNombreRival = document.getElementById('editNombreRival');
+    const inputEsLocal = document.getElementById('editEsLocal');
 
     if (this.partido.fechaHora) {
       // Convertir fecha ISO a formato datetime-local (YYYY-MM-DDTHH:mm)
@@ -349,6 +397,11 @@ class PartidoApp extends BaseApp {
       }
     }
 
+    if (inputEsLocal) {
+      // Default to true if undefined
+      inputEsLocal.checked = (this.partido.esLocal !== false);
+    }
+
     const modal = new bootstrap.Modal(document.getElementById('modalEditarPartido'));
     modal.show();
   }
@@ -357,6 +410,7 @@ class PartidoApp extends BaseApp {
     const inputFecha = document.getElementById('editFechaHora');
     const inputPabellon = document.getElementById('editPabellon');
     const inputNombreRival = document.getElementById('editNombreRival');
+    const inputEsLocal = document.getElementById('editEsLocal');
 
     if (inputFecha.value) {
       const fechaPartido = new Date(inputFecha.value);
@@ -380,17 +434,41 @@ class PartidoApp extends BaseApp {
       this.partido.nombreRival = '';
     }
 
+    if (inputEsLocal) {
+      this.partido.esLocal = inputEsLocal.checked;
+    }
+
     this.dataService.guardarPartido(this.partido)
       .then(() => {
         bootstrap.Modal.getInstance(document.getElementById('modalEditarPartido')).hide();
         this.renderInfoPartido();
         this.renderNombresEquipos();
+        this.actualizarOrdenMarcador();
         alert('Partido actualizado correctamente');
       })
       .catch(error => {
         console.error('Error al guardar:', error);
         alert('Error al guardar los cambios');
       });
+  }
+
+  actualizarOrdenMarcador() {
+    const containerTeam = document.getElementById('scoreboardTeamContainer');
+    const containerRival = document.getElementById('scoreboardRivalContainer');
+
+    if (!containerTeam || !containerRival) return;
+
+    // Default: esLocal = true -> Team first (order 0), Rival second (order 1)
+    // If esLocal = false -> Rival first (order 0), Team second (order 1)
+    const esLocal = (this.partido.esLocal !== false);
+
+    if (esLocal) {
+      containerTeam.style.order = '0';
+      containerRival.style.order = '1';
+    } else {
+      containerTeam.style.order = '1';
+      containerRival.style.order = '0';
+    }
   }
 
   renderEventosEnVivo() {
@@ -742,7 +820,7 @@ class PartidoApp extends BaseApp {
 
   actualizarLucesFaltas() {
     const faltas = this.calcularFaltasCuarto();
-    console.log(faltas);
+    // console.log(faltas);
     this.renderLuces('foulLightsEquipo', faltas.equipo);
     this.renderLuces('foulLightsRival', faltas.rival);
   }
@@ -1025,6 +1103,344 @@ class PartidoApp extends BaseApp {
     } catch (error) {
       console.error('Error rejecting request:', error);
       alert('Error al rechazar la solicitud');
+    }
+  }
+  // --- Lógica de Crónica con IA ---
+
+  renderCronica() {
+    const cronicaContent = document.getElementById('cronicaContent');
+    const btnGenerar = document.getElementById('btnGenerarCronica');
+    const btnBorrar = document.getElementById('btnBorrarCronica');
+
+    if (!cronicaContent) return;
+
+    if (this.partido.cronica) {
+      cronicaContent.style.display = 'block';
+      cronicaContent.innerHTML = this.partido.cronica; // Usar innerHTML para permitir formato básico si la IA lo devuelve
+      if (btnGenerar) btnGenerar.textContent = 'Regenerar Crónica';
+      if (btnBorrar) btnBorrar.style.display = 'inline-block';
+    } else {
+      cronicaContent.style.display = 'none';
+      cronicaContent.textContent = '';
+      if (btnGenerar) btnGenerar.textContent = 'Generar Crónica con IA';
+      if (btnBorrar) btnBorrar.style.display = 'none';
+    }
+  }
+
+  async borrarCronica() {
+    if (!confirm('¿Estás seguro de que quieres borrar la crónica actual?')) return;
+
+    this.partido.cronica = null;
+    try {
+      await this.dataService.guardarPartido(this.partido);
+      this.renderCronica();
+      alert('Crónica borrada correctamente.');
+    } catch (error) {
+      console.error('Error al borrar la crónica:', error);
+      alert('Error al borrar la crónica: ' + error.message);
+    }
+  }
+
+  async generarCronica() {
+    const { key, provider } = this.loadApiKey();
+    if (!key) {
+      const modal = new bootstrap.Modal(document.getElementById('modalApiKey'));
+      modal.show();
+      return;
+    }
+
+    const loading = document.getElementById('loadingCronica');
+    const content = document.getElementById('cronicaContent');
+    const btn = document.getElementById('btnGenerarCronica');
+
+    if (loading) loading.style.display = 'block';
+    if (content) content.style.display = 'none';
+    if (btn) btn.disabled = true;
+
+    try {
+      const prompt = await this.getMatchSummaryForAI();
+      const cronica = await this.callAIAPI(provider, key, prompt);
+
+      this.partido.cronica = cronica;
+      await this.dataService.guardarPartido(this.partido);
+
+      this.renderCronica();
+    } catch (error) {
+      console.error('Error generando crónica:', error);
+      alert('Error al generar la crónica: ' + error.message);
+    } finally {
+      if (loading) loading.style.display = 'none';
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async getMatchSummaryForAI() {
+    const p = this.partido;
+    const fecha = p.fechaHora ? new Date(p.fechaHora).toLocaleDateString() : 'Fecha desconocida';
+    const lugar = p.pabellon || 'Pabellón desconocido';
+
+    // Determine Local/Visitor context
+    const esLocal = (p.esLocal !== false); // Default true
+    let equipoLocal, equipoVisitante, marcador;
+
+    if (esLocal) {
+      equipoLocal = p.nombreEquipo || 'Equipo Local';
+      equipoVisitante = p.nombreRival || 'Equipo Rival';
+      marcador = `${p.puntosEquipo} - ${p.puntosRival}`;
+    } else {
+      equipoLocal = p.nombreRival || 'Equipo Rival';
+      equipoVisitante = p.nombreEquipo || 'Equipo Visitante';
+      marcador = `${p.puntosRival} - ${p.puntosEquipo}`;
+    }
+
+    // Fetch coach name
+    let nombreEntrenador = '';
+    if (p.equipoId && this.ownerUid) {
+      try {
+        const teamSnap = await this.db.ref(`usuarios/${this.ownerUid}/equipos/${p.equipoId}`).once('value');
+        if (teamSnap.exists()) {
+          nombreEntrenador = teamSnap.val().entrenador || '';
+        }
+      } catch (e) {
+        console.error('Error fetching coach name:', e);
+      }
+    }
+
+    let statsJugadores = '';
+    if (p.estadisticasJugadores) {
+      Object.entries(p.estadisticasJugadores).forEach(([id, stats]) => {
+        const nombre = (p.convocados && p.convocados[id]) ? p.convocados[id].nombre : 'Jugador';
+        const dorsal = (p.convocados && p.convocados[id]) ? p.convocados[id].dorsal : '#';
+        // Include ALL players, even with 0 stats
+        statsJugadores += `- ${nombre} (#${dorsal}): ${stats.puntos} pts, ${stats.asistencias} ast, ${stats.rebotes} reb, ${stats.robos} rob, ${stats.tapones} tap.\n`;
+      });
+    }
+
+    // Calcular parciales por cuarto
+    let parciales = '';
+    if (p.eventos) {
+      const puntosPorCuarto = {};
+      Object.values(p.eventos).forEach(ev => {
+        if (ev.tipo === 'puntos') {
+          if (!puntosPorCuarto[ev.cuarto]) puntosPorCuarto[ev.cuarto] = { equipo: 0, rival: 0 };
+          if (ev.dorsal >= 0) puntosPorCuarto[ev.cuarto].equipo += ev.cantidad;
+          else puntosPorCuarto[ev.cuarto].rival += ev.cantidad;
+        }
+      });
+      Object.keys(puntosPorCuarto).sort().forEach(c => {
+        const ptsEquipo = puntosPorCuarto[c].equipo;
+        const ptsRival = puntosPorCuarto[c].rival;
+        const parcial = esLocal ? `${ptsEquipo}-${ptsRival}` : `${ptsRival}-${ptsEquipo}`;
+        parciales += `Cuarto ${c}: ${parcial}. `;
+      });
+    }
+
+    const miEquipoNombre = p.nombreEquipo || 'Mi Equipo';
+    let entrenadorInfo = nombreEntrenador ? `Entrenador del equipo ${miEquipoNombre}: ${nombreEntrenador}` : '';
+
+    return `
+      Actúa como un periodista deportivo experto en baloncesto juvenil. Escribe una crónica emocionante y detallada del siguiente partido:
+      
+      Partido: ${equipoLocal} (Local) vs ${equipoVisitante} (Visitante)
+      Fecha: ${fecha}
+      Lugar: ${lugar}
+      Resultado Final: ${marcador}
+      Parciales: ${parciales}
+      ${entrenadorInfo}
+      
+      Jugadores del equipo ${miEquipoNombre} (Estadísticas):
+      ${statsJugadores}
+      
+      Instrucciones:
+      - Usa un tono periodístico, narrativo y motivador.
+      - Ten en cuenta quién jugaba como local (${equipoLocal}) y quién como visitante (${equipoVisitante}).
+      - IMPORTANTE: Menciona SIEMPRE al entrenador ${nombreEntrenador} (si hay nombre) y destaca su dirección del equipo.
+      - IMPORTANTE: Intenta mencionar a TODOS los jugadores de la lista anterior, aunque sea brevemente o agrupando a los que no anotaron destacando su esfuerzo defensivo o compañerismo.
+      - IMPORTANTE: Sé SIEMPRE respetuoso con el equipo rival (${p.nombreRival || 'Rival'}), reconociendo su esfuerzo y buen juego, independientemente del resultado.
+      - Destaca a los jugadores con mejores estadísticas.
+      - Analiza brevemente el flujo del partido basándote en los parciales.
+      - No inventes datos que no estén aquí, pero puedes añadir "color" narrativo.
+      - Usa formato HTML básico (párrafos <p>, negritas <strong>) para que se lea bien.
+    `;
+  }
+
+  async callAIAPI(provider, apiKey, prompt) {
+    if (provider === 'openai') {
+      // OpenAI
+      const url = 'https://api.openai.com/v1/chat/completions';
+      const body = {
+        model: "gpt-3.5-turbo",
+        messages: [
+          { role: "system", content: "Eres un redactor deportivo experto." },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.7
+      };
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error?.message || 'Error en la API de OpenAI');
+      }
+
+      const data = await response.json();
+      let text = data.choices[0].message.content;
+      // Limpiar bloques de código markdown de forma más agresiva
+      text = text.replace(/```html/gi, '').replace(/```/g, '').trim();
+      return text;
+
+    } else if (provider === 'huggingface') {
+      // Hugging Face Inference API (Mistral)
+      const model = 'mistralai/Mistral-7B-Instruct-v0.3';
+      const url = `https://api-inference.huggingface.co/models/${model}`;
+
+      // Mistral format: <s>[INST] prompt [/INST]
+      const formattedPrompt = `<s>[INST] ${prompt} [/INST]`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          inputs: formattedPrompt,
+          parameters: {
+            max_new_tokens: 1000,
+            return_full_text: false // Ask API not to return the prompt
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Error en la API de Hugging Face');
+      }
+
+      const data = await response.json();
+      // HF returns array: [{ generated_text: "..." }]
+      if (Array.isArray(data) && data.length > 0 && data[0].generated_text) {
+        let text = data[0].generated_text;
+        // Cleanup just in case
+        text = text.replace(/```html/gi, '').replace(/```/g, '').trim();
+        return text;
+      } else {
+        throw new Error('Hugging Face no devolvió texto válido.');
+      }
+
+    } else {
+      // Google Gemini (Default)
+      const model = 'gemini-2.0-flash';
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+      const body = {
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }]
+      };
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error?.message || 'Error en la API de Gemini');
+      }
+
+      const data = await response.json();
+      if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts.length > 0) {
+        let text = data.candidates[0].content.parts[0].text;
+        // Limpiar bloques de código markdown de forma más agresiva
+        text = text.replace(/```html/gi, '').replace(/```/g, '').trim();
+        return text;
+      } else {
+        throw new Error('La API de Gemini no devolvió texto válido.');
+      }
+    }
+  }
+
+  saveApiKey() {
+    const input = document.getElementById('inputApiKey');
+    const select = document.getElementById('selectAiProvider');
+
+    if (input && input.value && select) {
+      localStorage.setItem('basketkids_ai_key', input.value);
+      localStorage.setItem('basketkids_ai_provider', select.value);
+
+      bootstrap.Modal.getInstance(document.getElementById('modalApiKey')).hide();
+      alert('Configuración de IA guardada correctamente.');
+    } else {
+      alert('Por favor introduce una API Key válida.');
+    }
+  }
+
+  loadApiKey() {
+    return {
+      key: localStorage.getItem('basketkids_ai_key'),
+      provider: localStorage.getItem('basketkids_ai_provider') || 'gemini'
+    };
+  }
+
+  configureApiKeyUI() {
+    const btnConfig = document.getElementById('btnConfigApiKey');
+    const btnSave = document.getElementById('btnSaveApiKey');
+    const btnGenerar = document.getElementById('btnGenerarCronica');
+    const selectProvider = document.getElementById('selectAiProvider');
+    const inputKey = document.getElementById('inputApiKey');
+    const helpText = document.getElementById('apiKeyHelp');
+
+    if (selectProvider) {
+      selectProvider.addEventListener('change', () => {
+        if (selectProvider.value === 'openai') {
+          inputKey.placeholder = 'sk-...';
+          helpText.innerHTML = '<i class="bi bi-info-circle"></i> Para conseguir tu clave de OpenAI, visita <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI Platform</a>.';
+        } else if (selectProvider.value === 'huggingface') {
+          inputKey.placeholder = 'hf_...';
+          helpText.innerHTML = '<i class="bi bi-info-circle"></i> Consigue tu token gratis en <a href="https://huggingface.co/settings/tokens" target="_blank">Hugging Face Tokens</a>.';
+        } else {
+          inputKey.placeholder = 'AIzaSy...';
+          helpText.innerHTML = '<i class="bi bi-info-circle"></i> Gemini tiene un plan gratuito. Consigue tu clave en <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.';
+        }
+      });
+    }
+
+    if (btnConfig) {
+      btnConfig.addEventListener('click', () => {
+        const modal = new bootstrap.Modal(document.getElementById('modalApiKey'));
+        const stored = this.loadApiKey();
+
+        if (inputKey) inputKey.value = stored.key || '';
+        if (selectProvider) {
+          selectProvider.value = stored.provider;
+          // Trigger change to update UI
+          selectProvider.dispatchEvent(new Event('change'));
+        }
+
+        modal.show();
+      });
+    }
+
+    if (btnSave) {
+      btnSave.addEventListener('click', () => this.saveApiKey());
+    }
+
+    if (btnGenerar) {
+      btnGenerar.addEventListener('click', () => this.generarCronica());
     }
   }
 }

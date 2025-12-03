@@ -44,8 +44,9 @@
     </nav>
 
     <section id="seccion-plantilla" class="seccion-activa">
+      <h3 id="coachNameDisplay" class="mb-3" style="display: none;"></h3>
       <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addPlayerModal">
-        Añadir Jugador
+        Añadir Jugador/a
       </button>
       <ul id="playersList" class="list-group"></ul>
     </section>
@@ -85,7 +86,7 @@
     <div class="modal-dialog">
       <form id="addPlayerForm" class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="addPlayerLabel">Añadir Jugador</h5>
+          <h5 class="modal-title" id="addPlayerLabel">Añadir Jugador/a</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body">
@@ -95,7 +96,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar jugador</button>
+          <button type="submit" class="btn btn-primary">Guardar jugador/a</button>
         </div>
       </form>
     </div>
@@ -175,6 +176,12 @@
           <div class="mb-3">
             <label for="editTeamNameInput" class="form-label fw-semibold">Nombre del Equipo</label>
             <input type="text" id="editTeamNameInput" class="form-control" placeholder="Nombre del equipo">
+          </div>
+
+          <!-- Coach Name -->
+          <div class="mb-3">
+            <label for="editCoachNameInput" class="form-label fw-semibold">Nombre del Entrenador/a</label>
+            <input type="text" id="editCoachNameInput" class="form-control" placeholder="Nombre del entrenador">
           </div>
 
           <!-- Jersey Color Palette -->

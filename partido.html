@@ -59,7 +59,8 @@
       </div>
       <div class="d-flex justify-content-center align-items-center gap-5 my-1 flex-wrap">
 
-        <div class="text-center bg-dark text-white rounded px-1 py-1" style="min-width: 140px;">
+        <div id="scoreboardTeamContainer" class="text-center bg-dark text-white rounded px-1 py-1"
+          style="min-width: 140px;">
           <div id="nombreEquipoMarcador" style="font-weight: 700; font-size: 1.2rem; margin-bottom: 0.25rem;">Equipo
           </div>
           <div id="marcadorEquipo" style="font-size: 3.5rem; font-weight: 900; line-height: 1;">0</div>
@@ -73,7 +74,8 @@
           </div>
         </div>
 
-        <div class="text-center bg-secondary text-white rounded px-1 py-1" style="min-width: 140px;">
+        <div id="scoreboardRivalContainer" class="text-center bg-secondary text-white rounded px-1 py-1"
+          style="min-width: 140px;">
           <div id="nombreEquipoRival" style="font-weight: 700; font-size: 1.2rem; margin-bottom: 0.25rem;">Rival</div>
           <div id="marcadorRival" style="font-size: 3.5rem; font-weight: 900; line-height: 1;">0</div>
           <div id="faltasRival" style="font-size: 1.1rem; font-weight: 600; color: #fff176;">F: 0</div>
@@ -136,11 +138,16 @@
           role="tab" aria-controls="solicitudes" aria-selected="false">Solicitudes <span id="badgeSolicitudes"
             class="badge bg-danger" style="display:none;">0</span></button>
       </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-cronica" data-bs-toggle="tab" data-bs-target="#cronica" type="button"
+          role="tab" aria-controls="cronica" aria-selected="false">Crónica</button>
+      </li>
     </ul>
 
     <div class="tab-content" id="tabsContent">
       <!-- Tab: Convocados -->
       <div class="tab-pane fade show active" id="convocados" role="tabpanel" aria-labelledby="tab-convocados">
+        <h4 id="nombreEntrenadorConvocados" class="mb-3" style="display: none;"></h4>
         <button type="button" class="btn btn-info mb-3" data-bs-toggle="modal"
           data-bs-target="#modalConvocarJugadores">Cambiar convocatoria</button>
         <div id="tablaEstadisticasContainer"></div>
@@ -162,6 +169,50 @@
         </div>
         <ul id="listaSolicitudes" class="list-group mt-3"></ul>
       </div>
+      <!-- Tab: Crónica -->
+      <div class="tab-pane fade" id="cronica" role="tabpanel" aria-labelledby="tab-cronica">
+        <div class="d-flex justify-content-between align-items-center mt-3 mb-3">
+          <h5 class="mb-0">Crónica del Partido</h5>
+          <button id="btnConfigApiKey" class="btn btn-sm btn-outline-secondary" title="Configurar API Key">
+            <i class="bi bi-gear"></i> Configurar IA
+          </button>
+        </div>
+
+        <div class="mb-3 d-flex gap-2">
+          <button id="btnGenerarCronica" class="btn btn-primary">
+            <i class="bi bi-magic"></i> Generar Crónica con IA
+          </button>
+          <button id="btnBorrarCronica" class="btn btn-danger" style="display: none;">
+            <i class="bi bi-trash"></i> Borrar Crónica
+          </button>
+        </div>
+
+        <div id="loadingCronica" class="text-center my-4" style="display: none;">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Generando...</span>
+          </div>
+          <p class="mt-2 text-muted">La IA está analizando el partido y escribiendo la crónica...</p>
+        </div>
+
+        <style>
+          #cronicaContent h1,
+          #cronicaContent h2,
+          #cronicaContent h3 {
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+          }
+
+          #cronicaContent p {
+            margin-bottom: 1rem;
+          }
+
+          #cronicaContent {
+            line-height: 1.4;
+            text-align: justify;
+          }
+        </style>
+        <div id="cronicaContent" class="card p-3 bg-light" style="display: none;"></div>
+      </div>
     </div>
   </div>
   <div class="d-flex justify-content-center">
@@ -171,6 +222,10 @@
     <a href="" id="publicMatchBtn" class="btn btn-primary btn-sm" target="_blank" rel="noopener">
       <i class="bi bi-eye-fill"></i> Ver partido público
     </a>
+    <button id="btnDownloadMatch" class="btn btn-secondary btn-sm ms-2" style="display: none;"
+      title="Descargar datos del partido">
+      <i class="bi bi-download"></i> Descargar Datos
+    </button>
   </div>
   <!-- Modal Convocar Jugadores -->
   <div class="modal fade" id="modalConvocarJugadores" tabindex="-1" aria-labelledby="modalConvocarJugadoresLabel"
@@ -236,12 +291,52 @@
               <option value="">Seleccionar rival...</option>
             </select>
           </div>
+          <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="editEsLocal">
+            <label class="form-check-label" for="editEsLocal">Jugamos como Local</label>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
           <button type="submit" class="btn btn-primary">Guardar cambios</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal Configurar API Key -->
+  <div class="modal fade" id="modalApiKey" tabindex="-1" aria-labelledby="modalApiKeyLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalApiKeyLabel">Configurar API Key de IA</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="selectAiProvider" class="form-label">Proveedor de IA</label>
+            <select class="form-select" id="selectAiProvider">
+              <option value="gemini" selected>Google Gemini (Recomendado - Gratis)</option>
+              <option value="huggingface">Hugging Face (Gratis)</option>
+              <option value="openai">OpenAI (GPT)</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="inputApiKey" class="form-label">API Key</label>
+            <input type="password" class="form-control" id="inputApiKey" placeholder="AIzaSy...">
+            <div id="apiKeyHelp" class="form-text mt-2">
+              <i class="bi bi-info-circle"></i> Para conseguir tu clave de Gemini, visita <a
+                href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.
+            </div>
+          </div>
+          <p class="small text-muted">La clave se guardará localmente en tu navegador.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btnSaveApiKey">Guardar</button>
+        </div>
+      </div>
     </div>
   </div>
 

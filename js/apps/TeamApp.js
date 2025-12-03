@@ -10,6 +10,7 @@ class TeamApp extends BaseApp {
         this.teamNameSpan = document.getElementById('teamName');
         this.editTeamBtn = document.getElementById('editTeamBtn');
         this.editTeamNameInput = document.getElementById('editTeamNameInput');
+        this.editCoachNameInput = document.getElementById('editCoachNameInput');
         this.modalColorPalette = document.getElementById('modalColorPalette');
         this.saveTeamBtn = document.getElementById('saveTeamBtn');
 
@@ -44,6 +45,7 @@ class TeamApp extends BaseApp {
 
         this.currentTeamId = null;
         this.currentTeamName = '';
+        this.currentCoachName = '';
         this.currentJerseyColor = '5199e4';
 
         this.colors = [
@@ -66,7 +68,7 @@ class TeamApp extends BaseApp {
 
     onUserLoggedIn(user) {
         this.currentUser = user;
-        this.ownerUid = this.getParam('ownerUid') || user.uid; // Get owner from URL or default to current user
+        this.ownerUid = this.getParam('ownerUid') || user.uid;
         this.loadTeamFromUrl();
         this.setupEventListeners();
     }
@@ -89,7 +91,6 @@ class TeamApp extends BaseApp {
             return;
         }
 
-        // Use this.ownerUid instead of this.currentUser.uid
         this.teamService.get(this.ownerUid, this.currentTeamId).then(async snap => {
             if (!snap.exists()) {
                 alert('Equipo no encontrado o no tienes permiso');
@@ -98,7 +99,18 @@ class TeamApp extends BaseApp {
             }
             const team = snap.val();
             this.currentTeamName = team.nombre;
+            this.currentCoachName = team.entrenador || '';
             this.teamNameSpan.textContent = team.nombre;
+
+            const coachNameDisplay = document.getElementById('coachNameDisplay');
+            if (coachNameDisplay) {
+                if (this.currentCoachName) {
+                    coachNameDisplay.textContent = `Entrenador/a: ${this.currentCoachName}`;
+                    coachNameDisplay.style.display = 'block';
+                } else {
+                    coachNameDisplay.style.display = 'none';
+                }
+            }
 
             const teamCalendarLink = document.getElementById('teamCalendarLink');
             if (teamCalendarLink) {
@@ -107,14 +119,12 @@ class TeamApp extends BaseApp {
 
             this.currentJerseyColor = team.jerseyColor || '5199e4';
 
-            // Check permissions
             this.isOwner = (this.currentUser.uid === this.ownerUid);
-            this.userRole = 'follower'; // Default
+            this.userRole = 'follower';
 
             if (this.isOwner) {
                 this.userRole = 'owner';
             } else {
-                // Check member role
                 const memberSnap = await this.teamMembersService.getMembers(this.ownerUid, this.currentTeamId, () => { }).once('value');
                 if (memberSnap.exists() && memberSnap.hasChild(this.currentUser.uid)) {
                     this.userRole = memberSnap.child(this.currentUser.uid).val().role;
@@ -139,14 +149,9 @@ class TeamApp extends BaseApp {
     }
 
     applyPermissions() {
-        // Hide/Show elements based on role
         if (this.userRole !== 'owner') {
             this.editTeamBtn.style.display = 'none';
             this.nuevoCompeticionBtn.style.display = 'none';
-            // Hide add player button?
-            // "Jugador: ... modificar su nombre y avatar". Can they add players? Probably not.
-            // "Estadista: ... editar todo lo que tiene que ver con todos los partidos".
-            // Assuming only Owner adds players/competitions for now.
             const addPlayerBtn = document.querySelector('[data-bs-target="#addPlayerModal"]');
             if (addPlayerBtn) addPlayerBtn.style.display = 'none';
         } else {
@@ -257,6 +262,7 @@ class TeamApp extends BaseApp {
 
     openEditTeamModal() {
         this.editTeamNameInput.value = this.currentTeamName;
+        this.editCoachNameInput.value = this.currentCoachName;
         this.renderModalColorPalette();
 
         const fixMatchesLink = document.getElementById('fixMatchesLink');
@@ -300,11 +306,17 @@ class TeamApp extends BaseApp {
 
     handleSaveTeam() {
         const newName = this.editTeamNameInput.value.trim();
+        const newCoach = this.editCoachNameInput.value.trim();
         const updates = {};
         let hasChanges = false;
 
         if (newName && newName !== this.currentTeamName) {
             updates.nombre = newName;
+            hasChanges = true;
+        }
+
+        if (newCoach !== this.currentCoachName) {
+            updates.entrenador = newCoach;
             hasChanges = true;
         }
 
@@ -324,6 +336,20 @@ class TeamApp extends BaseApp {
                     this.currentTeamName = updates.nombre;
                     this.teamNameSpan.textContent = updates.nombre;
                 }
+                if (updates.entrenador !== undefined) { // Check for undefined to allow empty string updates
+                    this.currentCoachName = updates.entrenador;
+                }
+
+                const coachNameDisplay = document.getElementById('coachNameDisplay');
+                if (coachNameDisplay) {
+                    if (this.currentCoachName) {
+                        coachNameDisplay.textContent = `Entrenador: ${this.currentCoachName}`;
+                        coachNameDisplay.style.display = 'block';
+                    } else {
+                        coachNameDisplay.style.display = 'none';
+                    }
+                }
+
                 this.editTeamModal.hide();
                 if (updates.jerseyColor) {
                     this.loadPlantilla();
@@ -412,19 +438,7 @@ class TeamApp extends BaseApp {
             const tdAcciones = document.createElement('td');
             tdAcciones.className = 'd-flex gap-2';
 
-            // Check if user can edit this player
-            // Owner: Yes
-            // Player: Only if linked to this player
-            // Statistician: No? (User says "Estadista: editar partidos")
-
             let canEdit = (this.userRole === 'owner');
-            if (this.userRole === 'player') {
-                // Check if linked. I need to know my linkedPlayerId.
-                // I should fetch it in loadTeamData or here.
-                // For simplicity, I'll allow clicking "Edit", and PlayerApp will enforce permission.
-                // Or better, check here.
-                // I'll fetch my member data in loadTeamData.
-            }
 
             const btnEditar = document.createElement('a');
             btnEditar.className = 'btn btn-primary btn-sm';
