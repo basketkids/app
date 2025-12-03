@@ -224,6 +224,10 @@ class IndexApp extends BaseApp {
     renderFollowedTeamItem(team, container) {
         const li = document.createElement('li');
         li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
+        li.style.cursor = 'pointer';
+        li.onclick = () => {
+            window.location.href = `equipo.html?idEquipo=${team.id}&ownerUid=${team.ownerUid}`;
+        };
 
         const spanNombre = document.createElement('span');
         spanNombre.textContent = team.name;
@@ -233,6 +237,7 @@ class IndexApp extends BaseApp {
         btnVer.href = `equipo.html?idEquipo=${team.id}&ownerUid=${team.ownerUid}`; // View as read-only
         btnVer.classList.add('btn', 'btn-sm', 'btn-info');
         btnVer.innerHTML = '<i class="bi bi-eye-fill"></i>';
+        btnVer.onclick = (e) => e.stopPropagation();
 
         li.appendChild(btnVer);
         container.appendChild(li);
@@ -241,6 +246,10 @@ class IndexApp extends BaseApp {
     renderTeamItem(equipo, key) {
         const li = document.createElement('li');
         li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
+        li.style.cursor = 'pointer';
+        li.onclick = () => {
+            window.location.href = `equipo.html?idEquipo=${key}`;
+        };
 
         // Contenido del equipo (nombre)
         const spanNombre = document.createElement('span');
@@ -257,6 +266,7 @@ class IndexApp extends BaseApp {
         btnGestionar.classList.add('btn', 'btn-sm', 'btn-warning');
         btnGestionar.title = 'Gestionar equipo';
         btnGestionar.innerHTML = '<i class="bi bi-pencil-fill"></i>';
+        btnGestionar.onclick = (e) => e.stopPropagation();
         botonesContainer.appendChild(btnGestionar);
 
         // Botón borrar
@@ -266,7 +276,8 @@ class IndexApp extends BaseApp {
         btnBorrar.dataset.bsToggle = 'modal';
         btnBorrar.dataset.bsTarget = '#confirmDeleteModal';
         btnBorrar.innerHTML = '<i class="bi bi-trash-fill"></i>';
-        btnBorrar.onclick = () => {
+        btnBorrar.onclick = (e) => {
+            e.stopPropagation();
             this.equipoIdABorrar = key;
         };
         botonesContainer.appendChild(btnBorrar);

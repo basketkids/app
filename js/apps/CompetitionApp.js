@@ -266,6 +266,15 @@ class CompetitionApp extends BaseApp {
     renderMatchItem(partido, id, nombreEquipo) {
         const li = document.createElement('li');
         li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center', 'flex-column', 'text-start');
+        li.style.cursor = 'pointer';
+
+        const canEdit = (this.userRole === 'owner' || this.userRole === 'statistician');
+
+        li.onclick = () => {
+            if (canEdit) {
+                window.location.href = `partido.html?idEquipo=${this.currentTeamId}&idCompeticion=${this.currentCompeticionId}&idPartido=${id}&ownerUid=${encodeURIComponent(this.ownerUid)}`;
+            }
+        };
 
         const fechaObj = new Date(partido.fechaHora);
         const fechaStr = fechaObj.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -302,6 +311,7 @@ class CompetitionApp extends BaseApp {
         mapsLink.appendChild(document.createTextNode(' ' + (partido.pabellon || 'Ubicación no especificada')));
         mapsLink.onmouseover = () => mapsLink.style.color = '#0d6efd';
         mapsLink.onmouseout = () => mapsLink.style.color = '#666';
+        mapsLink.onclick = (e) => e.stopPropagation();
         divPabellon.appendChild(mapsLink);
 
         const divMarcador = document.createElement('div');
@@ -351,14 +361,13 @@ class CompetitionApp extends BaseApp {
         const botonesContainer = document.createElement('div');
         botonesContainer.classList.add('d-flex', 'gap-2', 'mt-2', 'justify-content-end', 'w-100');
 
-        const canEdit = (this.userRole === 'owner' || this.userRole === 'statistician');
-
         if (canEdit) {
             const btnGestionar = document.createElement('a');
             btnGestionar.href = `partido.html?idEquipo=${this.currentTeamId}&idCompeticion=${this.currentCompeticionId}&idPartido=${id}&ownerUid=${encodeURIComponent(this.ownerUid)}`;
             btnGestionar.classList.add('btn', 'btn-sm', 'btn-success');
             btnGestionar.title = 'Ver/Gestionar partido';
             btnGestionar.innerHTML = '<i class="bi bi-eye-fill"></i>';
+            btnGestionar.onclick = (e) => e.stopPropagation();
             botonesContainer.appendChild(btnGestionar);
         }
 
@@ -367,7 +376,8 @@ class CompetitionApp extends BaseApp {
         btnCalendar.classList.add('btn', 'btn-sm', 'btn-info');
         btnCalendar.title = 'Añadir a Google Calendar';
         btnCalendar.innerHTML = '<i class="bi bi-calendar-plus"></i>';
-        btnCalendar.onclick = () => {
+        btnCalendar.onclick = (e) => {
+            e.stopPropagation();
             const url = CalendarHelper.generateCalendarURL(partido, nombreEquipo);
             CalendarHelper.openCalendar(url);
         };
@@ -378,7 +388,8 @@ class CompetitionApp extends BaseApp {
             btnBorrar.classList.add('btn', 'btn-sm', 'btn-danger');
             btnBorrar.title = 'Borrar partido';
             btnBorrar.innerHTML = '<i class="bi bi-trash-fill"></i>';
-            btnBorrar.onclick = () => {
+            btnBorrar.onclick = (e) => {
+                e.stopPropagation();
                 this.elementoABorrar = { tipo: 'partido', id };
                 this.confirmDeleteModal.show();
             };

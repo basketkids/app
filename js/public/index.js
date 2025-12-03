@@ -469,6 +469,10 @@ function renderDay(dayColumn, container, matches) {
 function createMatchCard(partido) {
   const card = document.createElement('div');
   card.className = 'match-card p-2 mb-2 border rounded shadow-sm bg-white';
+  card.style.cursor = 'pointer';
+  card.onclick = () => {
+    window.location.href = `partido.html?id=${partido.id}`;
+  };
 
   const fechaObj = new Date(partido.fechaHora);
   const time = fechaObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
@@ -522,7 +526,8 @@ function createMatchCard(partido) {
   const viewBtn = `
         <a href="partido.html?id=${partido.id}" 
            class="btn btn-sm btn-success ms-auto" 
-           title="Ver partido">
+           title="Ver partido"
+           onclick="event.stopPropagation()">
             <i class="bi bi-eye-fill"></i>
         </a>
     `;

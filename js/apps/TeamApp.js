@@ -610,6 +610,10 @@ class TeamApp extends BaseApp {
             const stats = this.mediasGlobalesCache[jugador.key] || null;
             const li = document.createElement('li');
             li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            li.style.cursor = 'pointer';
+            li.onclick = () => {
+                window.location.href = `jugadores.html?idJugador=${encodeURIComponent(jugador.key)}&idEquipo=${encodeURIComponent(this.currentTeamId)}&ownerUid=${encodeURIComponent(this.ownerUid)}`;
+            };
 
             const divInfo = document.createElement('div');
             divInfo.className = 'd-flex align-items-center gap-2';
@@ -644,12 +648,14 @@ class TeamApp extends BaseApp {
             btnEditar.href = `jugadores.html?idJugador=${encodeURIComponent(jugador.key)}&idEquipo=${encodeURIComponent(this.currentTeamId)}&ownerUid=${encodeURIComponent(this.ownerUid)}`;
             btnEditar.title = 'Editar jugador';
             btnEditar.innerHTML = '<i class="bi bi-pencil"></i>';
+            btnEditar.onclick = (e) => e.stopPropagation();
 
             const btnBorrar = document.createElement('button');
             btnBorrar.className = 'btn btn-danger btn-sm';
             btnBorrar.title = 'Borrar jugador';
             btnBorrar.innerHTML = '<i class="bi bi-trash"></i>';
-            btnBorrar.addEventListener('click', () => {
+            btnBorrar.addEventListener('click', (e) => {
+                e.stopPropagation();
                 this.confirmarBorradoJugador(jugador.key, jugador.nombre);
             });
 
@@ -683,17 +689,23 @@ class TeamApp extends BaseApp {
                 const li = document.createElement('li');
                 li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
                 li.textContent = competicion.nombre;
+                li.style.cursor = 'pointer';
+                li.onclick = () => {
+                    window.location.href = `competicion.html?idEquipo=${this.currentTeamId}&idCompeticion=${key}&ownerUid=${encodeURIComponent(this.ownerUid)}`;
+                };
 
                 const btnAbrir = document.createElement('a');
                 // Pass ownerUid
                 btnAbrir.href = `competicion.html?idEquipo=${this.currentTeamId}&idCompeticion=${key}&ownerUid=${encodeURIComponent(this.ownerUid)}`;
                 btnAbrir.classList.add('btn', 'btn-sm', 'btn-primary');
                 btnAbrir.textContent = 'Abrir';
+                btnAbrir.onclick = (e) => e.stopPropagation();
 
                 const btnEditar = document.createElement('button');
                 btnEditar.classList.add('btn', 'btn-sm', 'btn-outline-secondary', 'ms-2');
                 btnEditar.innerHTML = '<i class="bi bi-pencil"></i>';
-                btnEditar.onclick = () => {
+                btnEditar.onclick = (e) => {
+                    e.stopPropagation();
                     this.competicionAEditar = key;
                     this.editNombreCompeticion.value = competicion.nombre;
                     this.editCompeticionModal.show();
