@@ -142,6 +142,14 @@
         <button class="nav-link" id="tab-cronica" data-bs-toggle="tab" data-bs-target="#cronica" type="button"
           role="tab" aria-controls="cronica" aria-selected="false">Crónica</button>
       </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-fantasy" data-bs-toggle="tab" data-bs-target="#fantasy" type="button"
+          role="tab" aria-controls="fantasy" aria-selected="false">Fantasy</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-quintetos" data-bs-toggle="tab" data-bs-target="#quintetos" type="button"
+          role="tab" aria-controls="quintetos" aria-selected="false">Quintetos</button>
+      </li>
     </ul>
 
     <div class="tab-content" id="tabsContent">
@@ -212,6 +220,24 @@
           }
         </style>
         <div id="cronicaContent" class="card p-3 bg-light" style="display: none;"></div>
+      </div>
+      <!-- Tab: Fantasy -->
+      <div class="tab-pane fade" id="fantasy" role="tabpanel" aria-labelledby="tab-fantasy">
+        <div id="fantasyContainer" class="mt-3 text-center"></div>
+      </div>
+
+      <!-- Tab: Quintetos -->
+      <div class="tab-pane fade" id="quintetos" role="tabpanel" aria-labelledby="tab-quintetos">
+        <div class="d-flex justify-content-center gap-3 my-3">
+          <button class="btn btn-outline-danger active" id="btnQuintetoAtaque"
+            onclick="app.cambiarVistaQuinteto('ataque')">
+            <i class="bi bi-lightning-fill"></i> Ataque
+          </button>
+          <button class="btn btn-outline-primary" id="btnQuintetoDefensa" onclick="app.cambiarVistaQuinteto('defensa')">
+            <i class="bi bi-shield-fill-check"></i> Defensa
+          </button>
+        </div>
+        <div id="quintetosContainer" class="text-center"></div>
       </div>
     </div>
   </div>
@@ -354,6 +380,7 @@
   <script src="js/services/TeamMembersService.js"></script>
   <script src="js/services/DataService.js"></script>
   <script src="js/apps/BaseApp.js"></script>
+  <script src="js/utils/DiceBearManager.js"></script>
   <script src="js/utils/MatchRenderer.js"></script>
   <script src="js/apps/PartidoApp.js?v=3"></script>
   <script src="js/partido.js?v=3"></script>

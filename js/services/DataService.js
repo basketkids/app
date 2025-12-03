@@ -151,13 +151,36 @@ class DataService {
 
         switch (evento.tipo) {
           case 'puntos':
-
             return estadisticasRef.once('value').then(snap => {
               const stats = snap.val() || {};
               if (!stats[evento.jugadorId]) stats[evento.jugadorId] = this._inicializarEstadisticas();
-              stats[evento.jugadorId].puntos = (stats[evento.jugadorId].puntos || 0) + (evento.cantidad || 0);
-              return estadisticasRef.set(stats).then(() => this._actualizarMarcador(evento));
 
+              // Actualizar puntos totales
+              stats[evento.jugadorId].puntos = (stats[evento.jugadorId].puntos || 0) + (evento.cantidad || 0);
+
+              // Actualizar tiros convertidos (1, 2 o 3)
+              const valor = evento.cantidad || 0;
+              if (valor >= 1 && valor <= 3) {
+                const key = `t${valor}_convertidos`;
+                stats[evento.jugadorId][key] = (stats[evento.jugadorId][key] || 0) + 1;
+              }
+
+              return estadisticasRef.set(stats).then(() => this._actualizarMarcador(evento));
+            });
+
+          case 'fallo':
+            return estadisticasRef.once('value').then(snap => {
+              const stats = snap.val() || {};
+              if (!stats[evento.jugadorId]) stats[evento.jugadorId] = this._inicializarEstadisticas();
+
+              // Actualizar tiros fallados (1, 2 o 3)
+              const valor = evento.valor || 0;
+              if (valor >= 1 && valor <= 3) {
+                const key = `t${valor}_fallados`;
+                stats[evento.jugadorId][key] = (stats[evento.jugadorId][key] || 0) + 1;
+              }
+
+              return estadisticasRef.set(stats);
             });
 
           case 'cambioPista':
@@ -212,7 +235,30 @@ class DataService {
               const stats = snap.val() || {};
               if (stats[evento.jugadorId]) {
                 stats[evento.jugadorId].puntos = (stats[evento.jugadorId].puntos || 0) - (evento.cantidad || 0);
+
+                // Revertir tiros convertidos
+                const valor = evento.cantidad || 0;
+                if (valor >= 1 && valor <= 3) {
+                  const key = `t${valor}_convertidos`;
+                  stats[evento.jugadorId][key] = (stats[evento.jugadorId][key] || 0) - 1;
+                }
+
                 return estadisticasRef.set(stats).then(() => this._actualizarMarcador(evento, true));
+              }
+              return Promise.resolve();
+            });
+
+          case 'fallo':
+            return estadisticasRef.once('value').then(snap => {
+              const stats = snap.val() || {};
+              if (stats[evento.jugadorId]) {
+                // Revertir tiros fallados
+                const valor = evento.valor || 0;
+                if (valor >= 1 && valor <= 3) {
+                  const key = `t${valor}_fallados`;
+                  stats[evento.jugadorId][key] = (stats[evento.jugadorId][key] || 0) - 1;
+                }
+                return estadisticasRef.set(stats);
               }
               return Promise.resolve();
             });
@@ -292,7 +338,12 @@ class DataService {
 
   // Inicializa estructura de estadísticas para un jugador
   _inicializarEstadisticas() {
-    return { puntos: 0, asistencias: 0, rebotes: 0, robos: 0, tapones: 0, faltas: 0, masMenos: 0 };
+    return {
+      puntos: 0, asistencias: 0, rebotes: 0, robos: 0, tapones: 0, faltas: 0, masMenos: 0,
+      t1_convertidos: 0, t1_fallados: 0,
+      t2_convertidos: 0, t2_fallados: 0,
+      t3_convertidos: 0, t3_fallados: 0
+    };
   }
 
   // Sincroniza el partido actual dentro del nodo global 'partidosGlobales'

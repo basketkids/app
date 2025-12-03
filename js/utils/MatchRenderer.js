@@ -2,6 +2,9 @@ class MatchRenderer {
     constructor() {
         this.ordenColumna = 0;
         this.ascendente = true;
+        if (typeof DiceBearManager !== 'undefined') {
+            this.diceBearManager = new DiceBearManager();
+        }
     }
 
     renderEventosEnVivo(containerId, partido, onDeleteEvento = null) {
@@ -229,7 +232,7 @@ class MatchRenderer {
         const statsJugadores = this.calcularEstadisticasDesdeEventos(partido);
 
         const columnas = ['Nombre', 'Puntos', '% T1', '% T2', '% T3', 'Asist.', 'Rebotes', 'Robos', 'Tapones', 'Faltas', '+/-', 'Val.'];
-        const campos = ['nombre', 'puntos', 'pct1', 'pct2', 'pct3', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas', 'masMenos', 'Fantasy'];
+        const campos = ['nombre', 'puntos', 'pct1', 'pct2', 'pct3', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas', 'masMenos', 'valoracion'];
 
         const jugadoresArray = Object.entries(partido.convocados).map(([id, jug]) => {
             return { id, ...jug };
@@ -312,10 +315,10 @@ class MatchRenderer {
                     tr.appendChild(td);
                 });
 
-                const tdFantasy = document.createElement('td');
-                tdFantasy.style.fontWeight = '600';
-                tdFantasy.textContent = this.calcularPuntosFantasy(stats);
-                tr.appendChild(tdFantasy);
+                const tdVal = document.createElement('td');
+                tdVal.style.fontWeight = '600';
+                tdVal.textContent = this.calcularValoracion(stats);
+                tr.appendChild(tdVal);
 
                 tbody.appendChild(tr);
             });
@@ -338,6 +341,9 @@ class MatchRenderer {
             } else if (campo === 'Fantasy') {
                 valA = this.calcularPuntosFantasy(statsJugadores[a.id]);
                 valB = this.calcularPuntosFantasy(statsJugadores[b.id]);
+            } else if (campo === 'valoracion') {
+                valA = this.calcularValoracion(statsJugadores[a.id]);
+                valB = this.calcularValoracion(statsJugadores[b.id]);
             } else {
                 const statsA = statsJugadores[a.id] || {};
                 const statsB = statsJugadores[b.id] || {};
@@ -354,28 +360,41 @@ class MatchRenderer {
 
     calcularEstadisticasDesdeEventos(partido) {
         const stats = {};
+        const hasEvents = partido.eventos && Object.keys(partido.eventos).length > 0;
 
         // Inicializar stats para todos los convocados
         if (partido.convocados) {
             Object.keys(partido.convocados).forEach(id => {
                 stats[id] = {
                     puntos: 0, asistencias: 0, rebotes: 0, robos: 0, tapones: 0, faltas: 0, masMenos: 0,
-                    puntos_favor_pista: 0, puntos_contra_pista: 0, // New stats
+                    puntos_favor_pista: 0, puntos_contra_pista: 0,
                     t1_convertidos: 0, t1_fallados: 0,
                     t2_convertidos: 0, t2_fallados: 0,
                     t3_convertidos: 0, t3_fallados: 0
                 };
+
+                // Cargar estadísticas guardadas si existen (PRIORIDAD)
+                if (partido.estadisticasJugadores && partido.estadisticasJugadores[id]) {
+                    const saved = partido.estadisticasJugadores[id];
+                    // Copiar propiedades guardadas
+                    Object.keys(saved).forEach(key => {
+                        stats[id][key] = saved[key];
+                    });
+                    stats[id]._loadedFromStorage = true;
+                }
             });
         }
 
-        if (!partido.eventos) return stats;
+        if (!hasEvents) return stats;
 
         Object.values(partido.eventos).forEach(ev => {
             const pid = ev.jugadorId;
-            // pid might be null for rival points, so check inside specific blocks or use optional chaining
+
+            // Si NO se cargaron datos del almacenamiento para este jugador, calculamos desde eventos
+            const shouldUseEventForStats = (pid && stats[pid] && !stats[pid]._loadedFromStorage);
 
             if (ev.tipo === 'puntos') {
-                if (pid && stats[pid]) {
+                if (shouldUseEventForStats) {
                     stats[pid].puntos += (ev.cantidad || 0);
                     const val = ev.cantidad || 0;
                     if (val >= 1 && val <= 3) {
@@ -383,26 +402,29 @@ class MatchRenderer {
                     }
                 }
 
-                // Puntos a favor con jugador en pista
+                // Puntos a favor con jugador en pista (SIEMPRE calcular, no se guarda)
                 const puntos = ev.cantidad || 0;
                 if (ev.jugadoresEnPista) {
                     ev.jugadoresEnPista.forEach(pistaId => {
                         if (stats[pistaId]) {
-                            stats[pistaId].masMenos += puntos;
                             stats[pistaId].puntos_favor_pista += puntos;
+
+                            if (!stats[pistaId]._loadedFromStorage) {
+                                stats[pistaId].masMenos += puntos;
+                            }
                         }
                     });
                 }
 
             } else if (ev.tipo === 'fallo') {
-                if (pid && stats[pid]) {
+                if (shouldUseEventForStats) {
                     const val = ev.valor || 0;
                     if (val >= 1 && val <= 3) {
                         stats[pid][`t${val}_fallados`] = (stats[pid][`t${val}_fallados`] || 0) + 1;
                     }
                 }
             } else if (['asistencias', 'rebotes', 'robos', 'tapones', 'faltas'].includes(ev.tipo)) {
-                if (pid && stats[pid]) {
+                if (shouldUseEventForStats) {
                     stats[pid][ev.tipo] = (stats[pid][ev.tipo] || 0) + (ev.cantidad || 1);
                 }
             }
@@ -413,15 +435,18 @@ class MatchRenderer {
                 if (ev.jugadoresEnPista) {
                     ev.jugadoresEnPista.forEach(pistaId => {
                         if (stats[pistaId]) {
-                            stats[pistaId].masMenos -= puntos;
                             stats[pistaId].puntos_contra_pista += puntos;
+
+                            if (!stats[pistaId]._loadedFromStorage) {
+                                stats[pistaId].masMenos -= puntos;
+                            }
                         }
                     });
                 }
             }
         });
 
-        // SOBREESCRIBIR el +/- calculado con el valor de la base de datos si existe
+        // Asegurar que masMenos coincida con lo guardado si existe (redundancia por seguridad)
         if (partido.estadisticasJugadores) {
             Object.keys(stats).forEach(id => {
                 if (partido.estadisticasJugadores[id] && partido.estadisticasJugadores[id].masMenos !== undefined) {
@@ -440,9 +465,24 @@ class MatchRenderer {
             (stats.rebotes || 0) * 1 +
             (stats.asistencias || 0) * 2 +
             (stats.tapones || 0) * 3 +
-            (stats.robos || 0) * 3 +
-            (stats.faltas || 0) * -1;
+            (stats.robos || 0) * 3;
         return puntos;
+    }
+
+    calcularValoracion(stats) {
+        if (!stats) return 0;
+        const puntosFallados =
+            (stats.t1_fallados || 0) * 1 +
+            (stats.t2_fallados || 0) * 2 +
+            (stats.t3_fallados || 0) * 3;
+
+        return (stats.puntos || 0) -
+            puntosFallados +
+            (stats.tapones || 0) +
+            (stats.rebotes || 0) +
+            (stats.asistencias || 0) +
+            (stats.robos || 0) -
+            (stats.faltas || 0);
     }
 
     renderQuintetos(containerId, partido, tipo = 'ataque') {
@@ -472,25 +512,117 @@ class MatchRenderer {
         container.innerHTML = courtHtml;
     }
 
+    renderFantasy(containerId, partido, jerseyColor = '5199e4', plantillaJugadores = []) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        container.innerHTML = '';
+        if (!partido.convocados) {
+            container.innerHTML = '<div class="alert alert-warning">No hay datos de jugadores.</div>';
+            return;
+        }
+
+        const statsJugadores = this.calcularEstadisticasDesdeEventos(partido);
+
+        // Convert to array with player info and fantasy points
+        const jugadoresArray = Object.entries(partido.convocados).map(([id, jug]) => {
+            const stats = statsJugadores[id] || {};
+
+            // Try to find avatarConfig in convocados, otherwise look in plantillaJugadores
+            let avatarConfig = jug.avatarConfig;
+            if (!avatarConfig && plantillaJugadores) {
+                const playerInRoster = plantillaJugadores.find(p => p.id === id);
+                if (playerInRoster) {
+                    avatarConfig = playerInRoster.avatarConfig;
+                }
+            }
+
+            return {
+                id,
+                ...jug,
+                avatarConfig, // Ensure this is passed
+                stats,
+                fantasyPoints: this.calcularPuntosFantasy(stats)
+            };
+        });
+
+        // Sort by Fantasy Points Descending
+        jugadoresArray.sort((a, b) => b.fantasyPoints - a.fantasyPoints);
+
+        const top5 = jugadoresArray.slice(0, 5);
+        const rest = jugadoresArray.slice(5);
+
+        // Render Top 5 Court
+        const courtHtml = this.renderCourt(top5, 'fantasy', jerseyColor);
+
+        const courtContainer = document.createElement('div');
+        courtContainer.innerHTML = courtHtml;
+        container.appendChild(courtContainer);
+
+        // Render Rest List
+        if (rest.length > 0) {
+            const listContainer = document.createElement('div');
+            listContainer.className = 'mt-4';
+            const title = document.createElement('h5');
+            title.textContent = 'Resto del equipo';
+            title.className = 'mb-3';
+            listContainer.appendChild(title);
+
+            const ul = document.createElement('ul');
+            ul.className = 'list-group';
+
+            rest.forEach(jug => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+
+                const leftDiv = document.createElement('div');
+                leftDiv.className = 'd-flex align-items-center gap-3';
+
+                const avatarImg = document.createElement('img');
+                avatarImg.className = 'rounded-circle';
+                avatarImg.style.width = '70px';
+                avatarImg.style.height = '70px';
+                avatarImg.src = this.diceBearManager.getImage(jug.id, jug.avatarConfig, jerseyColor);
+                avatarImg.alt = 'Avatar';
+
+                const nameDiv = document.createElement('div');
+                nameDiv.innerHTML = `<strong>${jug.nombre}</strong> <small class="text-muted">#${jug.dorsal}</small>`;
+
+                leftDiv.appendChild(avatarImg);
+                leftDiv.appendChild(nameDiv);
+
+                const pointsBadge = document.createElement('span');
+                pointsBadge.className = 'badge bg-primary rounded-pill';
+                pointsBadge.style.fontSize = '1rem';
+                pointsBadge.textContent = `${jug.fantasyPoints} pts`;
+
+                li.appendChild(leftDiv);
+                li.appendChild(pointsBadge);
+                ul.appendChild(li);
+            });
+
+            listContainer.appendChild(ul);
+            container.appendChild(listContainer);
+        }
+    }
+
     calculateTop5(jugadores, tipo) {
         return jugadores.sort((a, b) => {
             let valA = 0, valB = 0;
             if (tipo === 'ataque') {
-                // Puntos * 1 + Asistencias * 2 + PuntosFavorPista * 0.5
-                valA = (a.stats.puntos || 0) * 1 + (a.stats.asistencias || 0) * 2 + (a.stats.puntos_favor_pista || 0) * 0.5;
-                valB = (b.stats.puntos || 0) * 1 + (b.stats.asistencias || 0) * 2 + (b.stats.puntos_favor_pista || 0) * 0.5;
+                // Puntos * 1 + Asistencias * 1 + PuntosFavorPista * 0.5
+                valA = (a.stats.puntos || 0) * 1 + (a.stats.asistencias || 0) * 1 + (a.stats.puntos_favor_pista || 0) * 0.10;
+                valB = (b.stats.puntos || 0) * 1 + (b.stats.asistencias || 0) * 1 + (b.stats.puntos_favor_pista || 0) * 0.10;
             } else {
-                // Defensa: (Rebotes * 1 + Robos * 3 + Tapones * 3) - (PuntosContraPista * 0.5)
-                // Note: Subtracting points against because fewer is better, but we want higher score for sorting.
-                // Wait, if points against is bad, we subtract it. So high points against reduces the score. Correct.
-                valA = ((a.stats.rebotes || 0) * 1 + (a.stats.robos || 0) * 3 + (a.stats.tapones || 0) * 3) - ((a.stats.puntos_contra_pista || 0) * 0.5);
-                valB = ((b.stats.rebotes || 0) * 1 + (b.stats.robos || 0) * 3 + (b.stats.tapones || 0) * 3) - ((b.stats.puntos_contra_pista || 0) * 0.5);
+                // Defensa: (Rebotes * 1 + Robos * 1 + Tapones * 1) - (PuntosContraPista * 0.5)
+                valA = ((a.stats.rebotes || 0) * 1 + (a.stats.robos || 0) * 1 + (a.stats.tapones || 0) * 1) - ((a.stats.puntos_contra_pista || 0) * 0.10);
+                valB = ((b.stats.rebotes || 0) * 1 + (b.stats.robos || 0) * 1 + (b.stats.tapones || 0) * 1) - ((b.stats.puntos_contra_pista || 0) * 0.10);
             }
             return valB - valA; // Descending
         }).slice(0, 5);
     }
 
-    renderCourt(players, tipo) {
+    renderCourt(players, tipo, jerseyColor = null) {
         let playersHtml = '';
 
         players.forEach((player, index) => {
@@ -500,22 +632,34 @@ class MatchRenderer {
             let val = 0;
 
             if (tipo === 'ataque') {
-                val = (player.stats.puntos || 0) * 1 + (player.stats.asistencias || 0) * 2 + (player.stats.puntos_favor_pista || 0) * 0.5;
+                val = (player.stats.puntos || 0) * 1 + (player.stats.asistencias || 0) * 1 + (player.stats.puntos_favor_pista || 0) * 0.10;
+                val = Math.round(val * 10) / 10;
+                statValue = `${val}`;
+            } else if (tipo === 'fantasy') {
+                val = player.fantasyPoints;
+                statValue = `${val} pts`;
             } else {
-                val = ((player.stats.rebotes || 0) * 1 + (player.stats.robos || 0) * 3 + (player.stats.tapones || 0) * 3) - ((player.stats.puntos_contra_pista || 0) * 0.5);
+                val = ((player.stats.rebotes || 0) * 1 + (player.stats.robos || 0) * 1 + (player.stats.tapones || 0) * 1) - ((player.stats.puntos_contra_pista || 0) * 0.10);
+                val = Math.round(val * 10) / 10;
+                statValue = `${val}`;
             }
-            // Round to 1 decimal place if needed, or integer
-            val = Math.round(val * 10) / 10;
-            statValue = `${val} val`;
 
-            // Jersey color based on type (Red for Attack, Blue for Defense to match buttons)
-            const jerseyColor = tipo === 'ataque' ? '#dc3545' : '#0d6efd';
+            // Jersey color based on type
+            let color = '#dc3545';
+            if (tipo === 'defensa') color = '#0d6efd';
+            if (tipo === 'fantasy') color = '#' + (jerseyColor || '5199e4');
+
+            let visualHtml = '';
+            if (tipo === 'fantasy') {
+                const avatarUrl = this.diceBearManager.getImage(player.id, player.avatarConfig, jerseyColor || '5199e4');
+                visualHtml = `<img src="${avatarUrl}" class="rounded-circle" style="width: 80px; height: 80px; border: 3px solid ${color}; background: white;">`;
+            } else {
+                visualHtml = `<div class="jersey-svg" style="width: 80px; height: 80px;">${this.getJerseySVG(color, player.dorsal)}</div>`;
+            }
 
             playersHtml += `
                 <div class="player-jersey ${posClass}">
-                    <div class="jersey-svg">
-                        ${this.getJerseySVG(jerseyColor, player.dorsal)}
-                    </div>
+                    ${visualHtml}
                     <div class="player-info">
                         <div>${player.nombre}</div>
                         <div class="player-stat">${statValue}</div>

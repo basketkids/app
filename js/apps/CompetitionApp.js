@@ -351,6 +351,17 @@ class CompetitionApp extends BaseApp {
         const botonesContainer = document.createElement('div');
         botonesContainer.classList.add('d-flex', 'gap-2', 'mt-2', 'justify-content-end', 'w-100');
 
+        const canEdit = (this.userRole === 'owner' || this.userRole === 'statistician');
+
+        if (canEdit) {
+            const btnGestionar = document.createElement('a');
+            btnGestionar.href = `partido.html?idEquipo=${this.currentTeamId}&idCompeticion=${this.currentCompeticionId}&idPartido=${id}&ownerUid=${encodeURIComponent(this.ownerUid)}`;
+            btnGestionar.classList.add('btn', 'btn-sm', 'btn-success');
+            btnGestionar.title = 'Ver/Gestionar partido';
+            btnGestionar.innerHTML = '<i class="bi bi-eye-fill"></i>';
+            botonesContainer.appendChild(btnGestionar);
+        }
+
         // Google Calendar button
         const btnCalendar = document.createElement('button');
         btnCalendar.classList.add('btn', 'btn-sm', 'btn-info');
@@ -362,16 +373,7 @@ class CompetitionApp extends BaseApp {
         };
         botonesContainer.appendChild(btnCalendar);
 
-        const canEdit = (this.userRole === 'owner' || this.userRole === 'statistician');
-
         if (canEdit) {
-            const btnGestionar = document.createElement('a');
-            btnGestionar.href = `partido.html?idEquipo=${this.currentTeamId}&idCompeticion=${this.currentCompeticionId}&idPartido=${id}&ownerUid=${encodeURIComponent(this.ownerUid)}`;
-            btnGestionar.classList.add('btn', 'btn-sm', 'btn-warning');
-            btnGestionar.title = 'Gestionar partido';
-            btnGestionar.innerHTML = '<i class="bi bi-pencil-fill"></i>';
-            botonesContainer.appendChild(btnGestionar);
-
             const btnBorrar = document.createElement('button');
             btnBorrar.classList.add('btn', 'btn-sm', 'btn-danger');
             btnBorrar.title = 'Borrar partido';

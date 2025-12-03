@@ -1,4 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const app = new PartidoApp();
-  app.init();
+  window.app = new PartidoApp();
+  window.app.init();
 });

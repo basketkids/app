@@ -18,6 +18,7 @@ class PartidoApp extends BaseApp {
     this.contadorActivo = false;
     this.matchRenderer = new MatchRenderer();
     this.userRole = 'follower';
+    this.jerseyColor = '5199e4';
   }
 
   onUserLoggedIn(user) {
@@ -54,7 +55,7 @@ class PartidoApp extends BaseApp {
   async initMatch() {
     try {
       this.partido = await this.dataService.cargarPartido();
-      //  console.log(this.partido);
+      console.log(this.partido);
 
       if (!this.partido) throw new Error('Partido no encontrado');
 
@@ -183,6 +184,38 @@ class PartidoApp extends BaseApp {
     this.actualizarLinksPublicos();
     this.renderCronica();
     this.actualizarOrdenMarcador();
+    this.renderFantasy();
+    this.renderQuintetos();
+  }
+
+  renderQuintetos() {
+    // Default to 'ataque' if not set
+    if (!this.vistaQuinteto) this.vistaQuinteto = 'ataque';
+    this.matchRenderer.renderQuintetos('quintetosContainer', this.partido, this.vistaQuinteto);
+  }
+
+  cambiarVistaQuinteto(tipo) {
+    this.vistaQuinteto = tipo;
+
+    // Update buttons
+    const btnAtaque = document.getElementById('btnQuintetoAtaque');
+    const btnDefensa = document.getElementById('btnQuintetoDefensa');
+
+    if (btnAtaque && btnDefensa) {
+      if (tipo === 'ataque') {
+        btnAtaque.classList.add('active');
+        btnDefensa.classList.remove('active');
+      } else {
+        btnAtaque.classList.remove('active');
+        btnDefensa.classList.add('active');
+      }
+    }
+
+    this.renderQuintetos();
+  }
+
+  renderFantasy() {
+    this.matchRenderer.renderFantasy('fantasyContainer', this.partido, this.jerseyColor, this.plantillaJugadores);
   }
 
   actualizarLinksPublicos() {
@@ -260,20 +293,27 @@ class PartidoApp extends BaseApp {
       nombreRival.textContent = this.partido.nombreRival;
     }
 
-    if (nombreEntrenadorDisplay && this.partido.equipoId && this.ownerUid) {
+    if (this.partido.equipoId && this.ownerUid) {
       try {
         const teamSnap = await this.db.ref(`usuarios/${this.ownerUid}/equipos/${this.partido.equipoId}`).once('value');
         if (teamSnap.exists()) {
-          const entrenador = teamSnap.val().entrenador;
-          if (entrenador) {
-            nombreEntrenadorDisplay.textContent = `Entrenador/a: ${entrenador}`;
-            nombreEntrenadorDisplay.style.display = 'block';
-          } else {
-            nombreEntrenadorDisplay.style.display = 'none';
+          const teamData = teamSnap.val();
+          const entrenador = teamData.entrenador;
+          this.jerseyColor = teamData.jerseyColor || '5199e4';
+
+          if (nombreEntrenadorDisplay) {
+            if (entrenador) {
+              nombreEntrenadorDisplay.textContent = `Entrenador/a: ${entrenador}`;
+              nombreEntrenadorDisplay.style.display = 'block';
+            } else {
+              nombreEntrenadorDisplay.style.display = 'none';
+            }
           }
+          // Re-render fantasy with correct color if needed
+          this.renderFantasy();
         }
       } catch (e) {
-        console.error('Error fetching coach name for display:', e);
+        console.error('Error fetching team data:', e);
       }
     }
   }
@@ -519,7 +559,7 @@ class PartidoApp extends BaseApp {
       checkbox.checked = this.partido.convocados && this.partido.convocados[j.id];
       checkbox.onchange = () => {
         if (!this.partido.convocados) this.partido.convocados = {};
-        if (checkbox.checked) this.partido.convocados[j.id] = { dorsal: j.dorsal, nombre: j.nombre };
+        if (checkbox.checked) this.partido.convocados[j.id] = { dorsal: j.dorsal, nombre: j.nombre, avatarConfig: j.avatarConfig };
         else delete this.partido.convocados[j.id];
         this.guardarPartido();
       };

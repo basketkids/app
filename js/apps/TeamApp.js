@@ -391,7 +391,7 @@ class TeamApp extends BaseApp {
 
         const thead = document.createElement('thead');
         const trHead = document.createElement('tr');
-        ['Avatar', 'Dorsal', 'Nombre', 'Pts/Juego', 'Partidos', 'Asist.', 'Rebotes', 'Robos', 'Tapones', 'Faltas', '+/-', 'Valoración', 'Acciones'].forEach(thText => {
+        ['Avatar', 'Dorsal', 'Nombre', 'Pts/Juego', 'Partidos', 'Asist.', 'Rebotes', 'Robos', 'Tapones', 'Faltas', '+/-', 'Fantasy', 'Acciones'].forEach(thText => {
             const th = document.createElement('th');
             th.textContent = thText;
             trHead.appendChild(th);
@@ -506,7 +506,7 @@ class TeamApp extends BaseApp {
 
             const spanStats = document.createElement('span');
             if (stats) {
-                spanStats.textContent = `Pts: ${stats.puntos.toFixed(2)} | Val: ${stats.valoracionFantasy.toFixed(2)}`;
+                spanStats.textContent = `Pts: ${stats.puntos.toFixed(2)} | Fantasy: ${stats.valoracionFantasy.toFixed(2)}`;
             } else {
                 spanStats.textContent = 'Sin estadísticas';
             }
@@ -655,8 +655,7 @@ class TeamApp extends BaseApp {
             (stats.rebotes || 0) * 1 +
             (stats.asistencias || 0) * 2 +
             (stats.tapones || 0) * 3 +
-            (stats.robos || 0) * 3 -
-            (stats.faltas || 0) * 1;
+            (stats.robos || 0) * 3;
     }
 
     // --- Members Management ---
