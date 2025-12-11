@@ -196,7 +196,11 @@ class PlayerApp extends BaseApp {
         }
     }
 
-    // ...
+
+    setupEventListeners() {
+        this.formEditarJugador.addEventListener('submit', (e) => this.guardarCambiosJugador(e));
+    }
+
 
     guardarCambiosJugador(e) {
         e.preventDefault();
