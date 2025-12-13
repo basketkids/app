@@ -19,7 +19,7 @@ fetch(`${basePath}header.html`)
     const logo = document.querySelector('.navbar-brand.logo');
     if (logo) {
       // If in public, we might want to go back to root index or keep it as is if it's absolute
-      // The original header.html has absolute link: https://BasketKids.github.io/app/
+      // The original header.html has absolute link: https://app.basketkids.org/
       // So we don't strictly need to change it, but if we wanted relative:
       // logo.href = `${basePath}index.html`;
     }

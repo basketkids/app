@@ -382,6 +382,11 @@ class PartidoApp extends BaseApp {
     this.configureApiKeyUI();
 
     document.getElementById('csvFileInput')?.addEventListener('change', (e) => this.handleFileUpload(e));
+
+    // Manual AI Mode
+    document.getElementById('btnManualMode')?.addEventListener('click', () => this.toggleManualMode());
+    document.getElementById('btnCopyPrompt')?.addEventListener('click', () => this.copyPromptToClipboard());
+    document.getElementById('btnSaveManualCronica')?.addEventListener('click', () => this.guardarCronicaManual());
   }
 
   handleFileUpload(event) {
@@ -780,7 +785,11 @@ class PartidoApp extends BaseApp {
 
         this.plantillaJugadores.forEach(j => {
           if (isChecked) {
-            this.partido.convocados[j.id] = { dorsal: j.dorsal, nombre: j.nombre, avatarConfig: j.avatarConfig };
+            this.partido.convocados[j.id] = {
+              dorsal: j.dorsal,
+              nombre: j.nombre,
+              avatarConfig: j.avatarConfig || null
+            };
           } else {
             delete this.partido.convocados[j.id];
           }
@@ -803,8 +812,17 @@ class PartidoApp extends BaseApp {
       checkbox.checked = this.partido.convocados && !!this.partido.convocados[j.id];
       checkbox.onchange = () => {
         if (!this.partido.convocados) this.partido.convocados = {};
-        if (checkbox.checked) this.partido.convocados[j.id] = { dorsal: j.dorsal, nombre: j.nombre, avatarConfig: j.avatarConfig };
-        else delete this.partido.convocados[j.id];
+        if (checkbox.checked) {
+          console.log(`Convocando jugador ${j.nombre} (#${j.dorsal})`);
+          this.partido.convocados[j.id] = {
+            dorsal: j.dorsal,
+            nombre: j.nombre,
+            avatarConfig: j.avatarConfig || null
+          };
+        } else {
+          console.log(`Desconvocando jugador ${j.nombre}`);
+          delete this.partido.convocados[j.id];
+        }
         updateCheckAllState();
         this.guardarPartido();
       };
@@ -910,8 +928,13 @@ class PartidoApp extends BaseApp {
     if (!ul) return;
     ul.innerHTML = '';
 
-    // Usar directamente this.partido.convocados y this.partido.jugadoresEnPista
-    if (!this.partido.convocados) return;
+    if (!this.partido.convocados) {
+      console.warn("No hay objeto convocados en this.partido");
+      return;
+    }
+
+    const convocadosIds = Object.keys(this.partido.convocados);
+    console.log(`Renderizando modal selección pista. ${convocadosIds.length} convocados.`);
 
     this.plantillaJugadores
       .filter(j => this.partido.convocados.hasOwnProperty(j.id))
@@ -1271,8 +1294,18 @@ class PartidoApp extends BaseApp {
   }
 
   guardarPartido() {
-    // console.log('Guardando partido', this.partido);
-    return this.dataService.guardarPartido(this.partido).catch(console.error);
+    console.log('Guardando partido', this.partido);
+    // Defensive coding: Ensure convocados exists
+    if (!this.partido.convocados) this.partido.convocados = {};
+
+    return this.dataService.guardarPartido(this.partido)
+      .then(() => {
+        console.log('Partido guardado correctamente en Firebase');
+      })
+      .catch(error => {
+        console.error('Error al guardar partido:', error);
+        alert('ERROR CRÍTICO: No se han podido guardar los cambios. ' + error.message);
+      });
   }
 
   actualizarBotonesPorEstado() {
@@ -1424,7 +1457,7 @@ class PartidoApp extends BaseApp {
   }
 
   async generarCronica() {
-    const { key, provider } = this.loadApiKey();
+    const { key, provider, model } = this.loadApiKey();
     if (!key) {
       const modal = new bootstrap.Modal(document.getElementById('modalApiKey'));
       modal.show();
@@ -1441,7 +1474,7 @@ class PartidoApp extends BaseApp {
 
     try {
       const prompt = await this.getMatchSummaryForAI();
-      const cronica = await this.callAIAPI(provider, key, prompt);
+      const cronica = await this.callAIAPI(provider, key, prompt, model);
 
       this.partido.cronica = cronica;
       await this.dataService.guardarPartido(this.partido);
@@ -1449,11 +1482,64 @@ class PartidoApp extends BaseApp {
       this.renderCronica();
     } catch (error) {
       console.error('Error generando crónica:', error);
-      alert('Error al generar la crónica: ' + error.message);
+      if (error.message.includes('Quota exceeded') || error.message.includes('429')) {
+        alert('Has excedido el límite de uso gratuito de la IA. Por favor, espera unos minutos e inténtalo de nuevo.');
+      } else {
+        alert('Error al generar la crónica: ' + error.message);
+      }
     } finally {
       if (loading) loading.style.display = 'none';
       if (btn) btn.disabled = false;
     }
+  }
+
+  async toggleManualMode() {
+    const container = document.getElementById('manualCronicaContainer');
+    const promptArea = document.getElementById('promptForAI');
+
+    if (container.style.display === 'none') {
+      container.style.display = 'block';
+      // Auto-generate prompt
+      promptArea.value = 'Generando prompt...';
+      try {
+        const prompt = await this.getMatchSummaryForAI();
+        promptArea.value = prompt;
+      } catch (e) {
+        promptArea.value = 'Error generando prompt: ' + e.message;
+      }
+    } else {
+      container.style.display = 'none';
+    }
+  }
+
+  copyPromptToClipboard() {
+    const promptArea = document.getElementById('promptForAI');
+    if (!promptArea || !promptArea.value) return;
+
+    promptArea.select();
+    document.execCommand('copy'); // Fallback for older browsers
+    // Modern way: navigator.clipboard.writeText(promptArea.value);
+
+    const btn = document.getElementById('btnCopyPrompt');
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-check"></i>';
+    setTimeout(() => btn.innerHTML = originalHtml, 2000);
+  }
+
+  guardarCronicaManual() {
+    const input = document.getElementById('manualCronicaInput');
+    if (!input || !input.value.trim()) {
+      alert('Por favor pega el texto de la crónica.');
+      return;
+    }
+
+    this.partido.cronica = input.value.trim();
+    this.guardarPartido().then(() => {
+      this.renderCronica();
+      document.getElementById('manualCronicaContainer').style.display = 'none';
+      input.value = ''; // clear
+      alert('Crónica manual guardada correctamente.');
+    });
   }
 
   async getMatchSummaryForAI() {
@@ -1546,7 +1632,7 @@ class PartidoApp extends BaseApp {
     `;
   }
 
-  async callAIAPI(provider, apiKey, prompt) {
+  async callAIAPI(provider, apiKey, prompt, model = null) {
     if (provider === 'openai') {
       // OpenAI
       const url = 'https://api.openai.com/v1/chat/completions';
@@ -1620,8 +1706,8 @@ class PartidoApp extends BaseApp {
 
     } else {
       // Google Gemini (Default)
-      const model = 'gemini-2.0-flash';
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const selectedModel = model || 'gemini-2.0-flash';
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
 
       const body = {
         contents: [{
@@ -1640,8 +1726,15 @@ class PartidoApp extends BaseApp {
       });
 
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error?.message || 'Error en la API de Gemini');
+        const err = await response.json().catch(() => ({}));
+        const status = response.status;
+        const msg = err.error?.message || response.statusText;
+
+        if (status === 429 || msg.includes('Quota exceeded') || msg.includes('429')) {
+          throw new Error('Quota exceeded. ' + msg);
+        }
+
+        throw new Error(msg || 'Error en la API de Gemini');
       }
 
       const data = await response.json();
@@ -1659,10 +1752,14 @@ class PartidoApp extends BaseApp {
   saveApiKey() {
     const input = document.getElementById('inputApiKey');
     const select = document.getElementById('selectAiProvider');
+    const selectModel = document.getElementById('selectGeminiModel');
 
     if (input && input.value && select) {
       localStorage.setItem('basketkids_ai_key', input.value);
       localStorage.setItem('basketkids_ai_provider', select.value);
+      if (selectModel && selectModel.value) {
+        localStorage.setItem('basketkids_ai_model', selectModel.value);
+      }
 
       bootstrap.Modal.getInstance(document.getElementById('modalApiKey')).hide();
       alert('Configuración de IA guardada correctamente.');
@@ -1674,7 +1771,8 @@ class PartidoApp extends BaseApp {
   loadApiKey() {
     return {
       key: localStorage.getItem('basketkids_ai_key'),
-      provider: localStorage.getItem('basketkids_ai_provider') || 'gemini'
+      provider: localStorage.getItem('basketkids_ai_provider') || 'gemini',
+      model: localStorage.getItem('basketkids_ai_model') || 'gemini-2.0-flash'
     };
   }
 
@@ -1685,20 +1783,30 @@ class PartidoApp extends BaseApp {
     const selectProvider = document.getElementById('selectAiProvider');
     const inputKey = document.getElementById('inputApiKey');
     const helpText = document.getElementById('apiKeyHelp');
+    const containerModel = document.getElementById('containerGeminiModel');
+    const selectModel = document.getElementById('selectGeminiModel');
 
     if (selectProvider) {
-      selectProvider.addEventListener('change', () => {
+      const updateUI = () => {
         if (selectProvider.value === 'openai') {
           inputKey.placeholder = 'sk-...';
           helpText.innerHTML = '<i class="bi bi-info-circle"></i> Para conseguir tu clave de OpenAI, visita <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI Platform</a>.';
+          if (containerModel) containerModel.style.display = 'none';
         } else if (selectProvider.value === 'huggingface') {
           inputKey.placeholder = 'hf_...';
           helpText.innerHTML = '<i class="bi bi-info-circle"></i> Consigue tu token gratis en <a href="https://huggingface.co/settings/tokens" target="_blank">Hugging Face Tokens</a>.';
+          if (containerModel) containerModel.style.display = 'none';
         } else {
+          // Gemini
           inputKey.placeholder = 'AIzaSy...';
           helpText.innerHTML = '<i class="bi bi-info-circle"></i> Gemini tiene un plan gratuito. Consigue tu clave en <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.';
+          if (containerModel) containerModel.style.display = 'block';
         }
-      });
+      };
+
+      selectProvider.addEventListener('change', updateUI);
+      // init state
+      updateUI();
     }
 
     if (btnConfig) {
@@ -1711,6 +1819,9 @@ class PartidoApp extends BaseApp {
           selectProvider.value = stored.provider;
           // Trigger change to update UI
           selectProvider.dispatchEvent(new Event('change'));
+        }
+        if (selectModel && stored.model) {
+          selectModel.value = stored.model;
         }
 
         modal.show();
