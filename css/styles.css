@@ -1,5 +1,37 @@
 :root {
   --bs-primary: #2B2B2B;
+  --bg-body: #F7F7F7;
+  --bg-card: #ffffff;
+  --text-main: #212529;
+  --text-primary: #2B2B2B;
+  --text-heading: #1a237e;
+  --border-color: #dee2e6;
+  --input-bg: #fff;
+  --input-text: #212529;
+  --btn-primary-bg: #2B2B2B;
+  --btn-primary-text: #fff;
+}
+
+[data-theme="dark"] {
+  --bs-primary: #000000;
+  --bg-body: #121212;
+  --bg-card: #1e1e1e;
+  --text-main: #e0e0e0;
+  --text-primary: #bbdefb;
+  --text-heading: #90caf9;
+  --border-color: #444;
+  --input-bg: #2c2c2c;
+  --input-text: #e0e0e0;
+  --btn-primary-bg: #424242;
+  --btn-primary-text: #fff;
+
+  /* Bootstrap Table Overrides via Variables */
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--text-main);
+  --bs-table-border-color: var(--border-color);
+  --bs-table-striped-bg: rgba(255, 255, 255, 0.05);
+  --bs-table-active-bg: rgba(255, 255, 255, 0.1);
+  --bs-table-hover-bg: rgba(255, 255, 255, 0.075);
 }
 
 h1,
@@ -7,7 +39,44 @@ h2,
 h3,
 h4,
 h5 {
-  color: #1a237e;
+  color: var(--text-heading);
+}
+
+body,
+body.bg-light {
+  background-color: var(--bg-body) !important;
+  color: var(--text-main) !important;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.card {
+  background-color: var(--bg-card);
+  border-color: var(--border-color);
+  color: var(--text-main);
+}
+
+.list-group-item {
+  background-color: var(--bg-card);
+  border-color: var(--border-color);
+  color: var(--text-main);
+}
+
+.modal-content {
+  background-color: var(--bg-card);
+  color: var(--text-main);
+}
+
+.form-control,
+.form-select {
+  background-color: var(--input-bg);
+  color: var(--input-text);
+  border-color: var(--border-color);
+}
+
+.form-control:focus,
+.form-select:focus {
+  background-color: var(--input-bg);
+  color: var(--input-text);
 }
 
 #auth-container button {
@@ -26,7 +95,8 @@ h5 {
 }
 
 .list-group li:hover {
-  background-color: #bbdefb;
+  background-color: rgba(187, 222, 251, 0.2);
+  /* Semi-transparent blue */
 }
 
 #estatsContainer button {
@@ -100,7 +170,7 @@ h5 {
 }
 
 .body {
-  background-color: #F7F7F7 !important;
+  background-color: var(--bg-body) !important;
 }
 
 body {
@@ -112,10 +182,16 @@ body {
 .btn-primary,
 .bg-primary,
 .text-primary {
-  background-color: #2B2B2B !important;
-  border-color: #2B2B2B !important;
+  background-color: var(--bs-primary) !important;
+  border-color: var(--bs-primary) !important;
   color: #fff !important;
 }
+
+/* Specific text primary override for dark mode if needed elsewhere, but .text-primary usually means the brand color */
+a.text-primary {
+  color: var(--bs-primary) !important;
+}
+
 
 .logo {
   display: inline-block;
@@ -151,6 +227,93 @@ body {
 
 #breadcrumb-container a {
   color: var(--bs-primary) !important;
+  text-decoration: none;
+}
+
+/* Fix visibility in dark mode where primary is black */
+[data-theme="dark"] #breadcrumb-container a {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .text-muted {
+  color: #adb5bd !important;
+}
+
+[data-theme="dark"] .text-secondary {
+  color: #a8a8a8 !important;
+}
+
+[data-theme="dark"] .breadcrumb-item.active {
+  color: #e0e0e0;
+}
+
+[data-theme="dark"] .breadcrumb-item+.breadcrumb-item::before {
+  color: #adb5bd;
+}
+
+/* Dark Mode Table Fixes */
+[data-theme="dark"] .table {
+  --bs-table-bg: transparent;
+  --bs-table-striped-bg: rgba(255, 255, 255, 0.05);
+  background-color: var(--bg-card) !important;
+  color: var(--text-main) !important;
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .table> :not(caption)>*>* {
+  background-color: var(--bg-card);
+  /* Fallback */
+  color: var(--text-main);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .table-striped>tbody>tr:nth-of-type(odd)>* {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+}
+
+[data-theme="dark"] .table-hover>tbody>tr:hover>* {
+  background-color: rgba(255, 255, 255, 0.075);
+  color: var(--text-main);
+}
+
+[data-theme="dark"] .table-light,
+[data-theme="dark"] .table-light th,
+[data-theme="dark"] .table-light td,
+[data-theme="dark"] .table .thead-light th {
+  background-color: #2c2c2c !important;
+  color: var(--text-main) !important;
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .table-secondary,
+[data-theme="dark"] .table-secondary th,
+[data-theme="dark"] .table-secondary td {
+  background-color: #333 !important;
+  color: var(--text-main) !important;
+}
+
+
+/* Override utility classes in dark mode */
+[data-theme="dark"] .bg-white,
+[data-theme="dark"] .bg-light,
+[data-theme="dark"] .card-header,
+[data-theme="dark"] .card-body,
+[data-theme="dark"] .list-group-item {
+  background-color: var(--bg-card) !important;
+  color: var(--text-main) !important;
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .bg-light {
+  background-color: var(--bg-body) !important;
+}
+
+/* Ensure table cells inside these containers also adapt if not handled by .table overrides */
+[data-theme="dark"] .bg-white td,
+[data-theme="dark"] .bg-white th {
+  background-color: transparent !important;
+  color: inherit !important;
 }
 
 

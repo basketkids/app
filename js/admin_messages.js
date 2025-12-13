@@ -124,10 +124,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const truncatedMessage = isLong ? (firstLine.length > 50 ? firstLine.substring(0, 50) + '...' : firstLine + '...') : fullMessage;
 
             tr.innerHTML = `
-                <td>${date}</td>
+                <td class="d-none d-md-table-cell">${date}</td>
                 <td>${escapeHtml(msg.name)}</td>
-                <td><a href="mailto:${escapeHtml(msg.email)}">${escapeHtml(msg.email)}</a></td>
-                <td>${msg.phone ? escapeHtml(msg.phone) : '-'}</td>
+                <td class="d-none d-lg-table-cell"><a href="mailto:${escapeHtml(msg.email)}">${escapeHtml(msg.email)}</a></td>
+                <td class="d-none d-xl-table-cell">${msg.phone ? escapeHtml(msg.phone) : '-'}</td>
                 <td>
                     <div class="message-content">
                         <span class="message-text">${isLong ? truncatedMessage : fullMessage}</span>

@@ -74,7 +74,7 @@ async function loadStats() {
                     <div class="d-flex align-items-center">
                         <div class="ms-2">
                             <h6 class="mb-0">${displayName}</h6>
-                            <small class="text-muted">${email}</small>
+                            <small class="text-muted d-none d-md-block">${email}</small>
                         </div>
                     </div>
                 </td>

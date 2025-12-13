@@ -88,11 +88,12 @@ async function loadUsers() {
                     <div class="d-flex align-items-center">
                         <div class="ms-2">
                             <h6 class="mb-0">${displayName}</h6>
-                            <small class="text-muted">ID: ${uid.substring(0, 8)}...</small>
+                            <small class="text-muted d-md-none">${uid.substring(0, 8)}...</small>
+                            <small class="text-muted d-none d-md-block">ID: ${uid}</small>
                         </div>
                     </div>
                 </td>
-                <td>${email}</td>
+                <td class="d-none d-md-table-cell">${email}</td>
                 <td class="text-center">
                     ${isAdmin ? '<span class="badge bg-success">Sí</span>' : '<span class="badge bg-secondary">No</span>'}
                 </td>
@@ -101,7 +102,7 @@ async function loadUsers() {
                             data-uid="${uid}" 
                             data-admin="${isAdmin}"
                             ${isCurrentUser ? 'disabled' : ''}>
-                        ${isAdmin ? 'Quitar Admin' : 'Hacer Admin'}
+                        ${isAdmin ? 'Quitar' : 'Hacer Admin'} 
                     </button>
                     <button class="btn btn-sm btn-danger delete-user-btn" 
                             data-uid="${uid}" 

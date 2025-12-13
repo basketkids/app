@@ -27,6 +27,9 @@ fetch(`${basePath}header.html`)
     // Call breadcrumbs initially (for static/public pages)
     construirBreadcrumbDesdeParametros();
 
+    // Initialize Theme
+    initTheme();
+
     authh.onAuthStateChanged(user => {
       if (user) {
         uid = user.uid;
@@ -471,3 +474,28 @@ async function inicializarAuth() {
     }
   });
 }
+
+function initTheme() {
+  const themeToggle = document.getElementById('themeToggle');
+  if (!themeToggle) return;
+
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  updateThemeIcon(savedTheme);
+
+  themeToggle.onclick = () => {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeIcon(newTheme);
+  };
+}
+
+function updateThemeIcon(theme) {
+  const icon = document.querySelector('#themeToggle i');
+  if (icon) {
+    icon.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-stars';
+  }
+}
+

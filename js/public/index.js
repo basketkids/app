@@ -6,6 +6,7 @@ const db = firebase.database();
 // Initialize services
 const calendarService = new CalendarService(db);
 const teamService = new TeamService(db);
+const matchRenderer = new MatchRenderer();
 
 let currentWeekStart = null;
 let currentMonthStart = null;
@@ -416,8 +417,13 @@ function renderMonthView() {
       const header = document.createElement('div');
       const isToday = date.toDateString() === new Date().toDateString();
 
+      // Update day header
+      // Consistent header styling (User prefers original bg-primary)
       if (isToday) {
-        header.className = 'card-header bg-warning text-dark p-2 d-flex justify-content-between align-items-center rounded-top';
+        // Highlight today with a border or slightly different shade if needed, but keeping bg-primary for now as requested
+        // Or maybe use a specific class that styles.css can handle?
+        // "Los colores de la semana actual ... queda feo" -> removing bg-warning
+        header.className = 'card-header bg-primary text-white p-2 d-flex justify-content-between align-items-center rounded-top border-bottom border-3 border-warning';
       } else {
         header.className = 'card-header bg-primary text-white p-2 d-flex justify-content-between align-items-center rounded-top';
       }
@@ -441,7 +447,7 @@ function renderMonthView() {
       cardBody.className = 'card-body p-0 pt-2';
 
       dayMatches.forEach(match => {
-        const matchCard = createMatchCard(match);
+        const matchCard = matchRenderer.renderMatchCard(match, { isOwner: false });
         cardBody.appendChild(matchCard);
       });
 
@@ -461,109 +467,12 @@ function renderDay(dayColumn, container, matches) {
   }
 
   matches.forEach(match => {
-    const matchCard = createMatchCard(match);
+    const matchCard = matchRenderer.renderMatchCard(match, { isOwner: false });
     container.appendChild(matchCard);
   });
 }
 
-function createMatchCard(partido) {
-  const card = document.createElement('div');
-  card.className = 'match-card p-2 mb-2 border rounded shadow-sm bg-white';
-  card.style.cursor = 'pointer';
-  card.onclick = () => {
-    window.location.href = `partido.html?id=${partido.id}`;
-  };
-
-  const fechaObj = new Date(partido.fechaHora);
-  const time = fechaObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-
-  const nombreEquipo = partido.nombreEquipo;
-  const local = partido.esLocal ? nombreEquipo : partido.nombreRival || 'Rival';
-  const visitante = partido.esLocal ? (partido.nombreRival || 'Rival') : nombreEquipo;
-
-  // Location
-  const locationLink = partido.pabellon
-    ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(partido.pabellon)}" 
-              target="_blank" 
-              onclick="event.stopPropagation()" 
-              class="text-decoration-none text-muted" style="font-size: 0.85em;">
-              <i class="bi bi-geo-alt"></i> ${partido.pabellon}
-           </a>`
-    : '<span class="text-muted" style="font-size: 0.85em;">Sin ubicación</span>';
-
-  // Status Icon
-  let iconHtml = '';
-  switch (partido.estado) {
-    case 'pendiente':
-      iconHtml = '<i class="bi bi-clock text-secondary" title="Pendiente"></i>';
-      break;
-    case 'en_curso':
-    case 'en curso':
-      iconHtml = '<i class="bi bi-record-circle-fill text-danger blink" title="En curso"></i>';
-      break;
-    case 'finalizado':
-      iconHtml = '<i class="bi bi-check-circle-fill text-success" title="Finalizado"></i>';
-      break;
-    default:
-      iconHtml = '<i class="bi bi-question-circle-fill text-muted"></i>';
-  }
-
-  // Score
-  let scoreHtml = '';
-  if (partido.estado === 'finalizado' || partido.estado === 'en curso' || partido.estado === 'en_curso') {
-    const puntosEquipo = partido.puntosEquipo ?? 0;
-    const puntosRival = partido.puntosRival ?? 0;
-    let scoreText = '';
-    if (partido.esLocal) {
-      scoreText = `${puntosEquipo} - ${puntosRival}`;
-    } else {
-      scoreText = `${puntosRival} - ${puntosEquipo}`;
-    }
-    scoreHtml = `<span class="fw-bold ms-2">${scoreText}</span>`;
-  }
-
-  // View Button
-  const viewBtn = `
-        <a href="partido.html?id=${partido.id}" 
-           class="btn btn-sm btn-success ms-auto" 
-           title="Ver partido"
-           onclick="event.stopPropagation()">
-            <i class="bi bi-eye-fill"></i>
-        </a>
-    `;
-
-  // Competicion name (if available)
-  const compNameBadge = partido.nombreCompeticion
-    ? `<span class="badge bg-secondary" style="font-size: 0.7em;">${partido.nombreCompeticion}</span>`
-    : '';
-
-  card.innerHTML = `
-        <div class="d-flex justify-content-between align-items-start mb-1">
-            <div class="text-muted small">${time}</div>
-            ${compNameBadge}
-        </div>
-        
-        <div class="mb-2">
-            <div class="fw-bold text-truncate" title="${local}">${local}</div>
-            <div class="text-muted small">vs</div>
-            <div class="fw-bold text-truncate" title="${visitante}">${visitante}</div>
-        </div>
-  
-        <div class="mb-2">
-            ${locationLink}
-        </div>
-  
-        <div class="d-flex align-items-center mt-2 border-top pt-2">
-            <div class="d-flex align-items-center">
-                ${iconHtml}
-                ${scoreHtml}
-            </div>
-            ${viewBtn}
-        </div>
-    `;
-
-  return card;
-}
+// createMatchCard removed in favor of matchRenderer.renderMatchCard
 
 function showLoading() {
   document.getElementById('loadingSpinner').style.display = 'block';

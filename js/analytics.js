@@ -1,6 +1,6 @@
 // Google Analytics Integration
 // TODO: Replace 'G-XXXXXXXXXX' with your actual Measurement ID
-const GA_MEASUREMENT_ID = 'G-VZQEYVJWSM';
+const GA_MEASUREMENT_ID = 'G-T9K21H6TPY';
 
 // Load the Google Analytics script
 const script = document.createElement('script');

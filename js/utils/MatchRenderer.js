@@ -766,6 +766,166 @@ class MatchRenderer {
         `;
     }
 
+    renderMatchCard(match, options = {}) {
+        const { isOwner, baseUrl = '' } = options;
+
+        const card = document.createElement('div');
+        // Use 'card' class for theme support, remove bg-white
+        card.className = 'match-card card mb-2 shadow-sm border';
+        card.style.cursor = 'pointer';
+
+        // Navigate to match details
+        card.onclick = () => {
+            // Determine target URL based on context (public vs private/admin)
+            // If we have an id (public) use that. If we have complex IDs (private) use those.
+            if (match.id && !match.matchId) {
+                // Public view format
+                window.location.href = `${baseUrl}partido.html?id=${match.id}`;
+            } else {
+                // Private view format
+                window.location.href = `${baseUrl}partido.html?idEquipo=${match.teamId}&idCompeticion=${match.compId}&idPartido=${match.matchId}&ownerUid=${match.ownerUid}`;
+            }
+        };
+
+        const fechaObj = new Date(match.fechaHora);
+        const time = fechaObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+        // Logic for team names handles both public (match.nombreEquipo) and private (match.teamName) structures
+        // Public: nombreEquipo vs nombreRival
+        // Private: teamName vs nombreRival (and esLocal flag)
+
+        let local, visitante;
+
+        if (match.teamName) {
+            // Private structure
+            local = match.esLocal ? match.teamName : match.nombreRival;
+            visitante = match.esLocal ? match.nombreRival : match.teamName;
+        } else {
+            // Public structure
+            const nombreEquipo = match.nombreEquipo || 'Equipo';
+            local = match.esLocal ? nombreEquipo : match.nombreRival || 'Rival';
+            visitante = match.esLocal ? match.nombreRival || 'Rival' : nombreEquipo;
+        }
+
+        // Location
+        // text-muted allows for override in styles.css for dark mode
+        const locationLink = match.pabellon
+            ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.pabellon)}" 
+                  target="_blank" 
+                  onclick="event.stopPropagation()" 
+                  class="text-decoration-none text-secondary location-link" style="font-size: 0.85em;">
+                  <i class="bi bi-geo-alt"></i> ${match.pabellon}
+               </a>`
+            : '<span class="text-secondary small" style="font-size: 0.85em;">Sin ubicación</span>';
+
+        // Status Icon
+        let iconHtml = '';
+        switch (match.estado) {
+            case 'pendiente':
+                // Changed from text-secondary to specific class or kept text-secondary (fixed in CSS)
+                iconHtml = '<i class="bi bi-clock text-secondary" title="Pendiente"></i>';
+                break;
+            case 'en_curso':
+            case 'en curso':
+                iconHtml = '<i class="bi bi-record-circle-fill text-danger blink" title="En curso"></i>';
+                break;
+            case 'finalizado':
+                iconHtml = '<i class="bi bi-check-circle-fill text-success" title="Finalizado"></i>';
+                break;
+            default:
+                iconHtml = '<i class="bi bi-question-circle-fill text-muted"></i>';
+        }
+
+        // Score
+        let scoreHtml = '';
+        if (match.estado === 'finalizado' || match.estado === 'en curso' || match.estado === 'en_curso') {
+            const puntosEquipo = match.puntosEquipo ?? 0;
+            const puntosRival = match.puntosRival ?? 0;
+
+            let scoreText = '';
+            // If private structure, rely on esLocal to show Team vs Rival
+            if (match.teamName) {
+                if (match.esLocal) {
+                    scoreText = `${puntosEquipo} - ${puntosRival}`;
+                } else {
+                    scoreText = `${puntosRival} - ${puntosEquipo}`;
+                }
+            } else {
+                // Public structure: default usually Equipo (left) - Rival (right)
+                // If esLocal=true, Equipo is Local. If esLocal=false, Rival is Local??
+                // Usually public view shows as is.
+                if (match.esLocal) {
+                    scoreText = `${puntosEquipo} - ${puntosRival}`;
+                } else {
+                    scoreText = `${puntosRival} - ${puntosEquipo}`;
+                }
+            }
+
+            scoreHtml = `<span class="fw-bold ms-2">${scoreText}</span>`;
+        }
+
+        // Compie name badge
+        const compName = match.compName || match.nombreCompeticion || '';
+        const compBadge = compName ? `<span class="badge bg-secondary" style="font-size: 0.7em;">${compName}</span>` : '';
+
+        // Action Button
+        let actionBtn = '';
+        if (isOwner) {
+            // Manage button (Private Calendar)
+            actionBtn = `
+            <button class="btn btn-sm btn-warning ms-auto action-btn" 
+                onclick="event.stopPropagation(); window.location.href='${baseUrl}partido.html?idEquipo=${match.teamId}&idCompeticion=${match.compId}&idPartido=${match.matchId}&ownerUid=${match.ownerUid}'"
+                title="Gestionar partido">
+                <i class="bi bi-pencil-fill"></i>
+            </button>
+            `;
+        } else {
+            // View button (Public/ReadOnly)
+            // Use correct ID for link
+            const linkUrl = (match.id && !match.matchId)
+                ? `${baseUrl}partido.html?id=${match.id}`
+                : `${baseUrl}partido.html?idEquipo=${match.teamId}&idCompeticion=${match.compId}&idPartido=${match.matchId}&ownerUid=${match.ownerUid}`;
+
+            actionBtn = `
+                <a href="${linkUrl}" 
+                class="btn btn-sm btn-success ms-auto action-btn" 
+                title="Ver partido"
+                onclick="event.stopPropagation()">
+                    <i class="bi bi-eye-fill"></i>
+                </a>
+            `;
+        }
+
+        card.innerHTML = `
+            <div class="card-body p-2">
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                    <div class="text-secondary small">${time}</div>
+                    ${compBadge}
+                </div>
+                
+                <div class="mb-2">
+                    <div class="fw-bold text-truncate" title="${local}">${local}</div>
+                    <div class="text-secondary small">vs</div>
+                    <div class="fw-bold text-truncate" title="${visitante}">${visitante}</div>
+                </div>
+
+                <div class="mb-2">
+                    ${locationLink}
+                </div>
+
+                <div class="d-flex align-items-center mt-2 border-top pt-2">
+                    <div class="d-flex align-items-center">
+                        ${iconHtml}
+                        ${scoreHtml}
+                    </div>
+                    ${actionBtn}
+                </div>
+            </div>
+        `;
+
+        return card;
+    }
+
     getJerseySVG(color, number) {
         return `
             <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
