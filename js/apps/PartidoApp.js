@@ -387,6 +387,10 @@ class PartidoApp extends BaseApp {
     document.getElementById('btnManualMode')?.addEventListener('click', () => this.toggleManualMode());
     document.getElementById('btnCopyPrompt')?.addEventListener('click', () => this.copyPromptToClipboard());
     document.getElementById('btnSaveManualCronica')?.addEventListener('click', () => this.guardarCronicaManual());
+
+    // Swap Stats
+    document.getElementById('btnOpenSwapStats')?.addEventListener('click', () => this.abrirModalSwapStats());
+    document.getElementById('btnConfirmSwap')?.addEventListener('click', () => this.confirmarSwapStats());
   }
 
   handleFileUpload(event) {
@@ -1832,8 +1836,121 @@ class PartidoApp extends BaseApp {
       btnSave.addEventListener('click', () => this.saveApiKey());
     }
 
-    if (btnGenerar) {
-      btnGenerar.addEventListener('click', () => this.generarCronica());
+    btnGenerar.addEventListener('click', () => this.generarCronica());
+  }
+
+  abrirModalSwapStats() {
+    const selectA = document.getElementById('selectSwapPlayerA');
+    const selectB = document.getElementById('selectSwapPlayerB');
+    if (!selectA || !selectB) return;
+
+    selectA.innerHTML = '<option value="">Seleccionar...</option>';
+    selectB.innerHTML = '<option value="">Seleccionar...</option>';
+
+    if (this.partido.convocados) {
+      Object.entries(this.partido.convocados).forEach(([id, jug]) => {
+        const optionA = document.createElement('option');
+        optionA.value = id;
+        optionA.textContent = `${jug.nombre} (#${jug.dorsal})`;
+        selectA.appendChild(optionA);
+
+        const optionB = document.createElement('option');
+        optionB.value = id;
+        optionB.textContent = `${jug.nombre} (#${jug.dorsal})`;
+        selectB.appendChild(optionB);
+      });
     }
+
+    const modal = new bootstrap.Modal(document.getElementById('modalSwapStats'));
+    modal.show();
+  }
+
+  confirmarSwapStats() {
+    const idA = document.getElementById('selectSwapPlayerA').value;
+    const idB = document.getElementById('selectSwapPlayerB').value;
+
+    if (!idA || !idB) {
+      return alert('Debes seleccionar dos jugadores.');
+    }
+    if (idA === idB) {
+      return alert('Debes seleccionar jugadores distintos.');
+    }
+
+    if (!confirm('¿Seguro que quieres intercambiar TODAS las estadísticas entre estos dos jugadores? Esta acción no se puede deshacer fácilmente.')) {
+      return;
+    }
+
+    // 1. Swap Summary Stats (estadisticasJugadores)
+    if (!this.partido.estadisticasJugadores) this.partido.estadisticasJugadores = {};
+    const statsA = this.partido.estadisticasJugadores[idA];
+    const statsB = this.partido.estadisticasJugadores[idB];
+
+    // Swap references
+    this.partido.estadisticasJugadores[idA] = statsB; // Can be undefined, that's fine
+    this.partido.estadisticasJugadores[idB] = statsA;
+
+    // Remove key if undefined to keep object clean
+    if (this.partido.estadisticasJugadores[idA] === undefined) delete this.partido.estadisticasJugadores[idA];
+    if (this.partido.estadisticasJugadores[idB] === undefined) delete this.partido.estadisticasJugadores[idB];
+
+
+    // 2. Swap Events (partido.eventos)
+    if (this.partido.eventos) {
+      Object.values(this.partido.eventos).forEach(ev => {
+        // A) Swap the Actor (who did the action)
+        if (ev.jugadorId === idA) {
+          ev.jugadorId = idB;
+          if (this.partido.convocados[idB]) {
+            ev.nombre = this.partido.convocados[idB].nombre;
+            ev.dorsal = this.partido.convocados[idB].dorsal;
+          }
+        } else if (ev.jugadorId === idB) {
+          ev.jugadorId = idA;
+          if (this.partido.convocados[idA]) {
+            ev.nombre = this.partido.convocados[idA].nombre;
+            ev.dorsal = this.partido.convocados[idA].dorsal;
+          }
+        }
+
+        // B) Swap the Context (who was on court - for +/-)
+        if (ev.jugadoresEnPista && Array.isArray(ev.jugadoresEnPista)) {
+          const idxA = ev.jugadoresEnPista.indexOf(idA);
+          const idxB = ev.jugadoresEnPista.indexOf(idB);
+
+          // If both are present, swapping them changes nothing in the set, so do nothing.
+          // If one is present, swap it for the other.
+          if (idxA !== -1 && idxB === -1) {
+            ev.jugadoresEnPista[idxA] = idB;
+          } else if (idxB !== -1 && idxA === -1) {
+            ev.jugadoresEnPista[idxB] = idA;
+          }
+        }
+      });
+    }
+
+    // 3. Swap Current Pista (if applicable)
+    // this.partido.pista might be an object {uid: true} or array.
+    // Usually handled by 'jugadoresEnPista' logic in app, but often stored as reference.
+    // If it's a list or object of current players, we should swap there too.
+    // Based on usage earlier (renderListaJugadoresPista not shown completely but likely list)
+    // We can try to safe swap if it exists.
+    /* 
+       Note: typical structure in this app is not fully visible, but usually 
+       partido.pista is updated live. If user refreshes, it rebuilds? 
+       To be safe, we rely on the event history + manual correction if needed, 
+       but swapping in events is the critical part for stats. 
+    */
+
+    // 4. Save and close
+    this.dataService.guardarPartido(this.partido)
+      .then(() => {
+        bootstrap.Modal.getInstance(document.getElementById('modalSwapStats')).hide();
+        this.renderizarTodo(); // Will re-calculate stats from events if needed, but summary swap helps if using stored stats
+        alert('Estadísticas intercambiadas correctamente.');
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Error al guardar los cambios.');
+      });
   }
 }

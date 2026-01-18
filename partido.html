@@ -160,6 +160,9 @@
           data-bs-target="#modalConvocarJugadores">Cambiar convocatoria</button>
         <button type="button" class="btn btn-secondary mb-3 ms-2" data-bs-toggle="modal"
           data-bs-target="#modalImportarStats">Importar CSV</button>
+        <button type="button" class="btn btn-warning mb-3 ms-2" id="btnOpenSwapStats">
+          <i class="bi bi-arrow-left-right"></i> Intercambiar Stats
+        </button>
         <div id="tablaEstadisticasContainer"></div>
       </div>
       <!-- Tab: Partido -->
@@ -441,6 +444,50 @@
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
           <!-- El botón de importar se generará dinámicamente o se activará tras seleccionar equipo -->
         </div>
+
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <!-- Modal Intercambiar Stats -->
+  <div class="modal fade" id="modalSwapStats" tabindex="-1" aria-labelledby="modalSwapStatsLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-warning">
+          <h5 class="modal-title text-dark" id="modalSwapStatsLabel">Intercambiar Estadísticas</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small">
+            Utiliza esta función si te has equivocado al anotar y has asignado estadísticas al jugador incorrecto.
+            Esta acción <strong>intercambiará TODOS los datos</strong> (puntos, faltas, eventos, etc.) entre los
+            dos
+            jugadores seleccionados para este partido.
+          </p>
+          <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle-fill"></i> Acción irreversible.
+          </div>
+
+          <div class="mb-3">
+            <label for="selectSwapPlayerA" class="form-label fw-bold">Jugador A (Tiene los datos)</label>
+            <select class="form-select" id="selectSwapPlayerA"></select>
+          </div>
+
+          <div class="mb-3 text-center">
+            <i class="bi bi-arrow-down-up fs-3 text-muted"></i>
+          </div>
+
+          <div class="mb-3">
+            <label for="selectSwapPlayerB" class="form-label fw-bold">Jugador B (Debería tener los datos)</label>
+            <select class="form-select" id="selectSwapPlayerB"></select>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-warning fw-bold" id="btnConfirmSwap">Intercambiar</button>
+        </div>
       </div>
     </div>
   </div>
@@ -461,7 +508,7 @@
   <script src="js/apps/BaseApp.js"></script>
   <script src="js/utils/DiceBearManager.js"></script>
   <script src="js/utils/MatchRenderer.js"></script>
-  <script src="js/apps/PartidoApp.js?v=3"></script>
+  <script src="js/apps/PartidoApp.js?v=4"></script>
   <script src="js/partido.js?v=3"></script>
 </body>
 
