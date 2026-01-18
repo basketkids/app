@@ -382,7 +382,7 @@ class TeamApp extends BaseApp {
         this.playersList.innerHTML = '';
         const jugadoresSnap = await this.playerService.getSquad(this.ownerUid, this.currentTeamId);
         if (!jugadoresSnap.exists()) {
-            this.playersList.innerHTML = '<li class="list-group-item">No hay jugadores añadidos</li>';
+            this.playersList.innerHTML = '<li class="modern-list-item justify-content-center text-muted">No hay jugadores añadidos</li>';
             return;
         }
 
@@ -604,12 +604,12 @@ class TeamApp extends BaseApp {
 
     renderPlayersListMobile(jerseyColor) {
         const listaMovil = document.createElement('ul');
-        listaMovil.className = 'list-group d-block d-md-none';
+        listaMovil.className = 'modern-list d-block d-md-none';
 
         this.jugadoresArrayCache.forEach(jugador => {
             const stats = this.mediasGlobalesCache[jugador.key] || null;
             const li = document.createElement('li');
-            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            li.className = 'modern-list-item';
             li.style.cursor = 'pointer';
             li.onclick = () => {
                 window.location.href = `jugadores.html?idJugador=${encodeURIComponent(jugador.key)}&idEquipo=${encodeURIComponent(this.currentTeamId)}&ownerUid=${encodeURIComponent(this.ownerUid)}`;
@@ -679,7 +679,7 @@ class TeamApp extends BaseApp {
         this.competitionService.getAll(this.ownerUid, this.currentTeamId, snapshot => { // Use ownerUid
             this.competicionesList.innerHTML = '';
             if (!snapshot.exists()) {
-                this.competicionesList.innerHTML = '<li class="list-group-item">No hay competiciones creadas</li>';
+                this.competicionesList.innerHTML = '<li class="modern-list-item justify-content-center text-muted">No hay competiciones creadas</li>';
                 return;
             }
             snapshot.forEach(compSnap => {
@@ -687,7 +687,7 @@ class TeamApp extends BaseApp {
                 const key = compSnap.key;
 
                 const li = document.createElement('li');
-                li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
+                li.classList.add('modern-list-item');
                 li.textContent = competicion.nombre;
                 li.style.cursor = 'pointer';
                 li.onclick = () => {
@@ -965,7 +965,7 @@ class TeamApp extends BaseApp {
     loadMembers() {
         this.teamMembersService.getMembers(this.ownerUid, this.currentTeamId, async (snap) => {
             if (!snap.exists()) {
-                this.membersList.innerHTML = '<li class="list-group-item text-muted">No hay miembros asignados.</li>';
+                this.membersList.innerHTML = '<li class="modern-list-item justify-content-center text-muted">No hay miembros asignados.</li>';
                 return;
             }
 
@@ -985,7 +985,7 @@ class TeamApp extends BaseApp {
                 const name = userProfile.displayName || userProfile.nombre || 'Usuario';
 
                 const li = document.createElement('li');
-                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                li.className = 'modern-list-item';
                 const divInfo = document.createElement('div');
 
                 const divName = document.createElement('div');
@@ -1029,7 +1029,7 @@ class TeamApp extends BaseApp {
         this.teamMembersService.getFollowers(this.ownerUid, this.currentTeamId, async (snap) => {
             this.followersList.innerHTML = '';
             if (!snap.exists()) {
-                this.followersList.innerHTML = '<li class="list-group-item text-muted">No hay seguidores.</li>';
+                this.followersList.innerHTML = '<li class="modern-list-item justify-content-center text-muted">No hay seguidores.</li>';
                 return;
             }
 
@@ -1046,7 +1046,7 @@ class TeamApp extends BaseApp {
                 const name = userProfile.displayName || userProfile.nombre || 'Usuario';
 
                 const li = document.createElement('li');
-                li.className = 'list-group-item';
+                li.className = 'modern-list-item';
                 const divInfo = document.createElement('div');
                 divInfo.className = 'd-flex justify-content-between align-items-center mb-2';
                 const spanName = document.createElement('span');

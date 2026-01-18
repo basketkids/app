@@ -29,51 +29,42 @@
 
 
 
-    <!-- Marcadores + contador + control -->
-    <div id="divEstado"
-      class="d-flex justify-content-center text-success fw-bold fs-3 border border-success rounded p-3"
-      style="max-width: 300px; margin: 0 auto;">
-      hola
-    </div>
+    <!-- Scoreboard Container -->
+    <div id="scoreboard-container"
+      class="glass-scoreboard d-flex justify-content-between align-items-center gap-2 mb-4 p-3">
 
-
-    <div id="cabeceramarcador" class="d-flex justify-content-center align-items-center gap-4 flex-wrap my-4">
-      <div class="text-center bg-primary text-white rounded px-1 py-1" style="min-width: 100px;">
-        <label for="selectCuarto" class="form-label mb-1"
-          style="font-weight:600; font-size:1rem;cursor:pointer;">Cuarto</label>
-        <p id="numCuarto" class="text-center"
-          style="font-weight:bold; font-size:1.5rem; max-width: 80px; margin:0 auto;">
-          1</p>
-      </div>
-      <div class="text-center bg-secondary text-white rounded px-1 py-1">
-        <div style="font-weight: 600; font-size: 1rem; margin-bottom: 2px;">Tiempo restante</div>
-        <div id="contador" style="font-size: 2rem; font-weight: 700;">10:00</div>
-      </div>
-
-    </div>
-    <div class="d-flex justify-content-center align-items-center gap-5 my-4 flex-wrap">
-
-      <div class="text-center bg-dark text-white rounded px-1 py-1" style="min-width: 140px;">
-        <div id="nombreEquipoMarcador" style="font-weight: 700; font-size: 1.2rem; margin-bottom: 0.25rem;">Equipo</div>
-        <div id="marcadorEquipo" style="font-size: 3.5rem; font-weight: 900; line-height: 1;">0</div>
-        <div class="foul-lights" id="foulLightsEquipo">
+      <!-- Local Team -->
+      <div id="scoreboardTeamContainer" class="scoreboard-team-box">
+        <div class="team-name" id="nombreEquipoMarcador">LOCAL</div>
+        <div class="team-score" id="marcadorEquipo">0</div>
+        <div class="foul-lights-container" id="foulLightsEquipo">
           <span class="foul-dot"></span>
           <span class="foul-dot"></span>
           <span class="foul-dot"></span>
           <span class="foul-dot"></span>
-          <span class="foul-dot"></span>
+          <span class="foul-dot bonus"></span>
         </div>
       </div>
 
-      <div class="text-center bg-secondary text-white rounded px-1 py-1" style="min-width: 140px;">
-        <div id="nombreEquipoRival" style="font-weight: 700; font-size: 1.2rem; margin-bottom: 0.25rem;">Rival</div>
-        <div id="marcadorRival" style="font-size: 3.5rem; font-weight: 900; line-height: 1;">0</div>
-        <div class="foul-lights" id="foulLightsRival">
+      <!-- Timer & Period (Center) -->
+      <div id="scoreboardTimerContainer"
+        class="d-flex flex-column justify-content-center align-items-center mx-2 timer-box">
+        <div id="contador" class="digital-clock mb-2">10:00</div>
+        <div class="period-display">Cuarto <span id="periodoActual">1</span></div>
+        <div id="parcialesCuartos" class="small text-white-50 mt-1" style="font-size: 0.7rem; white-space: nowrap;">
+        </div>
+      </div>
+
+      <!-- Visitor Team -->
+      <div id="scoreboardRivalContainer" class="scoreboard-team-box">
+        <div class="team-name" id="nombreEquipoRival">RIVAL</div>
+        <div class="team-score" id="marcadorRival">0</div>
+        <div class="foul-lights-container" id="foulLightsRival">
           <span class="foul-dot"></span>
           <span class="foul-dot"></span>
           <span class="foul-dot"></span>
           <span class="foul-dot"></span>
-          <span class="foul-dot"></span>
+          <span class="foul-dot bonus"></span>
         </div>
       </div>
 

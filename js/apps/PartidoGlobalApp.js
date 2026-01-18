@@ -247,7 +247,11 @@ class PartidosGlobalesApp {
     // if (faltasRival) faltasRival.textContent = `F: ${this.partido.faltasRival || 0}`;
 
     this.actualizarLucesFaltas();
+    this.actualizarLucesFaltas();
     this.actualizarDisplay();
+    this.actualizarOrdenMarcador(); // New order logic
+    this.renderParciales();         // New partials logic
+
     // Renderizar jugadores convocados
     this.renderizarEstadisticas();
 
@@ -323,8 +327,8 @@ class PartidosGlobalesApp {
 
   actualizarDisplay() {
     if (this.partido.estado != "finalizado") {
-      const numCuartoElem = document.getElementById('numCuarto');
-      if (numCuartoElem) numCuartoElem.textContent = this.parteActual || 1;
+      const periodoSpan = document.getElementById('periodoActual');
+      if (periodoSpan) periodoSpan.textContent = this.parteActual || 1;
 
       const elem = document.getElementById('contador');
       if (elem) {
@@ -333,10 +337,60 @@ class PartidosGlobalesApp {
         elem.textContent = `${min.toString().padStart(2, '0')}:${seg.toString().padStart(2, '0')}`;
       }
     }
-    else {
-      const div = document.getElementById("cabeceramarcador")
-      div.style = 'display:none !important';
+    // else block removed as hiding header is not desired behavior for finished game with new design
+  }
+
+  actualizarOrdenMarcador() {
+    const containerTimer = document.getElementById('scoreboardTimerContainer');
+    const containerTeam = document.getElementById('scoreboardTeamContainer');
+    const containerRival = document.getElementById('scoreboardRivalContainer');
+
+    if (!containerTeam || !containerRival) return;
+
+    // Default: esLocal = true -> Team (0), Timer (1), Rival (2)
+    const esLocal = (this.partido.esLocal !== false);
+
+    if (containerTimer) containerTimer.style.order = '1';
+
+    if (esLocal) {
+      containerTeam.style.order = '0';
+      containerRival.style.order = '2';
+    } else {
+      containerTeam.style.order = '2';
+      containerRival.style.order = '0';
     }
+  }
+
+  renderParciales() {
+    const container = document.getElementById('parcialesCuartos');
+    if (!container) return;
+
+    const puntosPorCuarto = {};
+    if (this.partido.eventos) {
+      Object.values(this.partido.eventos).forEach(ev => {
+        if (ev.tipo === 'puntos') {
+          if (!puntosPorCuarto[ev.cuarto]) puntosPorCuarto[ev.cuarto] = { equipo: 0, rival: 0 };
+          if (!ev.dorsal || ev.dorsal >= 0) puntosPorCuarto[ev.cuarto].equipo += ev.cantidad;
+          else puntosPorCuarto[ev.cuarto].rival += ev.cantidad;
+        }
+      });
+    }
+
+    let html = '';
+    const quarters = Object.keys(puntosPorCuarto).sort((a, b) => a - b);
+    const esLocal = (this.partido.esLocal !== false);
+
+    quarters.forEach(q => {
+      // Show all previous quarters
+      if (parseInt(q) < (this.parteActual || 1)) {
+        const ptsTeam = puntosPorCuarto[q].equipo;
+        const ptsRival = puntosPorCuarto[q].rival;
+        const str = esLocal ? `${ptsTeam}-${ptsRival}` : `${ptsRival}-${ptsTeam}`;
+        html += `<span class="mx-1">Q${q}: ${str}</span>`;
+      }
+    });
+
+    container.innerHTML = html;
   }
   renderEventosEnVivo() {
     this.matchRenderer.renderEventosEnVivo('listaEventosEnVivo', this.partido);

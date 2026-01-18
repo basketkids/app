@@ -46,7 +46,7 @@ class IndexApp extends BaseApp {
 
         entries.forEach(([key, notif]) => {
             const li = document.createElement('li');
-            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            li.className = 'modern-list-item';
 
             const divContent = document.createElement('div');
             const date = new Date(notif.timestamp).toLocaleDateString();
@@ -180,7 +180,7 @@ class IndexApp extends BaseApp {
                     this.renderTeamItem(equipo, equipoSnap.key);
                 });
             } else {
-                this.teamsList.innerHTML = '<li class="list-group-item">No tienes equipos creados</li>';
+                this.teamsList.innerHTML = '<li class="modern-list-item justify-content-center text-muted">No tienes equipos creados</li>';
             }
         });
 
@@ -191,7 +191,7 @@ class IndexApp extends BaseApp {
             this.db.ref(`usuarios/${this.currentUser.uid}/following`).on('value', async snapshot => {
                 followedList.innerHTML = '';
                 if (!snapshot.exists()) {
-                    followedList.innerHTML = '<li class="list-group-item">No sigues a ningún equipo</li>';
+                    followedList.innerHTML = '<li class="modern-list-item justify-content-center text-muted">No sigues a ningún equipo</li>';
                     return;
                 }
 
@@ -223,7 +223,7 @@ class IndexApp extends BaseApp {
 
     renderFollowedTeamItem(team, container) {
         const li = document.createElement('li');
-        li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
+        li.classList.add('modern-list-item');
         li.style.cursor = 'pointer';
         li.onclick = () => {
             window.location.href = `equipo.html?idEquipo=${team.id}&ownerUid=${team.ownerUid}`;
@@ -245,7 +245,7 @@ class IndexApp extends BaseApp {
 
     renderTeamItem(equipo, key) {
         const li = document.createElement('li');
-        li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
+        li.classList.add('modern-list-item');
         li.style.cursor = 'pointer';
         li.onclick = () => {
             window.location.href = `equipo.html?idEquipo=${key}`;

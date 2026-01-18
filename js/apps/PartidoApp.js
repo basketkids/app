@@ -19,6 +19,7 @@ class PartidoApp extends BaseApp {
     this.matchRenderer = new MatchRenderer();
     this.userRole = 'follower';
     this.jerseyColor = '5199e4';
+    this.selectedPlayerId = null; // Track selected player for stats
   }
 
   onUserLoggedIn(user) {
@@ -238,7 +239,7 @@ class PartidoApp extends BaseApp {
   }
 
   renderInfoPartido() {
-    const container = document.getElementById('infoPartido');
+    const container = document.getElementById('infoPartidoConvocatoria');
     if (!container) return;
 
     let html = '';
@@ -263,7 +264,22 @@ class PartidoApp extends BaseApp {
       `;
     }
 
+    // Botón Editar
+    html += `
+      <div class="mt-2">
+        <button id="btnEditarInTab" class="btn btn-sm btn-outline-secondary" title="Editar partido">
+          <i class="bi bi-pencil"></i> Editar Detalles
+        </button>
+      </div>
+    `;
+
     container.innerHTML = html;
+
+    // Attach listener
+    const btn = document.getElementById('btnEditarInTab');
+    if (btn) {
+      btn.addEventListener('click', () => this.abrirModalEditar());
+    }
   }
   renderUbicacion() {
     const container = document.getElementById('ubicacionPartido');
@@ -391,6 +407,114 @@ class PartidoApp extends BaseApp {
     // Swap Stats
     document.getElementById('btnOpenSwapStats')?.addEventListener('click', () => this.abrirModalSwapStats());
     document.getElementById('btnConfirmSwap')?.addEventListener('click', () => this.confirmarSwapStats());
+
+    // Action Panel Events (New UI)
+    const actionPanel = document.getElementById('action-controls-footer');
+    if (actionPanel) {
+      actionPanel.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+
+        // Rival Quick Actions (ID specific)
+        if (btn.id === 'btnRivalP1') return this.agregarEstadistica('', 'puntos', 1);
+        if (btn.id === 'btnRivalP2') return this.agregarEstadistica('', 'puntos', 2);
+        if (btn.id === 'btnRivalP3') return this.agregarEstadistica('', 'puntos', 3);
+        if (btn.id === 'btnRivalF') return this.agregarEstadistica('', 'puntos', 1, 'faltas'); // Wait, signature is id, type, amount. Faltas is type.
+
+        const action = btn.dataset.action;
+        const value = parseInt(btn.dataset.val) || 1;
+
+        if (action) {
+          this.triggerButtonEffect(btn);
+          this.handleActionPanelClick(action, value);
+        }
+      });
+
+      // Bind Miss Modal buttons
+      const modalFallo = document.getElementById('modalFallo');
+      if (modalFallo) {
+        modalFallo.addEventListener('click', (e) => {
+          const btn = e.target.closest('.action-miss-val');
+          if (!btn) return;
+          const val = parseInt(btn.dataset.val);
+          if (this.selectedPlayerId && val) {
+            this.registrarFallo(this.selectedPlayerId, val);
+            bootstrap.Modal.getInstance(modalFallo).hide();
+          }
+        });
+      }
+
+      // Special handling for Rival Faltas button manual binding if needed or fix logic above
+      const btnRivalF = document.getElementById('btnRivalF');
+      if (btnRivalF) {
+        // Remove previous if any or relies on delegation above? 
+        // The delegation above catching 'btnRivalF' was calling pts which is wrong.
+      }
+    }
+
+    // Fix Rival Faltas delegation correctly
+    if (document.getElementById('btnRivalF')) {
+      document.getElementById('btnRivalF').onclick = (e) => {
+        e.stopPropagation();
+        this.triggerButtonEffect(e.target.closest('button'));
+        this.agregarEstadistica('', 'faltas', 1);
+      };
+    }
+  }
+
+  triggerButtonEffect(btn) {
+    if (!btn) return;
+    // Remove class if it exists to restart animation
+    btn.classList.remove('btn-effect');
+    void btn.offsetWidth; // Force reflow
+    btn.classList.add('btn-effect');
+    setTimeout(() => btn.classList.remove('btn-effect'), 200);
+  }
+
+  handleActionPanelClick(action, value) {
+    if (!this.selectedPlayerId && action !== 'falta' && action !== 'fallo') {
+      // Check if we want to allow selecting player AFTER action? 
+      // For now, require selection.
+      // Unless action is purely global which we don't have yet except Rival (handled separately).
+      // Fallo/Falta also need player.
+    }
+
+    if (!this.selectedPlayerId) {
+      alert("Selecciona un jugador primero.");
+      return;
+    }
+
+    const p = this.selectedPlayerId;
+
+    // Reset selection after action? Maybe optional preference. 
+    // For now, keep selected for rapid entry (e.g. offensive reb + putback).
+
+    if (action === 'puntos') {
+      this.agregarEstadistica(p, 'puntos', value);
+    } else if (action === 'fallo') {
+      // Show modal or assume 2pts? Let's default to a prompt or simple 2p miss for now
+      // Or reuse the logic. 'fallo' button in HTML didn't have value.
+      // Let's prompt or simple toggle? 
+      // Ideally Miss should ask 1, 2, 3? 
+      // Simplified: MISS -> Prompt? Or Buttons like +1/-1?
+      // Let's open a small miss selector or just default to 2?
+      this.mostrarOpcionesFallo(p);
+    } else {
+      // rebound, assist, steal, block, foul
+      this.agregarEstadistica(p, action, value);
+    }
+  }
+
+  mostrarOpcionesFallo(id) {
+    const modalEl = document.getElementById('modalFallo');
+    if (!modalEl) return;
+
+    const jugador = this.plantillaJugadores.find(j => j.id === id);
+    const nombreEl = document.getElementById('nombreJugadorFallo');
+    if (nombreEl && jugador) nombreEl.textContent = jugador.nombre;
+
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
   }
 
   handleFileUpload(event) {
@@ -721,20 +845,24 @@ class PartidoApp extends BaseApp {
   }
 
   actualizarOrdenMarcador() {
+    const containerTimer = document.getElementById('scoreboardTimerContainer');
     const containerTeam = document.getElementById('scoreboardTeamContainer');
     const containerRival = document.getElementById('scoreboardRivalContainer');
 
     if (!containerTeam || !containerRival) return;
 
-    // Default: esLocal = true -> Team first (order 0), Rival second (order 1)
-    // If esLocal = false -> Rival first (order 0), Team second (order 1)
+    // Default: esLocal = true -> Team (0), Timer (1), Rival (2)
+    // If esLocal = false -> Rival (0), Timer (1), Team (2)
     const esLocal = (this.partido.esLocal !== false);
+
+    // Ensure timer is always in the middle
+    if (containerTimer) containerTimer.style.order = '1';
 
     if (esLocal) {
       containerTeam.style.order = '0';
-      containerRival.style.order = '1';
+      containerRival.style.order = '2';
     } else {
-      containerTeam.style.order = '1';
+      containerTeam.style.order = '2';
       containerRival.style.order = '0';
     }
   }
@@ -848,81 +976,45 @@ class PartidoApp extends BaseApp {
 
 
   renderListaJugadoresPista() {
-    const ul = document.getElementById('listaJugadoresPista');
-    if (!ul) return;
-    ul.innerHTML = '';
+    const container = document.getElementById('active-players-grid');
+    if (!container) return;
+    container.innerHTML = '';
+
     if (!this.partido.jugadoresEnPista) return;
 
     Object.keys(this.partido.jugadoresEnPista).forEach(id => {
       const jugador = this.plantillaJugadores.find(j => j.id === id);
       if (!jugador) return;
-      const li = document.createElement('li');
-      li.className = 'list-group-item d-flex flex-column';
 
-      const nombre = document.createElement('div');
-      nombre.textContent = `${jugador.nombre} (#${jugador.dorsal})`;
-      nombre.style.fontWeight = '600';
+      const card = document.createElement('div');
+      card.className = `player-card ${this.selectedPlayerId === id ? 'selected' : ''}`;
+      card.onclick = () => {
+        this.selectedPlayerId = (this.selectedPlayerId === id) ? null : id;
+        this.renderListaJugadoresPista(); // Re-render to update selection style
+      };
 
       const stats = (this.partido.estadisticasJugadores && this.partido.estadisticasJugadores[id]) || {};
-      const txtStats = document.createElement('small');
-      txtStats.className = 'ms-3 text-muted';
-      const masMenos = stats.masMenos || 0;
-      const masMenosStr = masMenos > 0 ? `+${masMenos}` : masMenos;
-      txtStats.textContent = `Pts:${stats.puntos || 0} A:${stats.asistencias || 0} R:${stats.rebotes || 0} S:${stats.robos || 0} T:${stats.tapones || 0} F:${stats.faltas || 0} +/-:${masMenosStr}`;
-      nombre.appendChild(txtStats);
-      li.appendChild(nombre);
 
+      // Calculate individual fouls
+      let fouls = stats.faltas || 0;
+      let points = stats.puntos || 0;
 
+      card.innerHTML = `
+        <div class="dorsal">${jugador.dorsal}</div>
+        <div class="nombre">${jugador.nombre}</div>
+        <div class="stats-summary">
+            <span class="stat-tag text-success">${points} pts</span>
+            <span class="stat-tag ${fouls >= 5 ? 'text-danger' : 'text-warning'}">${fouls} F</span>
+        </div>
+      `;
 
-      const contStats = document.createElement('div');
-      contStats.className = 'd-flex flex-wrap gap-1 mt-2';
-
-      [1, 2, 3].forEach(p => {
-        // Botón Acierto
-        const btn = document.createElement('button');
-        btn.className = 'btn btn-sm btn-outline-primary stat-btn';
-        btn.textContent = `+${p}`;
-        btn.title = `Añadir ${p} punto${p > 1 ? 's' : ''}`;
-        btn.type = 'button';
-        btn.onclick = () => this.agregarEstadistica(jugador.id, 'puntos', p);
-        contStats.appendChild(btn);
-
-        // Botón Fallo
-        const btnFallo = document.createElement('button');
-        btnFallo.className = 'btn btn-sm btn-outline-danger stat-btn';
-        btnFallo.textContent = `-${p}`; // O usar un icono de fallo
-        btnFallo.title = `Fallo de ${p} punto${p > 1 ? 's' : ''}`;
-        btnFallo.type = 'button';
-        btnFallo.onclick = () => this.registrarFallo(jugador.id, p);
-        contStats.appendChild(btnFallo);
-      });
-
-      [
-        ['A', 'asistencias'],
-        ['R', 'rebotes'],
-        ['S', 'robos'],
-        ['T', 'tapones'],
-        ['F', 'faltas'],
-      ].forEach(([label, key]) => {
-        const btn = document.createElement('button');
-        btn.className = 'btn btn-sm btn-outline-success stat-btn';
-
-        if (key == 'faltas') {
-          btn.className = 'btn btn-sm btn-outline-danger stat-btn';
-
-        }
-        btn.textContent = label;
-        btn.title = `Añadir ${label}`;
-        btn.type = 'button';
-        btn.onclick = () => this.agregarEstadistica(jugador.id, key, 1);
-        contStats.appendChild(btn);
-      });
-
-      li.appendChild(contStats);
-
-
-      ul.appendChild(li);
+      container.appendChild(card);
     });
+
+    // Also clear the old list if it exists to avoid confusion
+    const oldList = document.getElementById('listaJugadoresPista');
+    if (oldList) oldList.innerHTML = '';
+
     this.renderListaJugadoresConvocadosModal();
   }
 
@@ -1062,6 +1154,11 @@ class PartidoApp extends BaseApp {
 
     this.dataService.pushEvento(evento, key)
       .catch(e => console.error('Error agregando evento:', e));
+
+    // Auto-start timer if not running
+    if (!this.contadorActivo && this.estadoPartido !== 'finalizado') {
+      this.toggleTemporizador();
+    }
   }
 
   registrarFallo(jugadorId, valor) {
@@ -1096,6 +1193,11 @@ class PartidoApp extends BaseApp {
 
     this.dataService.pushEvento(evento, key)
       .catch(e => console.error('Error agregando evento de fallo:', e));
+
+    // Auto-start timer if not running
+    if (!this.contadorActivo && this.estadoPartido !== 'finalizado') {
+      this.toggleTemporizador();
+    }
   }
 
 
@@ -1132,6 +1234,50 @@ class PartidoApp extends BaseApp {
     // console.log(faltas);
     this.renderLuces('foulLightsEquipo', faltas.equipo);
     this.renderLuces('foulLightsRival', faltas.rival);
+    this.renderParciales();
+  }
+
+  renderParciales() {
+    const container = document.getElementById('parcialesCuartos');
+    if (!container) return;
+
+    const puntosPorCuarto = {};
+    if (this.partido.eventos) {
+      Object.values(this.partido.eventos).forEach(ev => {
+        if (ev.tipo === 'puntos') {
+          if (!puntosPorCuarto[ev.cuarto]) puntosPorCuarto[ev.cuarto] = { equipo: 0, rival: 0 };
+          if (!ev.dorsal || ev.dorsal >= 0) puntosPorCuarto[ev.cuarto].equipo += ev.cantidad;
+          else puntosPorCuarto[ev.cuarto].rival += ev.cantidad;
+        }
+      });
+    }
+
+    let html = '';
+    // Show only COMPLETED quarters (less than current part) OR all quarters? 
+    // Usually partials are shown for previous quarters or current live one.
+    // User said "anterior" (previous), but seeing current is also useful.
+    // Let's show all quarters that have points.
+
+    // Sort keys
+    const quarters = Object.keys(puntosPorCuarto).sort((a, b) => a - b);
+
+    // Logic for Team vs Rival based on esLocal
+    const esLocal = (this.partido.esLocal !== false);
+
+    quarters.forEach(q => {
+      // Don't show current quarter? The user said "anterior", but normally you want to see standard partials.
+      // If user strictly wants PREVIOUS, filter by q < this.partido.parteActual
+      // Let's show all for now, maybe dim current? Or just show logic.
+      // "parcial de cada cuarto anterior" -> strictly previous.
+      if (parseInt(q) < (this.partido.parteActual || 1)) {
+        const ptsTeam = puntosPorCuarto[q].equipo;
+        const ptsRival = puntosPorCuarto[q].rival;
+        const str = esLocal ? `${ptsTeam}-${ptsRival}` : `${ptsRival}-${ptsTeam}`;
+        html += `<span class="mx-1">Q${q}: ${str}</span>`;
+      }
+    });
+
+    container.innerHTML = html;
   }
 
   calcularFaltasCuarto() {
@@ -1206,6 +1352,10 @@ class PartidoApp extends BaseApp {
 
   actualizarDisplay() {
     if (this.selectCuarto) this.selectCuarto.value = this.partido.parteActual || 1;
+
+    const periodoSpan = document.getElementById('periodoActual');
+    if (periodoSpan) periodoSpan.textContent = this.partido.parteActual || 1;
+
     const min = Math.floor(this.segundosRestantes / 60);
     const seg = this.segundosRestantes % 60;
     const elem = document.getElementById('contador');

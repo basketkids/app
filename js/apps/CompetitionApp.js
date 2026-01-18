@@ -173,7 +173,7 @@ class CompetitionApp extends BaseApp {
             this.inputRivalSelect.innerHTML = '<option value="">Selecciona rival</option>';
 
             if (!snapshot.exists()) {
-                this.rivalesList.innerHTML = '<li class="list-group-item">No hay rivales añadidos</li>';
+                this.rivalesList.innerHTML = '<li class="modern-list-item justify-content-center text-muted">No hay rivales añadidos</li>';
                 return;
             }
 
@@ -189,7 +189,7 @@ class CompetitionApp extends BaseApp {
                 this.inputRivalSelect.appendChild(option);
 
                 const li = document.createElement('li');
-                li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
+                li.classList.add('modern-list-item');
                 li.textContent = rival.nombre;
 
                 const divBtns = document.createElement('div');
@@ -228,7 +228,7 @@ class CompetitionApp extends BaseApp {
         this.competitionService.getMatches(this.ownerUid, this.currentTeamId, this.currentCompeticionId, snapshot => {
             this.partidosList.innerHTML = '';
             if (!snapshot.exists()) {
-                this.partidosList.innerHTML = '<li class="list-group-item">No hay partidos añadidos</li>';
+                this.partidosList.innerHTML = '<li class="modern-list-item justify-content-center text-muted">No hay partidos añadidos</li>';
                 return;
             }
 
@@ -265,7 +265,7 @@ class CompetitionApp extends BaseApp {
 
     renderMatchItem(partido, id, nombreEquipo) {
         const li = document.createElement('li');
-        li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center', 'flex-column', 'text-start');
+        li.classList.add('modern-list-item', 'flex-column', 'text-start');
         li.style.cursor = 'pointer';
 
         const canEdit = (this.userRole === 'owner' || this.userRole === 'statistician');

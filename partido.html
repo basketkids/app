@@ -24,67 +24,53 @@
 
     <h2 id="nombrePartido" class="mb-4">Gestión de Partido</h2>
     <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
-      <div id="infoPartido" class="text-center"></div>
-      <button id="btnEditarPartido" class="btn btn-sm btn-outline-secondary" title="Editar partido">
-        <i class="bi bi-pencil"></i>
-      </button>
+
+
     </div>
 
-    <div class="mb-3 d-flex justify-content-center align-items-center gap-3">
-      <label for="selectConfiguracion" class="form-label fw-semibold mb-0">Configuración de partido:</label>
-      <select id="selectConfiguracion" class="form-select form-select-sm" style="max-width: 250px;">
-        <option value="6x8" selected>6 cuartos - 8 minutos</option>
-        <option value="4x10">4 cuartos - 10 minutos</option>
-      </select>
-    </div>
+
 
     <!-- Marcadores + contador + control -->
     <div class="d-flex justify-content-center align-items-center gap-4 flex-wrap my-1">
 
-      <div class="text-center bg-primary text-white rounded px-1 py-1" style="min-width: 100px;">
-        <label for="selectCuarto" class="form-label mb-1"
-          style="font-weight:600; font-size:1rem;cursor:pointer;">Cuarto</label>
-        <select id="selectCuarto" class="form-select form-select-sm text-center"
-          style="font-weight:bold; font-size:1.5rem; max-width: 80px; margin:0 auto;">
-          <option value="1" selected>1</option>
-          <option value="2">2</option>
-          <option value="3">3</option>
-          <option value="4">4</option>
-          <option value="5">5</option>
-          <option value="6">6</option>
-        </select>
-      </div>
 
-      <div class="text-center bg-secondary text-white rounded px-1 py-1" style="min-width: 120px;">
-        <div style="font-weight: 600; font-size: 1rem; margin-bottom: 2px;">Tiempo restante</div>
-        <div id="contador" style="font-size: 2rem; font-weight: 700;">10:00</div>
-      </div>
-      <div class="d-flex justify-content-center align-items-center gap-5 my-1 flex-wrap">
 
-        <div id="scoreboardTeamContainer" class="text-center bg-dark text-white rounded px-1 py-1"
-          style="min-width: 140px;">
-          <div id="nombreEquipoMarcador" style="font-weight: 700; font-size: 1.2rem; margin-bottom: 0.25rem;">Equipo
-          </div>
-          <div id="marcadorEquipo" style="font-size: 3.5rem; font-weight: 900; line-height: 1;">0</div>
-          <div class="foul-lights" id="foulLightsEquipo">
+      <!-- Scoreboard Container -->
+      <div id="scoreboard-container"
+        class="glass-scoreboard d-flex justify-content-between align-items-center gap-2 mb-4 p-3">
+
+        <!-- Local Team -->
+        <div id="scoreboardTeamContainer" class="scoreboard-team-box">
+          <div class="team-name" id="nombreEquipoMarcador">LOCAL</div>
+          <div class="team-score" id="marcadorEquipo">0</div>
+          <div class="foul-lights-container" id="foulLightsEquipo">
             <span class="foul-dot"></span>
             <span class="foul-dot"></span>
             <span class="foul-dot"></span>
             <span class="foul-dot"></span>
-            <span class="foul-dot"></span>
+            <span class="foul-dot bonus"></span>
           </div>
         </div>
 
-        <div id="scoreboardRivalContainer" class="text-center bg-secondary text-white rounded px-1 py-1"
-          style="min-width: 140px;">
-          <div id="nombreEquipoRival" style="font-weight: 700; font-size: 1.2rem; margin-bottom: 0.25rem;">Rival</div>
-          <div id="marcadorRival" style="font-size: 3.5rem; font-weight: 900; line-height: 1;">0</div>
-          <div class="foul-lights" id="foulLightsRival">
+        <!-- Timer & Period (Center) -->
+        <div id="scoreboardTimerContainer"
+          class="d-flex flex-column justify-content-center align-items-center mx-2 timer-box">
+          <div id="contador" class="digital-clock mb-2">10:00</div>
+          <div class="period-display">Cuarto <span id="periodoActual">1</span></div>
+          <div id="parcialesCuartos" class="small text-white-50 mt-1" style="font-size: 0.7rem; white-space: nowrap;">
+          </div>
+        </div>
+
+        <!-- Visitor Team -->
+        <div id="scoreboardRivalContainer" class="scoreboard-team-box">
+          <div class="team-name" id="nombreEquipoRival">RIVAL</div>
+          <div class="team-score" id="marcadorRival">0</div>
+          <div class="foul-lights-container" id="foulLightsRival">
             <span class="foul-dot"></span>
             <span class="foul-dot"></span>
             <span class="foul-dot"></span>
             <span class="foul-dot"></span>
-            <span class="foul-dot"></span>
+            <span class="foul-dot bonus"></span>
           </div>
         </div>
 
@@ -105,19 +91,7 @@
 
 
 
-    <div class="mb-3">
-      <label class="form-label fw-semibold">Control de puntos y faltas rival</label>
-      <div class="d-flex gap-2 align-items-center flex-wrap">
-        <button class="btn btn-sm btn-outline-danger stat-btn" title="+1 punto rival" type="button"
-          id="btnPuntoRival1">+1</button>
-        <button class="btn btn-sm btn-outline-danger stat-btn" title="+2 puntos rival" type="button"
-          id="btnPuntoRival2">+2</button>
-        <button class="btn btn-sm btn-outline-danger stat-btn" title="+3 puntos rival" type="button"
-          id="btnPuntoRival3">+3</button>
-        <button class="btn btn-sm btn-outline-danger stat-btn" title="+1 falta rival" type="button"
-          id="btnFaltasRival">F+</button>
-      </div>
-    </div>
+
 
     <!-- Tabs -->
     <ul class="nav nav-tabs mb-3" id="tabsPartido" role="tablist">
@@ -155,6 +129,19 @@
     <div class="tab-content" id="tabsContent">
       <!-- Tab: Convocados -->
       <div class="tab-pane fade show active" id="convocados" role="tabpanel" aria-labelledby="tab-convocados">
+
+        <!-- Match Info inside Convocatoria -->
+        <div id="infoPartidoConvocatoria" class="text-center mb-3 p-2 bg-white rounded border"></div>
+
+        <!-- Match Configuration -->
+        <div class="mb-3 d-flex justify-content-center align-items-center gap-3 bg-light p-2 rounded">
+          <label for="selectConfiguracion" class="form-label fw-semibold mb-0">Configuración:</label>
+          <select id="selectConfiguracion" class="form-select form-select-sm" style="max-width: 250px;">
+            <option value="6x8" selected>6 cuartos - 8 minutos</option>
+            <option value="4x10">4 cuartos - 10 minutos</option>
+          </select>
+        </div>
+
         <h4 id="nombreEntrenadorConvocados" class="mb-3" style="display: none;"></h4>
         <button type="button" class="btn btn-info mb-3" data-bs-toggle="modal"
           data-bs-target="#modalConvocarJugadores">Cambiar convocatoria</button>
@@ -167,9 +154,61 @@
       </div>
       <!-- Tab: Partido -->
       <div class="tab-pane fade" id="pista" role="tabpanel" aria-labelledby="tab-pista">
-        <button type="button" class="btn btn-warning mb-3" data-bs-toggle="modal"
-          data-bs-target="#modalElegirPista">Cambiar jugadores en pista</button>
-        <ul id="listaJugadoresPista" class="list-group"></ul>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal"
+            data-bs-target="#modalElegirPista">
+            <i class="bi bi-people-fill"></i> Cambios
+          </button>
+          <div class="text-muted small">Selecciona un jugador para anotar</div>
+        </div>
+
+        <!-- New Player Grid Container -->
+        <div id="active-players-grid" class="player-grid-container mb-4">
+          <!-- Players will be injected here by JS -->
+        </div>
+
+        <!-- Legacy list for fallback or hidden? removing it as we replace functionality -->
+        <!-- <ul id="listaJugadoresPista" class="list-group"></ul> -->
+
+        <!-- Sticky Action Panel -->
+        <div id="action-controls-footer" class="action-panel-footer">
+          <div class="d-flex flex-column gap-2">
+
+            <!-- Row 1: Positive Stats -->
+            <div class="d-flex gap-2 justify-content-between">
+              <button class="btn btn-outline-success flex-grow-1 action-btn" data-action="asistencias">AST</button>
+              <button class="btn btn-outline-success flex-grow-1 action-btn" data-action="rebotes">REB</button>
+              <button class="btn btn-outline-success flex-grow-1 action-btn" data-action="robos">ROB</button>
+              <button class="btn btn-outline-success flex-grow-1 action-btn" data-action="tapones">TAP</button>
+            </div>
+
+            <!-- Row 2: Scoring & Fouls -->
+            <div class="d-flex gap-2 justify-content-between align-items-center">
+              <div class="d-flex gap-2 flex-grow-1">
+                <button class="btn btn-primary action-btn-score flex-grow-1" data-action="puntos"
+                  data-val="1">+1</button>
+                <button class="btn btn-primary action-btn-score flex-grow-1" data-action="puntos"
+                  data-val="2">+2</button>
+                <button class="btn btn-primary action-btn-score flex-grow-1" data-action="puntos"
+                  data-val="3">+3</button>
+              </div>
+
+              <button class="btn btn-outline-danger action-btn" data-action="faltas" title="Falta Personal">FAL</button>
+              <button class="btn btn-outline-secondary action-btn" data-action="fallo"
+                title="Tiro Fallado">MISS</button>
+            </div>
+
+            <!-- Row 3: Opponent Quick Stats (Optional here or kept above) -->
+            <!-- Creating a small strip for Rival -->
+            <div class="d-flex gap-2 justify-content-center border-top pt-2 mt-1">
+              <span class="small text-muted align-self-center">Rival:</span>
+              <button class="btn btn-sm btn-light border" id="btnRivalP1">+1</button>
+              <button class="btn btn-sm btn-light border" id="btnRivalP2">+2</button>
+              <button class="btn btn-sm btn-light border" id="btnRivalP3">+3</button>
+              <button class="btn btn-sm btn-light border text-danger" id="btnRivalF">F+</button>
+            </div>
+          </div>
+        </div>
       </div>
       <!-- Tab: En Vivo -->
       <div class="tab-pane fade" id="en-vivo" role="tabpanel" aria-labelledby="tab-en-vivo">
@@ -448,6 +487,28 @@
       </div>
     </div>
   </div>
+  </div>
+
+  <!-- Modal Registrar Fallo -->
+  <div class="modal fade" id="modalFallo" tabindex="-1" aria-labelledby="modalFalloLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="modalFalloLabel">Registrar Fallo</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body text-center">
+          <p class="mb-3">¿Qué tipo de tiro falló <span id="nombreJugadorFallo" class="fw-bold"></span>?</p>
+          <div class="d-grid gap-2">
+            <button type="button" class="btn btn-outline-danger btn-lg action-miss-val" data-val="1">Tiro Libre
+              (1p)</button>
+            <button type="button" class="btn btn-outline-danger btn-lg action-miss-val" data-val="2">Tiro de 2</button>
+            <button type="button" class="btn btn-outline-danger btn-lg action-miss-val" data-val="3">Triple
+              (3p)</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Modal Intercambiar Stats -->
