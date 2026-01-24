@@ -191,8 +191,13 @@ class DataService {
             return estadisticasRef.once('value').then(snap => {
               const stats = snap.val() || {};
               if (!stats[evento.jugadorId]) stats[evento.jugadorId] = this._inicializarEstadisticas();
-              if (evento.estadisticaTipo && evento.cantidad)
-                stats[evento.jugadorId][evento.estadisticaTipo] = (stats[evento.jugadorId][evento.estadisticaTipo] || 0) + evento.cantidad;
+
+              // Use estadisticaTipo if present, otherwise use tipo (e.g. 'ace', 'robos')
+              const statKey = evento.estadisticaTipo || evento.tipo;
+
+              if (statKey && evento.cantidad)
+                stats[evento.jugadorId][statKey] = (stats[evento.jugadorId][statKey] || 0) + evento.cantidad;
+
               return estadisticasRef.set(stats).then(() => this._actualizarFaltas(evento));
             });
         }
@@ -270,8 +275,9 @@ class DataService {
             return estadisticasRef.once('value').then(snap => {
               const stats = snap.val() || {};
               if (stats[evento.jugadorId]) {
-                if (evento.estadisticaTipo && evento.cantidad) {
-                  stats[evento.jugadorId][evento.estadisticaTipo] = (stats[evento.jugadorId][evento.estadisticaTipo] || 0) - evento.cantidad;
+                const statKey = evento.estadisticaTipo || evento.tipo;
+                if (statKey && evento.cantidad) {
+                  stats[evento.jugadorId][statKey] = (stats[evento.jugadorId][statKey] || 0) - evento.cantidad;
                 }
                 return estadisticasRef.set(stats).then(() => this._actualizarFaltas(evento, true));
               }

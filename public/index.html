@@ -33,11 +33,18 @@
 
           <!-- View & Date Pickers -->
           <div
-            class="col-12 col-lg-auto d-flex justify-content-center justify-content-lg-start gap-2 order-2 order-lg-1">
+            class="col-12 col-lg-auto d-flex flex-wrap justify-content-center justify-content-lg-start gap-2 order-2 order-lg-1">
             <div class="btn-group" role="group">
               <button type="button" class="btn btn-outline-primary active" id="viewWeekBtn">Semana</button>
               <button type="button" class="btn btn-outline-primary" id="viewMonthBtn">Mes</button>
             </div>
+
+            <div class="btn-group" role="group">
+              <button type="button" class="btn btn-outline-secondary active" id="filterAllBtn">Todos</button>
+              <button type="button" class="btn btn-outline-secondary" id="filterBasketBtn">Basket</button>
+              <button type="button" class="btn btn-outline-secondary" id="filterVolleyBtn">Volley</button>
+            </div>
+
             <button id="goToDateBtn" class="btn btn-outline-secondary" title="Ir a fecha">
               <i class="bi bi-calendar-date"></i>
             </button>

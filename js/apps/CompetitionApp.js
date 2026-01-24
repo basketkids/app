@@ -270,9 +270,14 @@ class CompetitionApp extends BaseApp {
 
         const canEdit = (this.userRole === 'owner' || this.userRole === 'statistician');
 
+        // Determine correct page based on sport
+        const sport = partido.sport || 'basketball'; // default to basketball
+        const page = (sport === 'volleyball') ? 'partido_volley.html' : 'partido.html';
+        const matchUrl = `${page}?idEquipo=${this.currentTeamId}&idCompeticion=${this.currentCompeticionId}&idPartido=${id}&ownerUid=${encodeURIComponent(this.ownerUid)}`;
+
         li.onclick = () => {
             if (canEdit) {
-                window.location.href = `partido.html?idEquipo=${this.currentTeamId}&idCompeticion=${this.currentCompeticionId}&idPartido=${id}&ownerUid=${encodeURIComponent(this.ownerUid)}`;
+                window.location.href = matchUrl;
             }
         };
 
@@ -322,10 +327,21 @@ class CompetitionApp extends BaseApp {
         const marcadorSpan = document.createElement('span');
         marcadorSpan.style.fontWeight = 'bold';
 
-        if (partido.esLocal) {
-            marcadorSpan.textContent = `${puntosEquipo} - ${puntosRival}`;
+
+        if (sport === 'volleyball') {
+            const setsEquipo = partido.setsEquipo ?? 0;
+            const setsRival = partido.setsRival ?? 0;
+            if (partido.esLocal) {
+                marcadorSpan.textContent = `${setsEquipo} - ${setsRival} (Sets)`;
+            } else {
+                marcadorSpan.textContent = `${setsRival} - ${setsEquipo} (Sets)`;
+            }
         } else {
-            marcadorSpan.textContent = `${puntosRival} - ${puntosEquipo}`;
+            if (partido.esLocal) {
+                marcadorSpan.textContent = `${puntosEquipo} - ${puntosRival}`;
+            } else {
+                marcadorSpan.textContent = `${puntosRival} - ${puntosEquipo}`;
+            }
         }
 
         const iconEstado = document.createElement('i');
@@ -363,7 +379,7 @@ class CompetitionApp extends BaseApp {
 
         if (canEdit) {
             const btnGestionar = document.createElement('a');
-            btnGestionar.href = `partido.html?idEquipo=${this.currentTeamId}&idCompeticion=${this.currentCompeticionId}&idPartido=${id}&ownerUid=${encodeURIComponent(this.ownerUid)}`;
+            btnGestionar.href = matchUrl;
             btnGestionar.classList.add('btn', 'btn-sm', 'btn-success');
             btnGestionar.title = 'Ver/Gestionar partido';
             btnGestionar.innerHTML = '<i class="bi bi-eye-fill"></i>';
@@ -429,8 +445,11 @@ class CompetitionApp extends BaseApp {
         const esLocal = this.inputLocalVisitante.value === 'local';
         const pabellon = this.inputPabellon.value.trim();
 
-        this.db.ref(`usuarios/${this.ownerUid}/equipos/${this.currentTeamId}/nombre`).once('value').then(equipoSnap => {
-            const nombreEquipo = equipoSnap.exists() ? equipoSnap.val() : 'Equipo desconocido';
+        this.db.ref(`usuarios/${this.ownerUid}/equipos/${this.currentTeamId}`).once('value').then(equipoSnap => {
+            const equipoData = equipoSnap.exists() ? equipoSnap.val() : {};
+            const nombreEquipo = equipoData.nombre || 'Equipo desconocido';
+            const deporte = equipoData.sport || 'basketball'; // Get sport from team
+
             if (!fechaHoraStr || !rivalId || !pabellon) {
                 alert('Rellena todos los campos para crear el partido');
                 return;
@@ -462,7 +481,8 @@ class CompetitionApp extends BaseApp {
                         puntosEquipo: 0,
                         puntosRival: 0,
                         faltasRival: 0,
-                        estado: 'pendiente'
+                        estado: 'pendiente',
+                        sport: deporte // Save sport
                     };
 
                     this.competitionService.createMatch(this.ownerUid, this.currentTeamId, this.currentCompeticionId, matchData)

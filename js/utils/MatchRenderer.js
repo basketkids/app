@@ -231,8 +231,31 @@ class MatchRenderer {
         // Calcular estadísticas dinámicamente desde eventos
         const statsJugadores = this.calcularEstadisticasDesdeEventos(partido);
 
-        const columnas = ['Nombre', 'Puntos', '% T1', '% T2', '% T3', 'Asist.', 'Rebotes', 'Robos', 'Tapones', 'Faltas', '+/-', 'Val.'];
-        const campos = ['nombre', 'puntos', 'pct1', 'pct2', 'pct3', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas', 'masMenos', 'valoracion'];
+        // Determine columns based on sport
+        const sport = partido.sport || 'basketball';
+        const config = (typeof SportConfig !== 'undefined' && SportConfig[sport]) ? SportConfig[sport] : SportConfig['basketball'];
+
+        let columnas = [];
+        let campos = [];
+
+        if (sport === 'basketball') {
+            columnas = ['Nombre', 'Puntos', '% T1', '% T2', '% T3', 'Asist.', 'Rebotes', 'Robos', 'Tapones', 'Faltas', '+/-', 'Val.'];
+            campos = ['nombre', 'puntos', 'pct1', 'pct2', 'pct3', 'asistencias', 'rebotes', 'robos', 'tapones', 'faltas', 'masMenos', 'valoracion'];
+        } else {
+            // Generic generation from config
+            columnas = ['Nombre'];
+            campos = ['nombre'];
+            if (config.stats) {
+                Object.entries(config.stats).forEach(([key, info]) => {
+                    columnas.push(info.label);
+                    campos.push(key);
+                });
+            }
+            // Add standard calculated fields if needed for other sports? 
+            // For now just raw stats + custom calc if any
+        }
+
+        // ... (rest of the setup)
 
         const jugadoresArray = Object.entries(partido.convocados).map(([id, jug]) => {
             return { id, ...jug };
@@ -252,10 +275,17 @@ class MatchRenderer {
                 th.textContent = thText;
                 th.style.cursor = 'pointer';
 
-                // Ocultar columnas en móvil vertical excepto Nombre, Puntos, Faltas, Val.
+                // Responsive logic: hide less important cols on mobile
+                // Simple heuristic: Keep first 2 and last 1? Or use config priorities
+                // For Volley: Name, ACE, BLK, ATK, ERR... maybe show all or hide Errors?
                 const colName = thText;
-                if (!['Nombre', 'Puntos', 'Faltas', 'Val.'].includes(colName)) {
-                    th.className = 'd-none d-sm-table-cell';
+                if (sport === 'basketball') {
+                    if (!['Nombre', 'Puntos', 'Faltas', 'Val.'].includes(colName)) {
+                        th.className = 'd-none d-sm-table-cell';
+                    }
+                } else {
+                    // For now show all or basic hiding logic
+                    if (i > 3) th.className = 'd-none d-md-table-cell';
                 }
 
                 if (i === this.ordenColumna) {
@@ -286,133 +316,136 @@ class MatchRenderer {
 
                 const stats = statsJugadores[jug.id] || {};
 
-                // Puntos
-                const tdPuntos = document.createElement('td');
-                tdPuntos.textContent = stats.puntos || 0;
-                tr.appendChild(tdPuntos);
+                if (sport === 'basketball') {
+                    // Puntos
+                    const tdPuntos = document.createElement('td');
+                    tdPuntos.textContent = stats.puntos || 0;
+                    tr.appendChild(tdPuntos);
 
-                // Porcentajes
-                [1, 2, 3].forEach(val => {
-                    const tdPct = document.createElement('td');
-                    tdPct.className = 'd-none d-sm-table-cell'; // Ocultar en móvil
-                    const convertidos = stats[`t${val}_convertidos`] || 0;
-                    const fallados = stats[`t${val}_fallados`] || 0;
-                    const total = convertidos + fallados;
-                    const pct = total > 0 ? Math.round((convertidos / total) * 100) : 0;
-                    tdPct.textContent = total > 0 ? `${pct}% (${convertidos}/${total})` : '-';
-                    tr.appendChild(tdPct);
-                });
+                    // Porcentajes
+                    [1, 2, 3].forEach(val => {
+                        const tdPct = document.createElement('td');
+                        tdPct.className = 'd-none d-sm-table-cell'; // Ocultar en móvil
+                        const convertidos = stats[`t${val}_convertidos`] || 0;
+                        const fallados = stats[`t${val}_fallados`] || 0;
+                        const total = convertidos + fallados;
+                        const pct = total > 0 ? Math.round((convertidos / total) * 100) : 0;
+                        tdPct.textContent = total > 0 ? `${pct}% (${convertidos}/${total})` : '-';
+                        tr.appendChild(tdPct);
+                    });
 
-                ['asistencias', 'rebotes', 'robos', 'tapones', 'faltas', 'masMenos'].forEach(stat => {
-                    const td = document.createElement('td');
-                    // Ocultar todas excepto faltas
-                    if (stat !== 'faltas') {
-                        td.className = 'd-none d-sm-table-cell';
-                    }
-                    let val = stats[stat] || 0;
-                    if (stat === 'masMenos' && val > 0) val = `+${val}`;
-                    td.textContent = val;
-                    tr.appendChild(td);
-                });
+                    ['asistencias', 'rebotes', 'robos', 'tapones', 'faltas', 'masMenos'].forEach(stat => {
+                        const td = document.createElement('td');
+                        // Ocultar todas excepto faltas
+                        if (stat !== 'faltas') {
+                            td.className = 'd-none d-sm-table-cell';
+                        }
+                        let val = stats[stat] || 0;
+                        if (stat === 'masMenos' && val > 0) val = `+${val}`;
+                        td.textContent = val;
+                        tr.appendChild(td);
+                    });
 
-                const tdVal = document.createElement('td');
-                tdVal.style.fontWeight = '600';
-                tdVal.textContent = this.calcularValoracion(stats);
-                tr.appendChild(tdVal);
+                    const tdVal = document.createElement('td');
+                    tdVal.style.fontWeight = '600';
+                    tdVal.textContent = this.calcularValoracion(stats);
+                    tr.appendChild(tdVal);
+                } else {
+                    // Generic Rendering for other sports
+                    campos.slice(1).forEach((campo, idx) => {
+                        const td = document.createElement('td');
+                        // Match visibility to header
+                        if ((idx + 1) > 3) td.className = 'd-none d-md-table-cell';
+
+                        td.textContent = stats[campo] || 0;
+                        tr.appendChild(td);
+                    });
+                }
 
                 tbody.appendChild(tr);
             });
             table.appendChild(tbody);
 
-            // --- Totals Row ---
+            // --- Totals Row --- (Adapted for generic)
             const tfoot = document.createElement('tfoot');
             const trTotal = document.createElement('tr');
             trTotal.className = 'table-secondary fw-bold';
 
-            // Calculate totals
-            const totals = {
-                puntos: 0,
-                asistencias: 0,
-                rebotes: 0,
-                robos: 0,
-                tapones: 0,
-                faltas: 0,
-                masMenos: 0,
-                valoracion: 0,
-                t1_conv: 0, t1_fail: 0,
-                t2_conv: 0, t2_fail: 0,
-                t3_conv: 0, t3_fail: 0
-            };
-
-            jugadoresArray.forEach(jug => {
-                const s = statsJugadores[jug.id] || {};
-                totals.puntos += s.puntos || 0;
-                totals.asistencias += s.asistencias || 0;
-                totals.rebotes += s.rebotes || 0;
-                totals.robos += s.robos || 0;
-                totals.tapones += s.tapones || 0;
-                totals.faltas += s.faltas || 0;
-                totals.faltas += s.faltas || 0;
-                // totals.masMenos += s.masMenos || 0; // No sumar +/- individual
-                // Valoración se calcula por jugador, no se suma directamente para el total
-                totals.valoracion += this.calcularValoracion(s);
-                totals.t1_conv += s.t1_convertidos || 0;
-                totals.t1_fail += s.t1_fallados || 0;
-                totals.t2_conv += s.t2_convertidos || 0;
-                totals.t2_fail += s.t2_fallados || 0;
-                totals.t3_conv += s.t3_convertidos || 0;
-                totals.t3_fail += s.t3_fallados || 0;
-            });
-
-            // Helper to create total cell
-            const createTotalCell = (text, isMobileVisible = false) => {
-                const td = document.createElement('td');
-                td.textContent = text;
-                if (!isMobileVisible) td.className = 'd-none d-sm-table-cell';
-                trTotal.appendChild(td);
-            };
-
-            // Name column
             const tdName = document.createElement('td');
             tdName.textContent = 'TOTAL';
             trTotal.appendChild(tdName);
 
-            // Puntos (Visible)
-            createTotalCell(totals.puntos, true);
+            // Calculate totals Generic
+            if (sport !== 'basketball') {
+                campos.slice(1).forEach((campo, idx) => {
+                    let sum = 0;
+                    jugadoresArray.forEach(jug => {
+                        const s = statsJugadores[jug.id] || {};
+                        sum += (s[campo] || 0);
+                    });
 
-            // % T1
-            const t1Total = totals.t1_conv + totals.t1_fail;
-            const t1Pct = t1Total > 0 ? Math.round((totals.t1_conv / t1Total) * 100) : 0;
-            createTotalCell(t1Total > 0 ? `${t1Pct}% (${totals.t1_conv}/${t1Total})` : '-');
+                    const td = document.createElement('td');
+                    if ((idx + 1) > 3) td.className = 'd-none d-md-table-cell';
+                    td.textContent = sum;
+                    trTotal.appendChild(td);
+                });
+                tfoot.appendChild(trTotal);
+                table.appendChild(tfoot);
+            } else {
+                // Keep existing complex logic for basketball totals (calc pct etc)
+                // ... (Reusing existing logic logic would be better but for brevity/safety I will just copy the existing basketball calc logic here or let it be handled if I didn't replace it? 
+                // Wait, I am replacing the whole function. I must re-implement the basketball totals part.)
 
-            // % T2
-            const t2Total = totals.t2_conv + totals.t2_fail;
-            const t2Pct = t2Total > 0 ? Math.round((totals.t2_conv / t2Total) * 100) : 0;
-            createTotalCell(t2Total > 0 ? `${t2Pct}% (${totals.t2_conv}/${t2Total})` : '-');
+                const totals = {
+                    puntos: 0, asistencias: 0, rebotes: 0, robos: 0, tapones: 0, faltas: 0, masMenos: 0, valoracion: 0,
+                    t1_conv: 0, t1_fail: 0, t2_conv: 0, t2_fail: 0, t3_conv: 0, t3_fail: 0
+                };
+                jugadoresArray.forEach(jug => {
+                    const s = statsJugadores[jug.id] || {};
+                    totals.puntos += s.puntos || 0;
+                    totals.asistencias += s.asistencias || 0;
+                    totals.rebotes += s.rebotes || 0;
+                    totals.robos += s.robos || 0;
+                    totals.tapones += s.tapones || 0;
+                    totals.faltas += s.faltas || 0;
+                    totals.valoracion += this.calcularValoracion(s);
+                    totals.t1_conv += s.t1_convertidos || 0;
+                    totals.t1_fail += s.t1_fallados || 0;
+                    totals.t2_conv += s.t2_convertidos || 0;
+                    totals.t2_fail += s.t2_fallados || 0;
+                    totals.t3_conv += s.t3_convertidos || 0;
+                    totals.t3_fail += s.t3_fallados || 0;
+                });
 
-            // % T3
-            const t3Total = totals.t3_conv + totals.t3_fail;
-            const t3Pct = t3Total > 0 ? Math.round((totals.t3_conv / t3Total) * 100) : 0;
-            createTotalCell(t3Total > 0 ? `${t3Pct}% (${totals.t3_conv}/${t3Total})` : '-');
+                const createTotalCell = (text, isMobileVisible = false) => {
+                    const td = document.createElement('td');
+                    td.textContent = text;
+                    if (!isMobileVisible) td.className = 'd-none d-sm-table-cell';
+                    trTotal.appendChild(td);
+                };
 
-            // Asistencias
-            createTotalCell(totals.asistencias);
-            // Rebotes
-            createTotalCell(totals.rebotes);
-            // Robos
-            createTotalCell(totals.robos);
-            // Tapones
-            createTotalCell(totals.tapones);
-            // Faltas (Visible)
-            createTotalCell(totals.faltas, true);
-            // +/-
-            const teamMasMenos = (partido.puntosEquipo || 0) - (partido.puntosRival || 0);
-            createTotalCell(teamMasMenos > 0 ? `+${teamMasMenos}` : teamMasMenos);
-            // Val (Visible)
-            createTotalCell(totals.valoracion, true);
+                createTotalCell(totals.puntos, true);
 
-            tfoot.appendChild(trTotal);
-            table.appendChild(tfoot);
+                const t1Total = totals.t1_conv + totals.t1_fail;
+                createTotalCell(t1Total > 0 ? `${Math.round((totals.t1_conv / t1Total) * 100)}% (${totals.t1_conv}/${t1Total})` : '-');
+                const t2Total = totals.t2_conv + totals.t2_fail;
+                createTotalCell(t2Total > 0 ? `${Math.round((totals.t2_conv / t2Total) * 100)}% (${totals.t2_conv}/${t2Total})` : '-');
+                const t3Total = totals.t3_conv + totals.t3_fail;
+                createTotalCell(t3Total > 0 ? `${Math.round((totals.t3_conv / t3Total) * 100)}% (${totals.t3_conv}/${t3Total})` : '-');
+
+                createTotalCell(totals.asistencias);
+                createTotalCell(totals.rebotes);
+                createTotalCell(totals.robos);
+                createTotalCell(totals.tapones);
+                createTotalCell(totals.faltas, true);
+
+                const teamMasMenos = (partido.puntosEquipo || 0) - (partido.puntosRival || 0);
+                createTotalCell(teamMasMenos > 0 ? `+${teamMasMenos}` : teamMasMenos);
+
+                createTotalCell(totals.valoracion, true);
+                tfoot.appendChild(trTotal);
+                table.appendChild(tfoot);
+            }
 
             container.appendChild(table);
         };
@@ -452,17 +485,27 @@ class MatchRenderer {
     calcularEstadisticasDesdeEventos(partido) {
         const stats = {};
         const hasEvents = partido.eventos && Object.keys(partido.eventos).length > 0;
+        const sport = partido.sport || 'basketball';
+        const config = (typeof SportConfig !== 'undefined' && SportConfig[sport]) ? SportConfig[sport] : null;
 
         // Inicializar stats para todos los convocados
         if (partido.convocados) {
             Object.keys(partido.convocados).forEach(id => {
+                // Initialize default stats structure relative to sport or all
                 stats[id] = {
                     puntos: 0, asistencias: 0, rebotes: 0, robos: 0, tapones: 0, faltas: 0, masMenos: 0,
                     puntos_favor_pista: 0, puntos_contra_pista: 0,
                     t1_convertidos: 0, t1_fallados: 0,
                     t2_convertidos: 0, t2_fallados: 0,
-                    t3_convertidos: 0, t3_fallados: 0
+                    t3_convertidos: 0, t3_failados: 0
                 };
+
+                // Initialize generic stats from config if available
+                if (config && config.stats) {
+                    Object.keys(config.stats).forEach(key => {
+                        stats[id][key] = 0;
+                    });
+                }
 
                 // Cargar estadísticas guardadas si existen (PRIORIDAD)
                 if (partido.estadisticasJugadores && partido.estadisticasJugadores[id]) {
@@ -492,7 +535,7 @@ class MatchRenderer {
                         stats[pid][`t${val}_convertidos`] = (stats[pid][`t${val}_convertidos`] || 0) + 1;
                     }
                 }
-
+                // ... (Existing Plus/Minus logic remains same for all sports roughly) ...
                 // Puntos a favor con jugador en pista (SIEMPRE calcular, no se guarda)
                 const puntos = ev.cantidad || 0;
                 if (ev.jugadoresEnPista) {
@@ -514,14 +557,25 @@ class MatchRenderer {
                         stats[pid][`t${val}_fallados`] = (stats[pid][`t${val}_fallados`] || 0) + 1;
                     }
                 }
-            } else if (['asistencias', 'rebotes', 'robos', 'tapones', 'faltas'].includes(ev.tipo)) {
+            } else {
+                // Generic handler: if type exists in stats, increment
+                // Also support Basket hardcoded types for backward compat if not in generic config
                 if (shouldUseEventForStats) {
-                    stats[pid][ev.tipo] = (stats[pid][ev.tipo] || 0) + (ev.cantidad || 1);
+                    if (['asistencias', 'rebotes', 'robos', 'tapones', 'faltas'].includes(ev.tipo)) {
+                        stats[pid][ev.tipo] = (stats[pid][ev.tipo] || 0) + (ev.cantidad || 1);
+                    } else {
+                        // Check valid stats from config (e.g. 'ace', 'ataque')
+                        if (config && config.stats && config.stats[ev.tipo]) {
+                            // Increment generic stat
+                            stats[pid][ev.tipo] = (stats[pid][ev.tipo] || 0) + (ev.cantidad || 1);
+                        }
+                    }
                 }
             }
 
             // Puntos en contra (rival)
-            if (ev.tipo === 'puntos' && !ev.jugadorId) { // Punto rival
+            // Fix: Check dorsal === -1 for Rival, otherwise it might be generic team point
+            if (ev.tipo === 'puntos' && ev.dorsal === -1) { // Punto rival
                 const puntos = ev.cantidad || 0;
                 if (ev.jugadoresEnPista) {
                     ev.jugadoresEnPista.forEach(pistaId => {
@@ -537,7 +591,7 @@ class MatchRenderer {
             }
         });
 
-        // Asegurar que masMenos coincida con lo guardado si existe (redundancia por seguridad)
+        // Asegurar que masMenos coincida con lo guardado
         if (partido.estadisticasJugadores) {
             Object.keys(stats).forEach(id => {
                 if (partido.estadisticasJugadores[id] && partido.estadisticasJugadores[id].masMenos !== undefined) {
@@ -551,29 +605,57 @@ class MatchRenderer {
 
     calcularPuntosFantasy(stats) {
         if (!stats) return 0;
+        // Basic impl for basketball
+        // For Volley? Maybe simpler
         const puntos =
             (stats.puntos || 0) * 1 +
             (stats.rebotes || 0) * 1 +
             (stats.asistencias || 0) * 2 +
             (stats.tapones || 0) * 3 +
             (stats.robos || 0) * 3;
+
+        // Add volley stats?
+        // ACE=3, BLK=3, ATK=2 ??
+        if (stats.ace) return (stats.ace * 3) + (stats.bloqueo * 3) + (stats.ataque * 2);
+
         return puntos;
     }
 
     calcularValoracion(stats) {
         if (!stats) return 0;
+
+        // Basket Logic
         const puntosFallados =
             (stats.t1_fallados || 0) * 1 +
             (stats.t2_fallados || 0) * 2 +
             (stats.t3_fallados || 0) * 3;
 
-        return (stats.puntos || 0) -
+        const valBasket = (stats.puntos || 0) -
             puntosFallados +
             (stats.tapones || 0) +
             (stats.rebotes || 0) +
             (stats.asistencias || 0) +
             (stats.robos || 0) -
             (stats.faltas || 0);
+
+        // Volley Logic (Simpler "Total")?
+        if (stats.ace !== undefined) {
+            // VAL = (Possible positives) - (Negatives)
+            // Positives: ACE, BLK, ATK, REC (maybe 1?)
+            // Negatives: Errors
+            let val = 0;
+            // Iterate known keys or hardcode?
+            // Using config-like approach would be best but I don't have config here easily without passing it
+            // Heuristic check
+            val += (stats.ace || 0);
+            val += (stats.bloqueo || 0);
+            val += (stats.ataque || 0);
+            val -= (stats.error_saque || 0);
+            val -= (stats.error_ataque || 0);
+            return val;
+        }
+
+        return valBasket;
     }
 
     renderQuintetos(containerId, partido, tipo = 'ataque') {
@@ -774,16 +856,20 @@ class MatchRenderer {
         card.className = 'match-card card mb-2 shadow-sm border';
         card.style.cursor = 'pointer';
 
+        // Determine correct page based on sport
+        const sport = match.sport || 'basketball';
+        const page = (sport === 'volleyball') ? 'partido_volley.html' : 'partido.html';
+
         // Navigate to match details
         card.onclick = () => {
             // Determine target URL based on context (public vs private/admin)
             // If we have an id (public) use that. If we have complex IDs (private) use those.
             if (match.id && !match.matchId) {
                 // Public view format
-                window.location.href = `${baseUrl}partido.html?id=${match.id}`;
+                window.location.href = `${baseUrl}${page}?id=${match.id}`;
             } else {
                 // Private view format
-                window.location.href = `${baseUrl}partido.html?idEquipo=${match.teamId}&idCompeticion=${match.compId}&idPartido=${match.matchId}&ownerUid=${match.ownerUid}`;
+                window.location.href = `${baseUrl}${page}?idEquipo=${match.teamId}&idCompeticion=${match.compId}&idPartido=${match.matchId}&ownerUid=${match.ownerUid}`;
             }
         };
 
@@ -844,20 +930,43 @@ class MatchRenderer {
 
             let scoreText = '';
             // If private structure, rely on esLocal to show Team vs Rival
+            const sport = match.sport || 'basketball';
+
             if (match.teamName) {
-                if (match.esLocal) {
-                    scoreText = `${puntosEquipo} - ${puntosRival}`;
+                if (sport === 'volleyball') {
+                    const setsE = match.setsEquipo || 0;
+                    const setsR = match.setsRival || 0;
+                    // Usually teamName is always local? No, depends on esLocal flag which indicates if the 'teamName' (the user's team) is local.
+                    // match.teamName is the NAME of the user's team.
+                    // match.nombreRival is the NAME of the rival.
+                    if (match.esLocal) {
+                        scoreText = `${setsE} - ${setsR} (Sets)`;
+                    } else {
+                        scoreText = `${setsR} - ${setsE} (Sets)`;
+                    }
                 } else {
-                    scoreText = `${puntosRival} - ${puntosEquipo}`;
+                    if (match.esLocal) {
+                        scoreText = `${puntosEquipo} - ${puntosRival}`;
+                    } else {
+                        scoreText = `${puntosRival} - ${puntosEquipo}`;
+                    }
                 }
             } else {
-                // Public structure: default usually Equipo (left) - Rival (right)
-                // If esLocal=true, Equipo is Local. If esLocal=false, Rival is Local??
-                // Usually public view shows as is.
-                if (match.esLocal) {
-                    scoreText = `${puntosEquipo} - ${puntosRival}`;
+                // Public structure
+                if (sport === 'volleyball') {
+                    const setsE = match.setsEquipo || 0;
+                    const setsR = match.setsRival || 0;
+                    if (match.esLocal) {
+                        scoreText = `${setsE} - ${setsR} (Sets)`;
+                    } else {
+                        scoreText = `${setsR} - ${setsE} (Sets)`;
+                    }
                 } else {
-                    scoreText = `${puntosRival} - ${puntosEquipo}`;
+                    if (match.esLocal) {
+                        scoreText = `${puntosEquipo} - ${puntosRival}`;
+                    } else {
+                        scoreText = `${puntosRival} - ${puntosEquipo}`;
+                    }
                 }
             }
 
@@ -874,7 +983,7 @@ class MatchRenderer {
             // Manage button (Private Calendar)
             actionBtn = `
             <button class="btn btn-sm btn-warning ms-auto action-btn" 
-                onclick="event.stopPropagation(); window.location.href='${baseUrl}partido.html?idEquipo=${match.teamId}&idCompeticion=${match.compId}&idPartido=${match.matchId}&ownerUid=${match.ownerUid}'"
+                onclick="event.stopPropagation(); window.location.href='${baseUrl}${page}?idEquipo=${match.teamId}&idCompeticion=${match.compId}&idPartido=${match.matchId}&ownerUid=${match.ownerUid}'"
                 title="Gestionar partido">
                 <i class="bi bi-pencil-fill"></i>
             </button>
@@ -883,8 +992,8 @@ class MatchRenderer {
             // View button (Public/ReadOnly)
             // Use correct ID for link
             const linkUrl = (match.id && !match.matchId)
-                ? `${baseUrl}partido.html?id=${match.id}`
-                : `${baseUrl}partido.html?idEquipo=${match.teamId}&idCompeticion=${match.compId}&idPartido=${match.matchId}&ownerUid=${match.ownerUid}`;
+                ? `${baseUrl}${page}?id=${match.id}`
+                : `${baseUrl}${page}?idEquipo=${match.teamId}&idCompeticion=${match.compId}&idPartido=${match.matchId}&ownerUid=${match.ownerUid}`;
 
             actionBtn = `
                 <a href="${linkUrl}" 

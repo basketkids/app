@@ -37,20 +37,16 @@
       <div id="scoreboardTeamContainer" class="scoreboard-team-box">
         <div class="team-name" id="nombreEquipoMarcador">LOCAL</div>
         <div class="team-score" id="marcadorEquipo">0</div>
-        <div class="foul-lights-container" id="foulLightsEquipo">
-          <span class="foul-dot"></span>
-          <span class="foul-dot"></span>
-          <span class="foul-dot"></span>
-          <span class="foul-dot"></span>
-          <span class="foul-dot bonus"></span>
+        <div class="sets-display mt-2 fw-bold text-white-50" style="font-size: 1.2rem;">
+          SETS: <span id="setsEquipo" class="text-white">0</span>
         </div>
       </div>
 
       <!-- Timer & Period (Center) -->
       <div id="scoreboardTimerContainer"
         class="d-flex flex-column justify-content-center align-items-center mx-2 timer-box">
-        <div id="contador" class="digital-clock mb-2">10:00</div>
-        <div class="period-display">Cuarto <span id="periodoActual">1</span></div>
+        <div id="contador" class="digital-clock mb-2">00:00</div>
+        <div class="period-display">Set <span id="periodoActual">1</span></div>
         <div id="parcialesCuartos" class="small text-white-50 mt-1" style="font-size: 0.7rem; white-space: nowrap;">
         </div>
       </div>
@@ -59,12 +55,8 @@
       <div id="scoreboardRivalContainer" class="scoreboard-team-box">
         <div class="team-name" id="nombreEquipoRival">RIVAL</div>
         <div class="team-score" id="marcadorRival">0</div>
-        <div class="foul-lights-container" id="foulLightsRival">
-          <span class="foul-dot"></span>
-          <span class="foul-dot"></span>
-          <span class="foul-dot"></span>
-          <span class="foul-dot"></span>
-          <span class="foul-dot bonus"></span>
+        <div class="sets-display mt-2 fw-bold text-white-50" style="font-size: 1.2rem;">
+          SETS: <span id="setsRival" class="text-white">0</span>
         </div>
       </div>
 

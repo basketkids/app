@@ -17,6 +17,15 @@ fetch(`${basePath}header.html`)
 
     // Update logo link based on context
     const logo = document.querySelector('.navbar-brand.logo');
+
+    // Check if we need to update branding based on URL params
+    const params = new URLSearchParams(window.location.search);
+    const teamId = params.get('idEquipo');
+    const ownerUid = params.get('ownerUid') || uid; // uid might be null here if not auth yet, but we check auth later. 
+    // Actually, to fetch team sport we need to know OWNER. If looking at own team, we wait for auth.
+
+    // But we can trigger it inside auth change or if we have ownerUid param (public view/shared link)
+
     if (logo) {
       // If in public, we might want to go back to root index or keep it as is if it's absolute
       // The original header.html has absolute link: https://app.basketkids.org/
@@ -33,9 +42,16 @@ fetch(`${basePath}header.html`)
     authh.onAuthStateChanged(user => {
       if (user) {
         uid = user.uid;
+        uid = user.uid;
         construirBreadcrumbDesdeParametros();
+        updateBranding();
       }
     });
+
+    if (params.get('ownerUid') && teamId) {
+      // If we have explicit owner (e.g. public view), we can try updating branding immediately
+      updateBranding(params.get('ownerUid'), teamId);
+    }
 
   }).catch(console.error);
 
@@ -250,6 +266,21 @@ async function inicializarAuth() {
       });
     } catch (error) {
       console.error('Error loading DiceBearManager:', error);
+    }
+  }
+
+  // Load SportConfig script if not already loaded
+  if (typeof SportConfig === 'undefined') {
+    try {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = `${basePath}js/utils/SportConfig.js`;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    } catch (error) {
+      console.error('Error loading SportConfig:', error);
     }
   }
 
@@ -499,3 +530,34 @@ function updateThemeIcon(theme) {
   }
 }
 
+
+async function updateBranding(explicitOwner, explicitTeam) {
+    if (typeof SportConfig === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+    const teamId = explicitTeam || params.get('idEquipo');
+    // If we have explicit owner, use it. Otherwise use current auth uid if available.
+    let targetUid = explicitOwner || params.get('ownerUid') || uid;
+
+    if (!teamId || !targetUid) return;
+
+    try {
+        const snap = await dbh.ref(`usuarios/${targetUid}/equipos/${teamId}/sport`).once('value');
+        const sport = snap.val() || 'basketball'; // Default to basketball
+        const config = SportConfig[sport];
+
+        if (config) {
+            const logo = document.querySelector('.navbar-brand.logo');
+            if (logo) {
+                // Determine icon HTML
+                const iconHtml = config.icon.startsWith('bi-') ? `<i class="bi ${config.icon}"></i>` : `<img src="${config.icon}" alt="logo" height="24">`;
+                logo.innerHTML = `${iconHtml} ${config.appName}`;
+                
+                // Update styling if needed (e.g. volleyball specific colors)
+                // document.documentElement.style.setProperty('--primary-color', ...);
+            }
+        }
+    } catch (e) {
+        console.error('Error updating branding:', e);
+    }
+}

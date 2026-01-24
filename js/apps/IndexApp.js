@@ -144,9 +144,13 @@ class IndexApp extends BaseApp {
             return;
         }
 
-        this.teamService.create(this.currentUser.uid, nombre)
+        const sport = document.getElementById('selectDeporteModal').value;
+
+        this.teamService.create(this.currentUser.uid, nombre, sport)
             .then(() => {
                 this.inputEquipoModal.value = '';
+                // Reset select to default
+                document.getElementById('selectDeporteModal').value = 'basketball';
                 const modalEl = document.getElementById('addTeamModal');
                 const modal = bootstrap.Modal.getInstance(modalEl);
                 if (modal) modal.hide();

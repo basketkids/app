@@ -9,8 +9,12 @@ class TeamService {
         return ref; // Return ref to allow off()
     }
 
-    create(userId, name) {
-        return this.db.ref(`usuarios/${userId}/equipos`).push().set({ nombre: name });
+    create(userId, name, sport = 'basketball') {
+        return this.db.ref(`usuarios/${userId}/equipos`).push().set({
+            nombre: name,
+            sport: sport,
+            createdAt: firebase.database.ServerValue.TIMESTAMP
+        });
     }
 
     delete(userId, teamId) {

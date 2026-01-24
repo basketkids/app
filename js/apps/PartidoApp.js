@@ -1,134 +1,21 @@
-class PartidoApp extends BaseApp {
+class PartidoApp extends MatchBaseApp {
   constructor() {
     super();
-    this.dataService = null;
-    this.teamMembersService = new TeamMembersService(this.db);
-
-    // Estado centralizado único que contiene toda la información del partido
-    this.partido = null;
-    this.plantillaJugadores = [];
-    this.rivales = [];
-
+    // Specific UI elements for Basket
     this.selectConfiguracion = document.getElementById('selectConfiguracion');
     this.selectCuarto = document.getElementById('selectCuarto');
-    this.btnStartPause = document.getElementById('btnStartPause');
     this.btnTerminarCuarto = document.getElementById('btnTerminarCuarto');
-    this.btnTerminar = document.getElementById('btnTerminar');
-    this.contadorInterval = null;
-    this.contadorActivo = false;
-    this.matchRenderer = new MatchRenderer();
-    this.userRole = 'follower';
-    this.jerseyColor = '5199e4';
-    this.selectedPlayerId = null; // Track selected player for stats
+    this.vistaQuinteto = 'ataque';
   }
 
-  onUserLoggedIn(user) {
-    this.currentUser = user;
-    const teamId = this.getParam('idEquipo');
-    const competitionId = this.getParam('idCompeticion');
-    const matchId = this.getParam('idPartido');
-    this.ownerUid = this.getParam('ownerUid') || user.uid;
-
-    if (!teamId || !competitionId || !matchId) {
-      alert('Faltan parámetros en la URL');
-      window.location.href = 'index.html';
-      return;
-    }
-
-    this.checkPermissions(teamId).then(() => {
-      this.dataService = new DataService(this.db, this.ownerUid, teamId, competitionId, matchId);
-      this.initMatch();
-    });
+  // Override init hook
+  onMatchLoaded() {
+    this.configuracionPartido = this.partido.configuracion || '4x10';
+    this.configurarPartido(this.configuracionPartido, false);
   }
 
-  async checkPermissions(teamId) {
-    if (this.currentUser.uid === this.ownerUid) {
-      this.userRole = 'owner';
-      return;
-    }
-
-    const memberSnap = await this.teamMembersService.getMembers(this.ownerUid, teamId, () => { }).once('value');
-    if (memberSnap.exists() && memberSnap.hasChild(this.currentUser.uid)) {
-      this.userRole = memberSnap.child(this.currentUser.uid).val().role;
-    }
-  }
-
-  async initMatch() {
-    try {
-      this.partido = await this.dataService.cargarPartido();
-      console.log(this.partido);
-
-      if (!this.partido) throw new Error('Partido no encontrado');
-
-      this.plantillaJugadores = await this.dataService.cargarPlantilla();
-      this.rivales = await this.dataService.cargarRivales();
-      // Ajustar configuración partido y temporizador según datos cargados
-      this.configuracionPartido = this.partido.configuracion || '4x10';
-      this.configurarPartido(this.configuracionPartido, false);
-
-      this.parteActual = this.partido.parteActual || 1;
-      // console.log(this.partido.parteActual);
-      // console.log(this.parteActual);
-      this.segundosRestantes = this.partido.duracionParte || (this.configuracionPartido === '6x8' ? 8 * 60 : 10 * 60);
-
-      this.estadoPartido = this.partido.estado || 'no empezado';
-
-      this.calcularTiempoRestante();
-      this.renderizarTodo();
-      this.prepararEventos();
-      this.inicializarTemporizador();
-      this.applyPermissions();
-      this.loadRequests();
-    } catch (error) {
-      console.error(error);
-      alert('Error cargando los datos del partido');
-    }
-  }
-
-  applyPermissions() {
-    const canEdit = (this.userRole === 'owner' || this.userRole === 'statistician');
-
-    if (!canEdit) {
-      // Disable all controls except navigation tabs and share buttons
-      const controls = document.querySelectorAll('button, select, input');
-      controls.forEach(el => {
-        if (el.id !== 'shareBtn' && el.id !== 'publicMatchBtn' && !el.classList.contains('nav-link') && !el.classList.contains('btn-close')) {
-          el.disabled = true;
-          el.style.pointerEvents = 'none';
-        }
-      });
-
-      // Hide edit button
-      const btnEditar = document.getElementById('btnEditarPartido');
-      if (btnEditar) btnEditar.style.display = 'none';
-    }
-  }
-  calcularTiempoRestante() {
-    //  console.log(this.parteActual);
-    // console.log(this.partido.parteActual);
-    // Aquí actualizar cuarto y segundos al último evento si existen eventos
-    const eventosArray = this.partido.eventos ? Object.values(this.partido.eventos) : [];
-    if (eventosArray.length > 0) {
-      eventosArray.sort((a, b) => {
-        if (a.cuarto === b.cuarto) {
-          return b.tiempoSegundos - a.tiempoSegundos; // más reciente primero
-        } else {
-          return b.cuarto - a.cuarto; // cuarto mayor primero
-        }
-      });
-      const ultimaJugada = eventosArray[0];
-      // console.log(ultimaJugada);
-      this.partido.parteActual = ultimaJugada.cuarto || this.partido.parteActual || 1;
-      const duracionParte = this.partido.duracionParte || (this.configuracionPartido === '6x8' ? 8 * 60 : 10 * 60);
-      this.segundosRestantes = duracionParte - (ultimaJugada.tiempoSegundos || 0);
-      if (this.segundosRestantes < 0) this.segundosRestantes = 0;
-    } else {
-      this.partido.parteActual = this.partido.parteActual || 1;
-      this.segundosRestantes = this.partido.duracionParte || (this.configuracionPartido === '6x8' ? 8 * 60 : 10 * 60);
-    }
-    // console.log(this.parteActual);
-    // console.log(this.partido.parteActual);
-
+  getDefaultParteDuration() {
+    return (this.configuracionPartido === '6x8' ? 8 * 60 : 10 * 60);
   }
 
   configurarPartido(opcion, guardarEnFirebase = true) {
@@ -143,7 +30,6 @@ class PartidoApp extends BaseApp {
       this.partido.configuracion = '4x10';
     }
 
-    //
     this.segundosRestantes = this.partido.duracionParte;
     this.estadoPartido = 'no empezado';
 
@@ -158,8 +44,6 @@ class PartidoApp extends BaseApp {
         option.textContent = i;
         this.selectCuarto.appendChild(option);
       }
-
-      this.selectCuarto.value = this.partido.parteActual;
       this.selectCuarto.value = this.partido.parteActual;
     }
 
@@ -189,153 +73,9 @@ class PartidoApp extends BaseApp {
     this.renderQuintetos();
   }
 
-  renderQuintetos() {
-    // Default to 'ataque' if not set
-    if (!this.vistaQuinteto) this.vistaQuinteto = 'ataque';
-    this.matchRenderer.renderQuintetos('quintetosContainer', this.partido, this.vistaQuinteto);
-  }
-
-  cambiarVistaQuinteto(tipo) {
-    this.vistaQuinteto = tipo;
-
-    // Update buttons
-    const btnAtaque = document.getElementById('btnQuintetoAtaque');
-    const btnDefensa = document.getElementById('btnQuintetoDefensa');
-
-    if (btnAtaque && btnDefensa) {
-      if (tipo === 'ataque') {
-        btnAtaque.classList.add('active');
-        btnDefensa.classList.remove('active');
-      } else {
-        btnAtaque.classList.remove('active');
-        btnDefensa.classList.add('active');
-      }
-    }
-
-    this.renderQuintetos();
-  }
-
-  renderFantasy() {
-    this.matchRenderer.renderFantasy('fantasyContainer', this.partido, this.jerseyColor, this.plantillaJugadores);
-  }
-
-  actualizarLinksPublicos() {
-    const shareBtn = document.getElementById('shareBtn');
-    const publicMatchBtn = document.getElementById('publicMatchBtn');
-
-    // Construir URL pública absoluta
-    // Asumimos que public/partido.html está en ../public/partido.html relativo a la app admin
-    // Pero necesitamos la URL absoluta para compartir
-    const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
-    const publicUrl = `${baseUrl}/public/partido.html?id=${this.dataService.matchId}`;
-
-    if (shareBtn) {
-      shareBtn.href = `https://wa.me/?text=` + encodeURIComponent(`Sigue el partido en vivo: ${publicUrl}`);
-    }
-
-    if (publicMatchBtn) {
-      publicMatchBtn.href = publicUrl;
-    }
-  }
-
-  renderInfoPartido() {
-    const container = document.getElementById('infoPartidoConvocatoria');
-    if (!container) return;
-
-    let html = '';
-
-    // Fecha y Hora
-    if (this.partido.fechaHora) {
-      const fechaObj = new Date(this.partido.fechaHora);
-      const fechaStr = fechaObj.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
-      const horaStr = fechaObj.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-      html += `<div class="mb-1 fw-bold"><i class="bi bi-calendar-event"></i> ${fechaStr} - ${horaStr}</div>`;
-    }
-
-    // Ubicación
-    if (this.partido.pabellon) {
-      html += `
-        <div>
-          <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(this.partido.pabellon)}" 
-             target="_blank" class="text-decoration-none text-muted">
-            <i class="bi bi-geo-alt-fill"></i> ${this.partido.pabellon}
-          </a>
-        </div>
-      `;
-    }
-
-    // Botón Editar
-    html += `
-      <div class="mt-2">
-        <button id="btnEditarInTab" class="btn btn-sm btn-outline-secondary" title="Editar partido">
-          <i class="bi bi-pencil"></i> Editar Detalles
-        </button>
-      </div>
-    `;
-
-    container.innerHTML = html;
-
-    // Attach listener
-    const btn = document.getElementById('btnEditarInTab');
-    if (btn) {
-      btn.addEventListener('click', () => this.abrirModalEditar());
-    }
-  }
-  renderUbicacion() {
-    const container = document.getElementById('ubicacionPartido');
-    if (!container) return;
-
-    if (this.partido.pabellon) {
-      container.innerHTML = `
-        <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(this.partido.pabellon)}" 
-           target="_blank" class="text-decoration-none text-muted">
-          <i class="bi bi-geo-alt-fill"></i> ${this.partido.pabellon}
-        </a>
-      `;
-    } else {
-      container.innerHTML = '';
-    }
-  }
-
-  async renderNombresEquipos() {
-    const nombreEquipo = document.getElementById('nombreEquipoMarcador');
-    const nombreRival = document.getElementById('nombreEquipoRival') || document.getElementById('nombreRivalMarcador');
-    const nombreEntrenadorDisplay = document.getElementById('nombreEntrenadorConvocados');
-
-    if (nombreEquipo && this.partido.nombreEquipo) {
-      nombreEquipo.textContent = this.partido.nombreEquipo;
-    }
-    if (nombreRival && this.partido.nombreRival) {
-      nombreRival.textContent = this.partido.nombreRival;
-    }
-
-    if (this.partido.equipoId && this.ownerUid) {
-      try {
-        const teamSnap = await this.db.ref(`usuarios/${this.ownerUid}/equipos/${this.partido.equipoId}`).once('value');
-        if (teamSnap.exists()) {
-          const teamData = teamSnap.val();
-          const entrenador = teamData.entrenador;
-          this.jerseyColor = teamData.jerseyColor || '5199e4';
-
-          if (nombreEntrenadorDisplay) {
-            if (entrenador) {
-              nombreEntrenadorDisplay.textContent = `Entrenador/a: ${entrenador}`;
-              nombreEntrenadorDisplay.style.display = 'block';
-            } else {
-              nombreEntrenadorDisplay.style.display = 'none';
-            }
-          }
-          // Re-render fantasy with correct color if needed
-          this.renderFantasy();
-        }
-      } catch (e) {
-        console.error('Error fetching team data:', e);
-      }
-    }
-  }
-
-
   prepararEventos() {
+    super.prepararEventos();
+
     this.selectConfiguracion?.addEventListener('change', e => this.configurarPartido(e.target.value));
 
     this.selectCuarto?.addEventListener('change', e => {
@@ -355,29 +95,22 @@ class PartidoApp extends BaseApp {
       this.guardarJugadoresEnPista();
     });
 
-    this.btnStartPause?.addEventListener('click', () => this.toggleTemporizador());
     this.btnTerminarCuarto?.addEventListener('click', () => this.terminarCuarto());
-    this.btnTerminar?.addEventListener('click', () => this.terminarPartido());
 
-
-
+    // Legacy manual buttons if still present
     const btnPuntoRival1 = document.getElementById('btnPuntoRival1');
-    const btnPuntoRival2 = document.getElementById('btnPuntoRival2');
-    const btnPuntoRival3 = document.getElementById('btnPuntoRival3');
-    const btnFaltasRival = document.getElementById('btnFaltasRival');
+    if (btnPuntoRival1) btnPuntoRival1.addEventListener('click', () => this.agregarEstadistica('', 'puntos', 1, null, true));
 
-    if (btnPuntoRival1) {
-      btnPuntoRival1.addEventListener('click', () => this.agregarEstadistica('', 'puntos', 1));
-    }
-    if (btnPuntoRival2) {
-      btnPuntoRival2.addEventListener('click', () => this.agregarEstadistica('', 'puntos', 2));
-    }
-    if (btnPuntoRival3) {
-      btnPuntoRival3.addEventListener('click', () => this.agregarEstadistica('', 'puntos', 3));
-    }
-    if (btnFaltasRival) {
-      btnFaltasRival.addEventListener('click', () => this.agregarEstadistica('', 'faltas', 1));
-    }
+    // ... (rest of listeners)
+    const btnPuntoRival2 = document.getElementById('btnPuntoRival2');
+    if (btnPuntoRival2) btnPuntoRival2.addEventListener('click', () => this.agregarEstadistica('', 'puntos', 2, null, true));
+
+    const btnPuntoRival3 = document.getElementById('btnPuntoRival3');
+    if (btnPuntoRival3) btnPuntoRival3.addEventListener('click', () => this.agregarEstadistica('', 'puntos', 3, null, true));
+
+    const btnFaltasRival = document.getElementById('btnFaltasRival');
+    if (btnFaltasRival) btnFaltasRival.addEventListener('click', () => this.agregarEstadistica('', 'faltas', 1, null, true));
+
 
     document.getElementById('btnEditarPartido')?.addEventListener('click', () => this.abrirModalEditar());
     document.getElementById('formEditarPartido')?.addEventListener('submit', (e) => {
@@ -387,69 +120,44 @@ class PartidoApp extends BaseApp {
 
     document.getElementById('btnBorrarCronica')?.addEventListener('click', () => this.borrarCronica());
 
-    const btnDownload = document.getElementById('btnDownloadMatch');
-    if (btnDownload) {
-      if (this.userRole === 'owner') {
-        btnDownload.style.display = 'inline-block';
-        btnDownload.addEventListener('click', () => this.downloadMatchData());
-      }
-    }
+    // ... match download, api key, file upload, manual mode, swap stats ...
+    // Assuming methods exist or are kept in this class or base. 
+    // They are in this class below this replacement.
 
-    this.configureApiKeyUI();
-
-    document.getElementById('csvFileInput')?.addEventListener('change', (e) => this.handleFileUpload(e));
-
-    // Manual AI Mode
-    document.getElementById('btnManualMode')?.addEventListener('click', () => this.toggleManualMode());
-    document.getElementById('btnCopyPrompt')?.addEventListener('click', () => this.copyPromptToClipboard());
-    document.getElementById('btnSaveManualCronica')?.addEventListener('click', () => this.guardarCronicaManual());
-
-    // Swap Stats
-    document.getElementById('btnOpenSwapStats')?.addEventListener('click', () => this.abrirModalSwapStats());
-    document.getElementById('btnConfirmSwap')?.addEventListener('click', () => this.confirmarSwapStats());
-
-    // Action Panel Events (New UI)
+    // Wire up Action Panel
     const actionPanel = document.getElementById('action-controls-footer');
     if (actionPanel) {
       actionPanel.addEventListener('click', (e) => {
         const btn = e.target.closest('button');
         if (!btn) return;
 
-        // Rival Quick Actions (ID specific)
-        if (btn.id === 'btnRivalP1') return this.agregarEstadistica('', 'puntos', 1);
-        if (btn.id === 'btnRivalP2') return this.agregarEstadistica('', 'puntos', 2);
-        if (btn.id === 'btnRivalP3') return this.agregarEstadistica('', 'puntos', 3);
-        if (btn.id === 'btnRivalF') return this.agregarEstadistica('', 'puntos', 1, 'faltas'); // Wait, signature is id, type, amount. Faltas is type.
+        if (btn.id === 'btnRivalP1') return this.agregarEstadistica('', 'puntos', 1, null, true);
+        if (btn.id === 'btnRivalP2') return this.agregarEstadistica('', 'puntos', 2, null, true);
+        if (btn.id === 'btnRivalP3') return this.agregarEstadistica('', 'puntos', 3, null, true);
+        if (btn.id === 'btnRivalF') return this.agregarEstadistica('', 'faltas', 1, null, true);
 
         const action = btn.dataset.action;
         const value = parseInt(btn.dataset.val) || 1;
 
         if (action) {
           this.triggerButtonEffect(btn);
-          this.handleActionPanelClick(action, value);
+          // Simplified generic handler for basket
+          if (!this.selectedPlayerId && action !== 'falta' && action !== 'fallo') {
+            // Warning?
+          }
+          if (!this.selectedPlayerId) {
+            alert("Selecciona un jugador primero.");
+            return;
+          }
+          if (action === 'puntos') {
+            this.agregarEstadistica(this.selectedPlayerId, 'puntos', value);
+          } else if (action === 'fallo') {
+            this.mostrarOpcionesFallo(this.selectedPlayerId);
+          } else {
+            this.agregarEstadistica(this.selectedPlayerId, action, value);
+          }
         }
       });
-
-      // Bind Miss Modal buttons
-      const modalFallo = document.getElementById('modalFallo');
-      if (modalFallo) {
-        modalFallo.addEventListener('click', (e) => {
-          const btn = e.target.closest('.action-miss-val');
-          if (!btn) return;
-          const val = parseInt(btn.dataset.val);
-          if (this.selectedPlayerId && val) {
-            this.registrarFallo(this.selectedPlayerId, val);
-            bootstrap.Modal.getInstance(modalFallo).hide();
-          }
-        });
-      }
-
-      // Special handling for Rival Faltas button manual binding if needed or fix logic above
-      const btnRivalF = document.getElementById('btnRivalF');
-      if (btnRivalF) {
-        // Remove previous if any or relies on delegation above? 
-        // The delegation above catching 'btnRivalF' was calling pts which is wrong.
-      }
     }
 
     // Fix Rival Faltas delegation correctly
@@ -457,52 +165,128 @@ class PartidoApp extends BaseApp {
       document.getElementById('btnRivalF').onclick = (e) => {
         e.stopPropagation();
         this.triggerButtonEffect(e.target.closest('button'));
-        this.agregarEstadistica('', 'faltas', 1);
+        this.agregarEstadistica('', 'faltas', 1, null, true);
       };
     }
-  }
 
-  triggerButtonEffect(btn) {
-    if (!btn) return;
-    // Remove class if it exists to restart animation
-    btn.classList.remove('btn-effect');
-    void btn.offsetWidth; // Force reflow
-    btn.classList.add('btn-effect');
-    setTimeout(() => btn.classList.remove('btn-effect'), 200);
-  }
+    this.renderActionButtons();
+    // Rest of listeners (download match, api key, etc) need to be ensured they are called.
+    // Since I am replacing the whole prepare function, I must check if I missed any.
+    // I missed configureApiKeyUI, file upload, manual mode, swap stats.
+    this.configureApiKeyUI();
+    document.getElementById('csvFileInput')?.addEventListener('change', (e) => this.handleFileUpload(e));
+    document.getElementById('btnManualMode')?.addEventListener('click', () => this.toggleManualMode());
+    document.getElementById('btnCopyPrompt')?.addEventListener('click', () => this.copyPromptToClipboard());
+    document.getElementById('btnSaveManualCronica')?.addEventListener('click', () => this.guardarCronicaManual());
+    document.getElementById('btnOpenSwapStats')?.addEventListener('click', () => this.abrirModalSwapStats());
+    document.getElementById('btnConfirmSwap')?.addEventListener('click', () => this.confirmarSwapStats());
 
-  handleActionPanelClick(action, value) {
-    if (!this.selectedPlayerId && action !== 'falta' && action !== 'fallo') {
-      // Check if we want to allow selecting player AFTER action? 
-      // For now, require selection.
-      // Unless action is purely global which we don't have yet except Rival (handled separately).
-      // Fallo/Falta also need player.
+    const btnDownload = document.getElementById('btnDownloadMatch');
+    if (btnDownload && this.userRole === 'owner') {
+      btnDownload.style.display = 'inline-block';
+      btnDownload.addEventListener('click', () => this.downloadMatchData());
     }
 
-    if (!this.selectedPlayerId) {
-      alert("Selecciona un jugador primero.");
+    // Bind Miss Modal buttons
+    const modalFallo = document.getElementById('modalFallo');
+    if (modalFallo) {
+      modalFallo.addEventListener('click', (e) => {
+        const btn = e.target.closest('.action-miss-val');
+        if (!btn) return;
+        const val = parseInt(btn.dataset.val);
+        if (this.selectedPlayerId && val) {
+          this.registrarFallo(this.selectedPlayerId, val);
+          bootstrap.Modal.getInstance(modalFallo).hide();
+        }
+      });
+    }
+  }
+
+  onStatAdded() {
+    this.actualizarMarcadoryFaltas();
+    this.renderEventosEnVivo();
+    this.selectedPlayerId = null;
+    this.renderListaJugadoresPista();
+  }
+
+  onPeriodEnd() {
+    if (this.btnTerminarCuarto) this.btnTerminarCuarto.disabled = false;
+  }
+
+  actualizarBotonesPorEstado() {
+    if (this.estadoPartido === 'finalizado') {
+      if (this.btnStartPause) this.btnStartPause.disabled = true;
+      if (this.btnTerminarCuarto) this.btnTerminarCuarto.disabled = true;
+      if (this.btnTerminar) this.btnTerminar.disabled = true;
       return;
     }
+    if (this.btnStartPause) this.btnStartPause.disabled = false;
 
-    const p = this.selectedPlayerId;
-
-    // Reset selection after action? Maybe optional preference. 
-    // For now, keep selected for rapid entry (e.g. offensive reb + putback).
-
-    if (action === 'puntos') {
-      this.agregarEstadistica(p, 'puntos', value);
-    } else if (action === 'fallo') {
-      // Show modal or assume 2pts? Let's default to a prompt or simple 2p miss for now
-      // Or reuse the logic. 'fallo' button in HTML didn't have value.
-      // Let's prompt or simple toggle? 
-      // Ideally Miss should ask 1, 2, 3? 
-      // Simplified: MISS -> Prompt? Or Buttons like +1/-1?
-      // Let's open a small miss selector or just default to 2?
-      this.mostrarOpcionesFallo(p);
-    } else {
-      // rebound, assist, steal, block, foul
-      this.agregarEstadistica(p, action, value);
+    const finished = (this.segundosRestantes <= 0);
+    if (this.btnTerminarCuarto) {
+      // Can end quarter if time is 0 AND not last quarter?
+      // Or anytime? Usually when time is 0.
+      this.btnTerminarCuarto.disabled = !finished;
     }
+
+    if (this.btnTerminar) {
+      // Can finish match if last quarter is done
+      // Or anytime manually?
+      // Assuming allow anytime if user wants to force end, but disabled normally until end of game logic
+      const isLast = (this.partido.parteActual >= this.partido.totalPartes);
+      this.btnTerminar.disabled = !(isLast && finished);
+    }
+  }
+
+  terminarCuarto() {
+    if (this.partido.parteActual < this.partido.totalPartes) {
+      this.partido.parteActual++;
+      this.segundosRestantes = this.partido.duracionParte;
+      this.partido.estado = 'pausado'; // Auto pause next quarter
+      this.estadoPartido = 'pausado';
+      this.dataService.guardarPartido(this.partido);
+      this.actualizarDisplay();
+      this.actualizarBotonesPorEstado();
+      // Add event 'finCuarto' ?
+    } else {
+      alert("Es el último cuarto. Usa Terminar Partido.");
+    }
+  }
+
+  renderActionButtons() {
+    // Basket buttons only here, simplified
+    const container = document.getElementById('action-controls-footer');
+    if (!container) return;
+
+    // Removed generic 'sport' check because this Class IS Basket
+    // Use the HTML structure defined in previous steps for Basket
+    container.innerHTML = `
+           <div class="d-flex flex-column gap-2">
+            <div class="d-flex gap-2 justify-content-between">
+              <button class="btn btn-outline-success flex-grow-1 action-btn" data-action="asistencias">AST</button>
+              <button class="btn btn-outline-success flex-grow-1 action-btn" data-action="rebotes">REB</button>
+              <button class="btn btn-outline-success flex-grow-1 action-btn" data-action="robos">ROB</button>
+              <button class="btn btn-outline-success flex-grow-1 action-btn" data-action="tapones">TAP</button>
+            </div>
+            <div class="d-flex gap-2 justify-content-between align-items-center">
+              <div class="d-flex gap-2 flex-grow-1">
+                <button class="btn btn-primary action-btn-score flex-grow-1" data-action="puntos" data-val="1">+1</button>
+                <button class="btn btn-primary action-btn-score flex-grow-1" data-action="puntos" data-val="2">+2</button>
+                <button class="btn btn-primary action-btn-score flex-grow-1" data-action="puntos" data-val="3">+3</button>
+              </div>
+              <button class="btn btn-outline-danger action-btn" data-action="faltas" title="Falta Personal">FAL</button>
+              <button class="btn btn-outline-secondary action-btn" data-action="fallo" title="Tiro Fallado">MISS</button>
+            </div>
+            <div class="d-flex gap-2 justify-content-center border-top pt-2 mt-1">
+              <span class="small text-muted align-self-center">Rival:</span>
+              <button class="btn btn-sm btn-light border" id="btnRivalP1">+1</button>
+              <button class="btn btn-sm btn-light border" id="btnRivalP2">+2</button>
+              <button class="btn btn-sm btn-light border" id="btnRivalP3">+3</button>
+              <button class="btn btn-sm btn-light border text-danger" id="btnRivalF">F+</button>
+            </div>
+          </div>`;
+
+    // No need to bind generic here as they are handled by delegation or specific IDs
   }
 
   mostrarOpcionesFallo(id) {
@@ -1696,411 +1480,9 @@ class PartidoApp extends BaseApp {
     });
   }
 
-  async getMatchSummaryForAI() {
-    const p = this.partido;
-    const fecha = p.fechaHora ? new Date(p.fechaHora).toLocaleDateString() : 'Fecha desconocida';
-    const lugar = p.pabellon || 'Pabellón desconocido';
-
-    // Determine Local/Visitor context
-    const esLocal = (p.esLocal !== false); // Default true
-    let equipoLocal, equipoVisitante, marcador;
-
-    if (esLocal) {
-      equipoLocal = p.nombreEquipo || 'Equipo Local';
-      equipoVisitante = p.nombreRival || 'Equipo Rival';
-      marcador = `${p.puntosEquipo} - ${p.puntosRival}`;
-    } else {
-      equipoLocal = p.nombreRival || 'Equipo Rival';
-      equipoVisitante = p.nombreEquipo || 'Equipo Visitante';
-      marcador = `${p.puntosRival} - ${p.puntosEquipo}`;
-    }
-
-    // Fetch coach name
-    let nombreEntrenador = '';
-    if (p.equipoId && this.ownerUid) {
-      try {
-        const teamSnap = await this.db.ref(`usuarios/${this.ownerUid}/equipos/${p.equipoId}`).once('value');
-        if (teamSnap.exists()) {
-          nombreEntrenador = teamSnap.val().entrenador || '';
-        }
-      } catch (e) {
-        console.error('Error fetching coach name:', e);
-      }
-    }
-
-    let statsJugadores = '';
-    if (p.estadisticasJugadores) {
-      Object.entries(p.estadisticasJugadores).forEach(([id, stats]) => {
-        const nombre = (p.convocados && p.convocados[id]) ? p.convocados[id].nombre : 'Jugador';
-        const dorsal = (p.convocados && p.convocados[id]) ? p.convocados[id].dorsal : '#';
-        // Include ALL players, even with 0 stats
-        statsJugadores += `- ${nombre} (#${dorsal}): ${stats.puntos} pts, ${stats.asistencias} ast, ${stats.rebotes} reb, ${stats.robos} rob, ${stats.tapones} tap.\n`;
-      });
-    }
-
-    // Calcular parciales por cuarto
-    let parciales = '';
-    if (p.eventos) {
-      const puntosPorCuarto = {};
-      Object.values(p.eventos).forEach(ev => {
-        if (ev.tipo === 'puntos') {
-          if (!puntosPorCuarto[ev.cuarto]) puntosPorCuarto[ev.cuarto] = { equipo: 0, rival: 0 };
-          if (ev.dorsal >= 0) puntosPorCuarto[ev.cuarto].equipo += ev.cantidad;
-          else puntosPorCuarto[ev.cuarto].rival += ev.cantidad;
-        }
-      });
-      Object.keys(puntosPorCuarto).sort().forEach(c => {
-        const ptsEquipo = puntosPorCuarto[c].equipo;
-        const ptsRival = puntosPorCuarto[c].rival;
-        const parcial = esLocal ? `${ptsEquipo}-${ptsRival}` : `${ptsRival}-${ptsEquipo}`;
-        parciales += `Cuarto ${c}: ${parcial}. `;
-      });
-    }
-
-    const miEquipoNombre = p.nombreEquipo || 'Mi Equipo';
-    let entrenadorInfo = nombreEntrenador ? `Entrenador del equipo ${miEquipoNombre}: ${nombreEntrenador}` : '';
-
-    return `
-      Actúa como un periodista deportivo experto en baloncesto juvenil. Escribe una crónica emocionante y detallada del siguiente partido:
-      
-      Partido: ${equipoLocal} (Local) vs ${equipoVisitante} (Visitante)
-      Fecha: ${fecha}
-      Lugar: ${lugar}
-      Resultado Final: ${marcador}
-      Parciales: ${parciales}
-      ${entrenadorInfo}
-      
-      Jugadores del equipo ${miEquipoNombre} (Estadísticas):
-      ${statsJugadores}
-      
-      Instrucciones:
-      - Usa un tono periodístico, narrativo y motivador.
-      - Ten en cuenta quién jugaba como local (${equipoLocal}) y quién como visitante (${equipoVisitante}).
-      - IMPORTANTE: Menciona SIEMPRE al entrenador ${nombreEntrenador} (si hay nombre) y destaca su dirección del equipo.
-      - IMPORTANTE: Intenta mencionar a TODOS los jugadores de la lista anterior, aunque sea brevemente o agrupando a los que no anotaron destacando su esfuerzo defensivo o compañerismo.
-      - IMPORTANTE: Sé SIEMPRE respetuoso con el equipo rival (${p.nombreRival || 'Rival'}), reconociendo su esfuerzo y buen juego, independientemente del resultado.
-      - Destaca a los jugadores con mejores estadísticas.
-      - Analiza brevemente el flujo del partido basándote en los parciales.
-      - No inventes datos que no estén aquí, pero puedes añadir "color" narrativo.
-      - Usa formato HTML básico (párrafos <p>, negritas <strong>) para que se lea bien.
-    `;
-  }
-
-  async callAIAPI(provider, apiKey, prompt, model = null) {
-    if (provider === 'openai') {
-      // OpenAI
-      const url = 'https://api.openai.com/v1/chat/completions';
-      const body = {
-        model: "gpt-3.5-turbo",
-        messages: [
-          { role: "system", content: "Eres un redactor deportivo experto." },
-          { role: "user", content: prompt }
-        ],
-        temperature: 0.7
-      };
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify(body)
-      });
-
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error?.message || 'Error en la API de OpenAI');
-      }
-
-      const data = await response.json();
-      let text = data.choices[0].message.content;
-      // Limpiar bloques de código markdown de forma más agresiva
-      text = text.replace(/```html/gi, '').replace(/```/g, '').trim();
-      return text;
-
-    } else if (provider === 'huggingface') {
-      // Hugging Face Inference API (Mistral)
-      const model = 'mistralai/Mistral-7B-Instruct-v0.3';
-      const url = `https://api-inference.huggingface.co/models/${model}`;
-
-      // Mistral format: <s>[INST] prompt [/INST]
-      const formattedPrompt = `<s>[INST] ${prompt} [/INST]`;
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          inputs: formattedPrompt,
-          parameters: {
-            max_new_tokens: 1000,
-            return_full_text: false // Ask API not to return the prompt
-          }
-        })
-      });
-
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || 'Error en la API de Hugging Face');
-      }
-
-      const data = await response.json();
-      // HF returns array: [{ generated_text: "..." }]
-      if (Array.isArray(data) && data.length > 0 && data[0].generated_text) {
-        let text = data[0].generated_text;
-        // Cleanup just in case
-        text = text.replace(/```html/gi, '').replace(/```/g, '').trim();
-        return text;
-      } else {
-        throw new Error('Hugging Face no devolvió texto válido.');
-      }
-
-    } else {
-      // Google Gemini (Default)
-      const selectedModel = model || 'gemini-2.0-flash';
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
-
-      const body = {
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }]
-      };
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-      });
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        const status = response.status;
-        const msg = err.error?.message || response.statusText;
-
-        if (status === 429 || msg.includes('Quota exceeded') || msg.includes('429')) {
-          throw new Error('Quota exceeded. ' + msg);
-        }
-
-        throw new Error(msg || 'Error en la API de Gemini');
-      }
-
-      const data = await response.json();
-      if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts.length > 0) {
-        let text = data.candidates[0].content.parts[0].text;
-        // Limpiar bloques de código markdown de forma más agresiva
-        text = text.replace(/```html/gi, '').replace(/```/g, '').trim();
-        return text;
-      } else {
-        throw new Error('La API de Gemini no devolvió texto válido.');
-      }
-    }
-  }
-
-  saveApiKey() {
-    const input = document.getElementById('inputApiKey');
-    const select = document.getElementById('selectAiProvider');
-    const selectModel = document.getElementById('selectGeminiModel');
-
-    if (input && input.value && select) {
-      localStorage.setItem('basketkids_ai_key', input.value);
-      localStorage.setItem('basketkids_ai_provider', select.value);
-      if (selectModel && selectModel.value) {
-        localStorage.setItem('basketkids_ai_model', selectModel.value);
-      }
-
-      bootstrap.Modal.getInstance(document.getElementById('modalApiKey')).hide();
-      alert('Configuración de IA guardada correctamente.');
-    } else {
-      alert('Por favor introduce una API Key válida.');
-    }
-  }
-
-  loadApiKey() {
-    return {
-      key: localStorage.getItem('basketkids_ai_key'),
-      provider: localStorage.getItem('basketkids_ai_provider') || 'gemini',
-      model: localStorage.getItem('basketkids_ai_model') || 'gemini-2.0-flash'
-    };
-  }
-
-  configureApiKeyUI() {
-    const btnConfig = document.getElementById('btnConfigApiKey');
-    const btnSave = document.getElementById('btnSaveApiKey');
-    const btnGenerar = document.getElementById('btnGenerarCronica');
-    const selectProvider = document.getElementById('selectAiProvider');
-    const inputKey = document.getElementById('inputApiKey');
-    const helpText = document.getElementById('apiKeyHelp');
-    const containerModel = document.getElementById('containerGeminiModel');
-    const selectModel = document.getElementById('selectGeminiModel');
-
-    if (selectProvider) {
-      const updateUI = () => {
-        if (selectProvider.value === 'openai') {
-          inputKey.placeholder = 'sk-...';
-          helpText.innerHTML = '<i class="bi bi-info-circle"></i> Para conseguir tu clave de OpenAI, visita <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI Platform</a>.';
-          if (containerModel) containerModel.style.display = 'none';
-        } else if (selectProvider.value === 'huggingface') {
-          inputKey.placeholder = 'hf_...';
-          helpText.innerHTML = '<i class="bi bi-info-circle"></i> Consigue tu token gratis en <a href="https://huggingface.co/settings/tokens" target="_blank">Hugging Face Tokens</a>.';
-          if (containerModel) containerModel.style.display = 'none';
-        } else {
-          // Gemini
-          inputKey.placeholder = 'AIzaSy...';
-          helpText.innerHTML = '<i class="bi bi-info-circle"></i> Gemini tiene un plan gratuito. Consigue tu clave en <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.';
-          if (containerModel) containerModel.style.display = 'block';
-        }
-      };
-
-      selectProvider.addEventListener('change', updateUI);
-      // init state
-      updateUI();
-    }
-
-    if (btnConfig) {
-      btnConfig.addEventListener('click', () => {
-        const modal = new bootstrap.Modal(document.getElementById('modalApiKey'));
-        const stored = this.loadApiKey();
-
-        if (inputKey) inputKey.value = stored.key || '';
-        if (selectProvider) {
-          selectProvider.value = stored.provider;
-          // Trigger change to update UI
-          selectProvider.dispatchEvent(new Event('change'));
-        }
-        if (selectModel && stored.model) {
-          selectModel.value = stored.model;
-        }
-
-        modal.show();
-      });
-    }
-
-    if (btnSave) {
-      btnSave.addEventListener('click', () => this.saveApiKey());
-    }
-
-    btnGenerar.addEventListener('click', () => this.generarCronica());
-  }
-
-  abrirModalSwapStats() {
-    const selectA = document.getElementById('selectSwapPlayerA');
-    const selectB = document.getElementById('selectSwapPlayerB');
-    if (!selectA || !selectB) return;
-
-    selectA.innerHTML = '<option value="">Seleccionar...</option>';
-    selectB.innerHTML = '<option value="">Seleccionar...</option>';
-
-    if (this.partido.convocados) {
-      Object.entries(this.partido.convocados).forEach(([id, jug]) => {
-        const optionA = document.createElement('option');
-        optionA.value = id;
-        optionA.textContent = `${jug.nombre} (#${jug.dorsal})`;
-        selectA.appendChild(optionA);
-
-        const optionB = document.createElement('option');
-        optionB.value = id;
-        optionB.textContent = `${jug.nombre} (#${jug.dorsal})`;
-        selectB.appendChild(optionB);
-      });
-    }
-
-    const modal = new bootstrap.Modal(document.getElementById('modalSwapStats'));
-    modal.show();
-  }
-
-  confirmarSwapStats() {
-    const idA = document.getElementById('selectSwapPlayerA').value;
-    const idB = document.getElementById('selectSwapPlayerB').value;
-
-    if (!idA || !idB) {
-      return alert('Debes seleccionar dos jugadores.');
-    }
-    if (idA === idB) {
-      return alert('Debes seleccionar jugadores distintos.');
-    }
-
-    if (!confirm('¿Seguro que quieres intercambiar TODAS las estadísticas entre estos dos jugadores? Esta acción no se puede deshacer fácilmente.')) {
-      return;
-    }
-
-    // 1. Swap Summary Stats (estadisticasJugadores)
-    if (!this.partido.estadisticasJugadores) this.partido.estadisticasJugadores = {};
-    const statsA = this.partido.estadisticasJugadores[idA];
-    const statsB = this.partido.estadisticasJugadores[idB];
-
-    // Swap references
-    this.partido.estadisticasJugadores[idA] = statsB; // Can be undefined, that's fine
-    this.partido.estadisticasJugadores[idB] = statsA;
-
-    // Remove key if undefined to keep object clean
-    if (this.partido.estadisticasJugadores[idA] === undefined) delete this.partido.estadisticasJugadores[idA];
-    if (this.partido.estadisticasJugadores[idB] === undefined) delete this.partido.estadisticasJugadores[idB];
 
 
-    // 2. Swap Events (partido.eventos)
-    if (this.partido.eventos) {
-      Object.values(this.partido.eventos).forEach(ev => {
-        // A) Swap the Actor (who did the action)
-        if (ev.jugadorId === idA) {
-          ev.jugadorId = idB;
-          if (this.partido.convocados[idB]) {
-            ev.nombre = this.partido.convocados[idB].nombre;
-            ev.dorsal = this.partido.convocados[idB].dorsal;
-          }
-        } else if (ev.jugadorId === idB) {
-          ev.jugadorId = idA;
-          if (this.partido.convocados[idA]) {
-            ev.nombre = this.partido.convocados[idA].nombre;
-            ev.dorsal = this.partido.convocados[idA].dorsal;
-          }
-        }
 
-        // B) Swap the Context (who was on court - for +/-)
-        if (ev.jugadoresEnPista && Array.isArray(ev.jugadoresEnPista)) {
-          const idxA = ev.jugadoresEnPista.indexOf(idA);
-          const idxB = ev.jugadoresEnPista.indexOf(idB);
 
-          // If both are present, swapping them changes nothing in the set, so do nothing.
-          // If one is present, swap it for the other.
-          if (idxA !== -1 && idxB === -1) {
-            ev.jugadoresEnPista[idxA] = idB;
-          } else if (idxB !== -1 && idxA === -1) {
-            ev.jugadoresEnPista[idxB] = idA;
-          }
-        }
-      });
-    }
 
-    // 3. Swap Current Pista (if applicable)
-    // this.partido.pista might be an object {uid: true} or array.
-    // Usually handled by 'jugadoresEnPista' logic in app, but often stored as reference.
-    // If it's a list or object of current players, we should swap there too.
-    // Based on usage earlier (renderListaJugadoresPista not shown completely but likely list)
-    // We can try to safe swap if it exists.
-    /* 
-       Note: typical structure in this app is not fully visible, but usually 
-       partido.pista is updated live. If user refreshes, it rebuilds? 
-       To be safe, we rely on the event history + manual correction if needed, 
-       but swapping in events is the critical part for stats. 
-    */
-
-    // 4. Save and close
-    this.dataService.guardarPartido(this.partido)
-      .then(() => {
-        bootstrap.Modal.getInstance(document.getElementById('modalSwapStats')).hide();
-        this.renderizarTodo(); // Will re-calculate stats from events if needed, but summary swap helps if using stored stats
-        alert('Estadísticas intercambiadas correctamente.');
-      })
-      .catch(err => {
-        console.error(err);
-        alert('Error al guardar los cambios.');
-      });
-  }
 }

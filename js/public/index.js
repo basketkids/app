@@ -14,6 +14,7 @@ let allMatches = [];
 let filteredMatches = [];
 let currentView = 'week'; // 'week' or 'month'
 let teamFilter = null;
+let sportFilter = 'all'; // 'all', 'basketball', 'volleyball'
 let currentUser = null;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -55,6 +56,12 @@ function setupEventListeners() {
 
   document.getElementById('viewWeekBtn').addEventListener('click', () => switchView('week'));
   document.getElementById('viewMonthBtn').addEventListener('click', () => switchView('month'));
+
+  // Sport Filter Listeners
+  document.getElementById('filterAllBtn').addEventListener('click', () => setSportFilter('all'));
+  document.getElementById('filterBasketBtn').addEventListener('click', () => setSportFilter('basketball'));
+  document.getElementById('filterVolleyBtn').addEventListener('click', () => setSportFilter('volleyball'));
+
 
   // Go to Date Modal
   const dateModal = new bootstrap.Modal(document.getElementById('dateModal'));
@@ -105,42 +112,14 @@ async function loadMatches() {
         return new Date(a.fechaHora) - new Date(b.fechaHora);
       });
 
-      // Apply filter if exists
-      if (teamFilter) {
-        filteredMatches = allMatches.filter(m => m.equipoId === teamFilter || m.rivalId === teamFilter);
-
-        // Get team name from first filtered match
-        const firstMatch = filteredMatches.length > 0 ? filteredMatches[0] : null;
-        const teamName = firstMatch ? firstMatch.nombreEquipo : 'Equipo';
-        const ownerUid = firstMatch ? firstMatch.ownerUid : null;
-
-        // Also update UI to show filter is active
-        const header = document.querySelector('h2');
-        header.innerHTML = `Partidos Públicos <span class="badge bg-info fs-6">${teamName}</span> 
-            <button id="followBtn" class="btn btn-sm btn-outline-primary ms-2" style="display:none">
-                <i class="bi bi-heart"></i> Seguir
-            </button>
-            <a href="index.html" class="btn btn-sm btn-outline-danger ms-2"><i class="bi bi-x"></i></a>`;
-
-        if (ownerUid) {
-          const followBtn = document.getElementById('followBtn');
-          followBtn.style.display = 'inline-block';
-          followBtn.onclick = () => toggleFollow(ownerUid, teamFilter);
-          // Check initial state if user is already loaded
-          if (currentUser) {
-            updateFollowButtonState(ownerUid, teamFilter);
-          }
-        }
-
-      } else {
-        filteredMatches = [...allMatches];
-      }
+      // Apply filters
+      applyFilters();
 
     } else {
       allMatches = [];
       filteredMatches = [];
+      render();
     }
-    render();
   } catch (error) {
     console.error('Error loading matches:', error);
     alert('Error al cargar los partidos');
@@ -473,6 +452,72 @@ function renderDay(dayColumn, container, matches) {
 }
 
 // createMatchCard removed in favor of matchRenderer.renderMatchCard
+
+function setSportFilter(filter) {
+  if (sportFilter === filter) return;
+  sportFilter = filter;
+
+  // Update Buttons
+  const map = { 'all': 'filterAllBtn', 'basketball': 'filterBasketBtn', 'volleyball': 'filterVolleyBtn' };
+  Object.keys(map).forEach(key => {
+    const btn = document.getElementById(map[key]);
+    if (btn) {
+      if (key === filter) {
+        btn.classList.add('active');
+        btn.classList.remove('btn-outline-secondary'); // if simple toggle
+        btn.classList.add('btn-secondary'); // active state style adaptation? 
+        // HTML has btn-outline-secondary active. 
+        // Bootstraps .active on outline works.
+      } else {
+        btn.classList.remove('active');
+      }
+    }
+  });
+
+  applyFilters();
+}
+
+function applyFilters() {
+  let matches = [...allMatches];
+
+  // 1. Team Filter
+  if (teamFilter) {
+    matches = matches.filter(m => m.equipoId === teamFilter || m.rivalId === teamFilter);
+
+    // Update Header UI for Team
+    const firstMatch = matches.length > 0 ? matches[0] : null; // or from allMatches if filtered is empty?
+    // Optimization: we might not find match if filtered by sport is empty. 
+    // Ideally we should look up team name from somewhere else or just use what we have.
+    const teamName = firstMatch ? firstMatch.nombreEquipo : 'Equipo';
+    const ownerUid = firstMatch ? firstMatch.ownerUid : null;
+
+    const header = document.querySelector('h2');
+    if (header) {
+      header.innerHTML = `Partidos Públicos <span class="badge bg-info fs-6">${teamName}</span> 
+              <button id="followBtn" class="btn btn-sm btn-outline-primary ms-2" style="display:none">
+                  <i class="bi bi-heart"></i> Seguir
+              </button>
+              <a href="index.html" class="btn btn-sm btn-outline-danger ms-2"><i class="bi bi-x"></i></a>`;
+
+      if (ownerUid) {
+        const followBtn = document.getElementById('followBtn');
+        followBtn.style.display = 'inline-block';
+        followBtn.onclick = () => toggleFollow(ownerUid, teamFilter);
+        if (currentUser) {
+          updateFollowButtonState(ownerUid, teamFilter);
+        }
+      }
+    }
+  }
+
+  // 2. Sport Filter
+  if (sportFilter !== 'all') {
+    matches = matches.filter(m => (m.sport || 'basketball') === sportFilter);
+  }
+
+  filteredMatches = matches;
+  render();
+}
 
 function showLoading() {
   document.getElementById('loadingSpinner').style.display = 'block';

@@ -39,38 +39,33 @@
       <div id="scoreboard-container"
         class="glass-scoreboard d-flex justify-content-between align-items-center gap-2 mb-4 p-3">
 
+
         <!-- Local Team -->
         <div id="scoreboardTeamContainer" class="scoreboard-team-box">
           <div class="team-name" id="nombreEquipoMarcador">LOCAL</div>
           <div class="team-score" id="marcadorEquipo">0</div>
-          <div class="foul-lights-container" id="foulLightsEquipo">
-            <span class="foul-dot"></span>
-            <span class="foul-dot"></span>
-            <span class="foul-dot"></span>
-            <span class="foul-dot"></span>
-            <span class="foul-dot bonus"></span>
+          <!-- Sets Display Local -->
+          <div class="sets-display text-success fw-bold" style="font-size: 1.2rem;">
+            Sets: <span id="indicadorSecundarioLocal">0</span>
           </div>
         </div>
 
         <!-- Timer & Period (Center) -->
         <div id="scoreboardTimerContainer"
           class="d-flex flex-column justify-content-center align-items-center mx-2 timer-box">
-          <div id="contador" class="digital-clock mb-2">10:00</div>
-          <div class="period-display">Cuarto <span id="periodoActual">1</span></div>
-          <div id="parcialesCuartos" class="small text-white-50 mt-1" style="font-size: 0.7rem; white-space: nowrap;">
-          </div>
+          <!-- Timer irrelevant for Volley usually, but kept for duration tracking or hidden -->
+          <div id="contador" class="digital-clock mb-2" style="font-size: 2rem;">00:00</div>
+          <div class="period-display">Set <span id="periodoActual">1</span></div>
+          <div id="tituloIndicadorSecundario" style="display:none;">SETS</div>
         </div>
 
         <!-- Visitor Team -->
         <div id="scoreboardRivalContainer" class="scoreboard-team-box">
           <div class="team-name" id="nombreEquipoRival">RIVAL</div>
           <div class="team-score" id="marcadorRival">0</div>
-          <div class="foul-lights-container" id="foulLightsRival">
-            <span class="foul-dot"></span>
-            <span class="foul-dot"></span>
-            <span class="foul-dot"></span>
-            <span class="foul-dot"></span>
-            <span class="foul-dot bonus"></span>
+          <!-- Sets Display Rival -->
+          <div class="sets-display text-danger fw-bold" style="font-size: 1.2rem;">
+            Sets: <span id="indicadorSecundarioRival">0</span>
           </div>
         </div>
 
@@ -567,11 +562,11 @@
   <script src="js/services/TeamMembersService.js"></script>
   <script src="js/services/DataService.js"></script>
   <script src="js/apps/BaseApp.js"></script>
+  <script src="js/apps/MatchBaseApp.js"></script>
   <script src="js/utils/DiceBearManager.js"></script>
   <script src="js/utils/MatchRenderer.js"></script>
-  <script src="js/apps/MatchBaseApp.js"></script>
-  <script src="js/apps/PartidoApp.js?v=4"></script>
-  <script src="js/partido.js?v=3"></script>
+  <script src="js/apps/VolleyMatchApp.js"></script>
+  <script src="js/partido_volley.js"></script>
 </body>
 
 </html>

@@ -252,6 +252,13 @@ class PartidosGlobalesApp {
     this.actualizarOrdenMarcador(); // New order logic
     this.renderParciales();         // New partials logic
 
+    // Renderizar sets si existen
+    const setsEq = document.getElementById('setsEquipo');
+    if (setsEq) setsEq.textContent = this.partido.setsEquipo || 0;
+
+    const setsRiv = document.getElementById('setsRival');
+    if (setsRiv) setsRiv.textContent = this.partido.setsRival || 0;
+
     // Renderizar jugadores convocados
     this.renderizarEstadisticas();
 
@@ -266,6 +273,28 @@ class PartidosGlobalesApp {
     }
     this.renderInfoPartido();
     this.renderQuintetos();
+    this.aplicarEstiloDeporte();
+  }
+
+  aplicarEstiloDeporte() {
+    if (typeof SportConfig === 'undefined' || !this.partido) return;
+    const sport = this.partido.sport || 'basketball';
+    const config = SportConfig[sport];
+
+    // Hide/Show Foul Lights
+    const foulContainers = document.querySelectorAll('.foul-lights-container');
+    foulContainers.forEach(el => {
+      el.style.display = (sport === 'basketball') ? 'flex' : 'none';
+    });
+
+    // Update Period Label
+    const periodDisplay = document.querySelector('.period-display');
+    if (periodDisplay && config) {
+      // Keep the span for number, change the text node
+      const numSpan = periodDisplay.querySelector('span');
+      const num = numSpan ? numSpan.textContent : (this.parteActual || 1);
+      periodDisplay.innerHTML = `${config.periodName} <span id="periodoActual">${num}</span>`;
+    }
   }
 
   renderInfoPartido() {
@@ -380,13 +409,17 @@ class PartidosGlobalesApp {
     const quarters = Object.keys(puntosPorCuarto).sort((a, b) => a - b);
     const esLocal = (this.partido.esLocal !== false);
 
+    // Adapt prefix Q/S based on sport
+    const sport = this.partido.sport || 'basketball';
+    const prefix = (sport === 'volleyball') ? 'S' : 'Q';
+
     quarters.forEach(q => {
       // Show all previous quarters
       if (parseInt(q) < (this.parteActual || 1)) {
         const ptsTeam = puntosPorCuarto[q].equipo;
         const ptsRival = puntosPorCuarto[q].rival;
         const str = esLocal ? `${ptsTeam}-${ptsRival}` : `${ptsRival}-${ptsTeam}`;
-        html += `<span class="mx-1">Q${q}: ${str}</span>`;
+        html += `<span class="mx-1">${prefix}${q}: ${str}</span>`;
       }
     });
 
@@ -416,6 +449,8 @@ class PartidosGlobalesApp {
   }
 
   actualizarLucesFaltas() {
+    // Only if basketball. Logic handled in aplicarEstiloDeporte, 
+    // but calculating faults is harmless. The display is hidden anyway if not basket.
     const faltas = this.calcularFaltasCuarto();
     this.renderLuces('foulLightsEquipo', faltas.equipo);
     this.renderLuces('foulLightsRival', faltas.rival);

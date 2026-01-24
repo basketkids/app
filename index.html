@@ -61,7 +61,12 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
           </div>
           <div class="modal-body">
-            <input type="text" id="inputEquipoModal" class="form-control" placeholder="Nombre de equipo" required />
+            <input type="text" id="inputEquipoModal" class="form-control mb-3" placeholder="Nombre de equipo"
+              required />
+            <select id="selectDeporteModal" class="form-select" required>
+              <option value="basketball" selected>Baloncesto</option>
+              <option value="volleyball">Voleibol</option>
+            </select>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
