@@ -949,3 +949,59 @@ a.text-primary {
 [data-theme="dark"] .item-subtitle {
     color: #adb5bd;
 }
+/* HIGH IMPACT RESPONSIVE SCOREBOARD */
+@media (max-width: 768px) {
+  .glass-scoreboard {
+    padding: 10px !important;
+    gap: 5px !important;
+    flex-wrap: nowrap !important; /* Force single row */
+  }
+
+  .team-score {
+    font-size: 2.5rem !important;
+    letter-spacing: -1px;
+  }
+
+  .team-name {
+    font-size: 0.7rem;
+    letter-spacing: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80px; /* Constrain width */
+  }
+
+  #contador {
+    font-size: 1.4rem !important;
+    min-width: 70px;
+    padding: 2px 4px;
+  }
+
+  .period-display {
+    font-size: 0.75rem;
+  }
+
+  .foul-dot {
+    width: 7px;
+    height: 7px;
+  }
+}
+
+@media (max-width: 480px) {
+  .glass-scoreboard {
+    padding: 8px !important;
+  }
+
+  .team-score {
+    font-size: 2rem !important; /* Even smaller for very narrow screens */
+  }
+
+  #contador {
+    font-size: 1.1rem !important;
+    min-width: 55px;
+  }
+  
+  .scoreboard-team-box {
+     min-width: 0; /* Allow shrinking */
+  }
+}
