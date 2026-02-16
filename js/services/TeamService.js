@@ -10,7 +10,7 @@ class TeamService {
     }
 
     create(userId, name) {
-        return this.db.ref(`usuarios/${userId}/equipos`).push().set({ nombre: name });
+        return this.db.ref(`usuarios/${userId}/equipos`).push().set({ nombre: Sanitizer.escape(name) });
     }
 
     delete(userId, teamId) {
@@ -26,7 +26,8 @@ class TeamService {
     }
 
     update(userId, teamId, data) {
-        return this.db.ref(`usuarios/${userId}/equipos/${teamId}`).update(data);
+        const safeData = Sanitizer.sanitizeObject(data);
+        return this.db.ref(`usuarios/${userId}/equipos/${teamId}`).update(safeData);
     }
 
     async followTeam(ownerUid, teamId, userUid) {

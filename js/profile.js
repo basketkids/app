@@ -80,13 +80,14 @@ saveDisplayNameBtn.addEventListener('click', async () => {
     }
 
     try {
-        await db.ref(`usuarios/${currentUser.uid}/profile/displayName`).set(newDisplayName);
+        const safeDisplayName = Sanitizer.escape(newDisplayName);
+        await db.ref(`usuarios/${currentUser.uid}/profile/displayName`).set(safeDisplayName);
 
         // If admin, update public profile
         const profileSnap = await db.ref(`usuarios/${currentUser.uid}/profile`).once('value');
         const profile = profileSnap.val();
         if (profile && profile.admin) {
-            await db.ref(`public_admins/${currentUser.uid}/name`).set(newDisplayName);
+            await db.ref(`public_admins/${currentUser.uid}/name`).set(safeDisplayName);
         }
 
         alert('Nombre actualizado correctamente.');

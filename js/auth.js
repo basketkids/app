@@ -29,10 +29,12 @@ async function saveUserData(user) {
         const currentData = snapshot.val() || {};
 
         const updates = {};
-        if (!currentData.email) updates.email = user.email;
+        // Sanitization: Escape special characters
+        if (!currentData.email) updates.email = Sanitizer.escape(user.email);
         if (!currentData.nombre && !currentData.displayName) {
-            updates.nombre = user.displayName || user.email.split('@')[0];
-            updates.displayName = user.displayName || user.email.split('@')[0];
+            const safeName = Sanitizer.escape(user.displayName || user.email.split('@')[0]);
+            updates.nombre = safeName;
+            updates.displayName = safeName;
         }
 
         if (Object.keys(updates).length > 0) {

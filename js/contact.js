@@ -44,10 +44,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             await contactService.saveMessage({
-                name,
-                email,
-                phone,
-                message
+                name: Sanitizer.escape(name),
+                email: Sanitizer.escape(email), // Email is usually validated but good to escape for display
+                phone: Sanitizer.escape(phone),
+                message: Sanitizer.escape(message)
             });
 
             showAlert('Mensaje enviado correctamente. Nos pondremos en contacto contigo pronto.', 'success');

@@ -75,7 +75,8 @@ async function loadUsers() {
             // Assuming the app saves email to profile on registration. If not, we might only see names.
 
             // Fallback for display name
-            const displayName = profile.displayName || profile.nombre || 'Usuario sin nombre';
+            const rawDisplayName = profile.displayName || profile.nombre || 'Usuario sin nombre';
+            const displayName = Sanitizer.escape(rawDisplayName);
             const isAdmin = profile.admin === true;
             const isCurrentUser = (uid === auth.currentUser.uid);
 
@@ -104,6 +105,11 @@ async function loadUsers() {
                             ${isCurrentUser ? 'disabled' : ''}>
                         ${isAdmin ? 'Quitar' : 'Hacer Admin'} 
                     </button>
+                    <button class="btn btn-sm btn-outline-secondary edit-name-btn me-2" 
+                            data-uid="${uid}" 
+                            data-current-name="${displayName}">
+                        <i class="bi bi-pencil"></i>
+                    </button>
                     <button class="btn btn-sm btn-danger delete-user-btn" 
                             data-uid="${uid}" 
                             ${!canDelete ? 'disabled title="No puedes borrar a un administrador ni a ti mismo"' : ''}>
@@ -123,6 +129,10 @@ async function loadUsers() {
             if (!btn.disabled) {
                 btn.addEventListener('click', handleDeleteUser);
             }
+        });
+
+        document.querySelectorAll('.edit-name-btn').forEach(btn => {
+            btn.addEventListener('click', handleEditName);
         });
 
     } catch (error) {
@@ -184,6 +194,38 @@ async function handleDeleteUser(e) {
         } catch (error) {
             console.error('Error deleting user:', error);
             alert('Error borrando usuario: ' + error.message);
+        }
+    }
+}
+
+async function handleEditName(e) {
+    const btn = e.target.closest('button');
+    const uid = btn.dataset.uid;
+    const currentName = btn.dataset.currentName;
+
+    const newName = prompt('Introduce el nuevo nombre para el usuario:', currentName);
+
+    if (newName && newName.trim() !== '' && newName !== currentName) {
+        try {
+            const safeName = Sanitizer.escape(newName.trim());
+
+            // Update profile
+            await db.ref(`usuarios/${uid}/profile/displayName`).set(safeName);
+            // Also update 'nombre' which sometimes is used
+            await db.ref(`usuarios/${uid}/profile/nombre`).set(safeName);
+
+            // If admin, update public profile
+            const profileSnap = await db.ref(`usuarios/${uid}/profile`).once('value');
+            const profile = profileSnap.val();
+            if (profile && profile.admin) {
+                await db.ref(`public_admins/${uid}/name`).set(safeName);
+            }
+
+            alert('Nombre actualizado correctamente.');
+            loadUsers();
+        } catch (error) {
+            console.error('Error updating name:', error);
+            alert('Error al actualizar el nombre: ' + error.message);
         }
     }
 }

@@ -1630,7 +1630,7 @@ class PartidoApp extends BaseApp {
       const prompt = await this.getMatchSummaryForAI();
       const cronica = await this.callAIAPI(provider, key, prompt, model);
 
-      this.partido.cronica = cronica;
+      this.partido.cronica = Sanitizer.sanitizeHtml(cronica);
       await this.dataService.guardarPartido(this.partido);
 
       this.renderCronica();
@@ -1687,7 +1687,7 @@ class PartidoApp extends BaseApp {
       return;
     }
 
-    this.partido.cronica = input.value.trim();
+    this.partido.cronica = Sanitizer.sanitizeHtml(input.value.trim());
     this.guardarPartido().then(() => {
       this.renderCronica();
       document.getElementById('manualCronicaContainer').style.display = 'none';
