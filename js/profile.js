@@ -1,6 +1,4 @@
-firebase.initializeApp(window.firebaseConfig);
-const db = firebase.database();
-const auth = firebase.auth();
+const sb = window.supabaseClient;
 
 let currentUser = null;
 let diceBearManager = new DiceBearManager();
@@ -23,12 +21,12 @@ const avatarControls = document.getElementById('avatarControls');
 const saveAvatarBtn = document.getElementById('saveAvatarBtn');
 
 // Initialize
-auth.onAuthStateChanged(user => {
-    if (!user) {
+sb.auth.onAuthStateChange((event, session) => {
+    if (!session) {
         window.location.href = 'index.html';
         return;
     }
-    currentUser = user;
+    currentUser = session.user;
     loadUserProfile();
 });
 
@@ -37,22 +35,26 @@ avatarEditorModal = new bootstrap.Modal(document.getElementById('avatarEditorMod
 // Load user profile
 async function loadUserProfile() {
     try {
-        const profileSnap = await db.ref(`usuarios/${currentUser.uid}/profile`).once('value');
-        const profile = profileSnap.val();
+        const { data: profile, error } = await sb
+            .from('profiles')
+            .select(`
+                *,
+                avatar_config:avatar_config_id (*)
+            `)
+            .eq('id', currentUser.id)
+            .single();
+
+        if (error) throw error;
 
         // Load display name
-        if (profile && profile.displayName) {
-            displayNameInput.value = profile.displayName;
-        } else {
-            displayNameInput.value = currentUser.displayName || '';
-        }
+        displayNameInput.value = profile.display_name || currentUser.user_metadata?.full_name || 'Usuario';
 
         // Load email
         emailInput.value = currentUser.email;
 
         // Load avatar
-        if (profile && profile.avatarConfig) {
-            currentAvatarConfig = profile.avatarConfig;
+        if (profile.avatar_config) {
+            currentAvatarConfig = profile.avatar_config;
         } else {
             currentAvatarConfig = null;
         }
@@ -64,7 +66,9 @@ async function loadUserProfile() {
 }
 
 function updateAvatarDisplay() {
-    const avatarUrl = diceBearManager.getImageForProfile(currentUser.uid, currentAvatarConfig);
+    // DiceBearManager might be sync, but it returns URL.
+    // If we have config object, we generate URL.
+    const avatarUrl = diceBearManager.getImageForProfile(currentUser.id, currentAvatarConfig);
     currentAvatar.src = avatarUrl;
     if (avatarPreview) {
         avatarPreview.src = avatarUrl;
@@ -81,17 +85,15 @@ saveDisplayNameBtn.addEventListener('click', async () => {
 
     try {
         const safeDisplayName = Sanitizer.escape(newDisplayName);
-        await db.ref(`usuarios/${currentUser.uid}/profile/displayName`).set(safeDisplayName);
 
-        // If admin, update public profile
-        const profileSnap = await db.ref(`usuarios/${currentUser.uid}/profile`).once('value');
-        const profile = profileSnap.val();
-        if (profile && profile.admin) {
-            await db.ref(`public_admins/${currentUser.uid}/name`).set(safeDisplayName);
-        }
+        const { error } = await sb
+            .from('profiles')
+            .update({ display_name: safeDisplayName })
+            .eq('id', currentUser.id);
+
+        if (error) throw error;
 
         alert('Nombre actualizado correctamente.');
-        // Reload header to update display
         location.reload();
     } catch (error) {
         console.error('Error saving display name:', error);
@@ -107,35 +109,29 @@ saveEmailBtn.addEventListener('click', async () => {
         return;
     }
 
-    if (!confirm('Cambiar el email requerirá volver a iniciar sesión. ¿Continuar?')) {
+    if (!confirm('Cambiar el email podría requerir confirmación. ¿Continuar?')) {
         return;
     }
 
     try {
-        await currentUser.updateEmail(newEmail);
-        alert('Email actualizado correctamente. Por favor, vuelve a iniciar sesión.');
-        await auth.signOut();
-        window.location.href = 'login.html';
+        const { error } = await sb.auth.updateUser({ email: newEmail });
+
+        if (error) throw error;
+
+        alert('Se ha enviado un correo de confirmación a la nueva dirección.');
     } catch (error) {
         console.error('Error updating email:', error);
-        if (error.code === 'auth/requires-recent-login') {
-            alert('Por seguridad, necesitas volver a iniciar sesión antes de cambiar el email.');
-            await auth.signOut();
-            window.location.href = 'login.html';
-        } else {
-            alert('Error al actualizar el email: ' + error.message);
-        }
+        alert('Error al actualizar el email: ' + error.message);
     }
 });
 
 // Change password
 changePasswordBtn.addEventListener('click', async () => {
-    const currentPassword = currentPasswordInput.value;
     const newPassword = newPasswordInput.value;
     const confirmPassword = confirmPasswordInput.value;
 
-    if (!currentPassword || !newPassword || !confirmPassword) {
-        alert('Por favor, completa todos los campos.');
+    if (!newPassword || !confirmPassword) {
+        alert('Por favor, completa los campos de nueva contraseña.');
         return;
     }
 
@@ -150,15 +146,9 @@ changePasswordBtn.addEventListener('click', async () => {
     }
 
     try {
-        // Re-authenticate user
-        const credential = firebase.auth.EmailAuthProvider.credential(
-            currentUser.email,
-            currentPassword
-        );
-        await currentUser.reauthenticateWithCredential(credential);
+        const { error } = await sb.auth.updateUser({ password: newPassword });
 
-        // Update password
-        await currentUser.updatePassword(newPassword);
+        if (error) throw error;
 
         alert('Contraseña actualizada correctamente.');
         currentPasswordInput.value = '';
@@ -166,18 +156,14 @@ changePasswordBtn.addEventListener('click', async () => {
         confirmPasswordInput.value = '';
     } catch (error) {
         console.error('Error changing password:', error);
-        if (error.code === 'auth/wrong-password') {
-            alert('La contraseña actual es incorrecta.');
-        } else {
-            alert('Error al cambiar la contraseña: ' + error.message);
-        }
+        alert('Error al cambiar la contraseña: ' + error.message);
     }
 });
 
 // Avatar editor
 editAvatarBtn.addEventListener('click', () => {
     diceBearManager.openEditor(
-        currentUser.uid,
+        currentUser.id,
         currentAvatarConfig,
         '5199e4',
         avatarControls,
@@ -188,74 +174,129 @@ editAvatarBtn.addEventListener('click', () => {
 
 saveAvatarBtn.addEventListener('click', async () => {
     try {
+        // 1. Get Config from Manager
+        // Editor might return JSON object
         const newConfig = diceBearManager.getConfigFromEditor();
-        await db.ref(`usuarios/${currentUser.uid}/profile/avatarConfig`).set(newConfig);
 
-        // If admin, update public profile
-        const profileSnap = await db.ref(`usuarios/${currentUser.uid}/profile`).once('value');
-        const profile = profileSnap.val();
-        if (profile && profile.admin) {
-            await db.ref(`public_admins/${currentUser.uid}/avatarConfig`).set(newConfig);
-        }
+        // 2. Insert into avatar_configs first (relation)
+        // Helper function mapping
+        const avatarPayload = {
+            skin_color: newConfig.skinColor,
+            top: newConfig.top,
+            hair_color: newConfig.hairColor,
+            hat_color: newConfig.hatColor,
+            facial_hair_type: newConfig.facialHairType,
+            facial_hair_color: newConfig.facialHairColor,
+            eyes: newConfig.eyes,
+            eyebrows: newConfig.eyebrows,
+            mouth: newConfig.mouth,
+            accessories_type: newConfig.accessoriesType,
+            accessories_color: newConfig.accessoriesColor,
+            clothing: newConfig.clothing,
+            clothes_color: newConfig.clothesColor,
+            clothing_graphic: newConfig.clothingGraphic
+        };
 
-        // Sync with linked players in followed teams
-        try {
-            const followingSnap = await db.ref(`usuarios/${currentUser.uid}/following`).once('value');
-            if (followingSnap.exists()) {
-                const updates = [];
-                const following = followingSnap.val();
+        const { data: avatarData, error: avatarError } = await sb
+            .from('avatar_configs')
+            .insert(avatarPayload)
+            .select('id')
+            .single();
 
-                for (const teamId in following) {
-                    const teamData = following[teamId];
-                    const ownerUid = teamData.ownerUid;
+        if (avatarError) throw avatarError;
+        const newAvatarId = avatarData.id;
 
-                    if (ownerUid) {
-                        // Check if member and has linked player
-                        const memberSnap = await db.ref(`usuarios/${ownerUid}/equipos/${teamId}/members/${currentUser.uid}`).once('value');
-                        if (memberSnap.exists()) {
-                            const memberData = memberSnap.val();
-                            if (memberData.linkedPlayerId) {
-                                // Get existing player config to preserve team settings
-                                const playerRef = db.ref(`usuarios/${ownerUid}/equipos/${teamId}/plantilla/${memberData.linkedPlayerId}/avatarConfig`);
-                                const playerSnap = await playerRef.once('value');
-                                const playerConfig = playerSnap.val() || {};
+        // 3. Update Profile
+        const { error: profileError } = await sb
+            .from('profiles')
+            .update({ avatar_config_id: newAvatarId })
+            .eq('id', currentUser.id);
 
-                                // Merge new config but preserve team-specific fields (clothing)
-                                const mergedConfig = { ...newConfig };
+        if (profileError) throw profileError;
 
-                                // Fields to preserve from the player's existing config (team set)
-                                const preservedFields = ['clothing', 'clothesColor', 'clothingGraphic'];
-                                preservedFields.forEach(field => {
-                                    if (playerConfig[field]) {
-                                        mergedConfig[field] = playerConfig[field];
-                                    }
-                                });
-
-                                // Update player avatar
-                                updates.push(playerRef.set(mergedConfig));
-                            }
-                        }
-                    }
-                }
-
-                if (updates.length > 0) {
-                    await Promise.all(updates);
-                    console.log(`Synced avatar to ${updates.length} linked players.`);
-                }
-            }
-        } catch (syncError) {
-            console.error('Error syncing avatar to linked players:', syncError);
-            // Don't block the main save if sync fails, but maybe warn?
-        }
+        // 4. Sycn with Linked Players
+        await syncAvatarWithPlayers(currentUser.id, newConfig, newAvatarId);
 
         currentAvatarConfig = newConfig;
         updateAvatarDisplay();
         avatarEditorModal.hide();
-        alert('Avatar guardado correctamente y sincronizado con tus equipos.');
-        // Reload to update header
+        alert('Avatar guardado correctamente y sincronizado.');
         location.reload();
     } catch (error) {
         console.error('Error saving avatar:', error);
         alert('Error al guardar el avatar: ' + error.message);
     }
 });
+
+async function syncAvatarWithPlayers(userId, newConfig, newAvatarId) {
+    try {
+        // Find team_members entries for this user where linked_player_id IS NOT NULL
+        const { data: members, error } = await sb
+            .from('team_members')
+            .select('linked_player_id')
+            .eq('user_id', userId)
+            .not('linked_player_id', 'is', null);
+
+        if (error || !members || members.length === 0) return;
+
+        for (const member of members) {
+            const playerId = member.linked_player_id;
+
+            // Get current player avatar to preserve clothing?
+            // Or just create NEW avatar config for player?
+            // Logic: Merge user config + player clothing
+
+            const { data: player, error: pError } = await sb
+                .from('players')
+                .select(`
+                    id, 
+                    avatar_config:avatar_config_id (*)
+                `)
+                .eq('id', playerId)
+                .single();
+
+            if (pError) continue;
+
+            const playerConfig = player.avatar_config || {};
+
+            // Map keys (camelCase from newConfig, snake_case from DB)
+            // Just use newConfig values mostly, but preserve clothing
+            // Since we save snake_case in DB, we need to construct payload carefully.
+
+            const mergedPayload = {
+                skin_color: newConfig.skinColor,
+                top: newConfig.top,
+                hair_color: newConfig.hairColor,
+                hat_color: newConfig.hatColor,
+                facial_hair_type: newConfig.facialHairType,
+                facial_hair_color: newConfig.facialHairColor,
+                eyes: newConfig.eyes,
+                eyebrows: newConfig.eyebrows,
+                mouth: newConfig.mouth,
+                accessories_type: newConfig.accessoriesType,
+                accessories_color: newConfig.accessoriesColor,
+
+                // Preserve player specific clothing if exists, otherwise use user's
+                clothing: playerConfig.clothing || newConfig.clothing,
+                clothes_color: playerConfig.clothes_color || newConfig.clothesColor,
+                clothing_graphic: playerConfig.clothing_graphic || newConfig.clothingGraphic
+            };
+
+            // Create new avatar config entry for player (or update existing?)
+            // Creating new is safer to avoid shared reference issues if one changes
+            const { data: newPlayerAvatar, error: paError } = await sb
+                .from('avatar_configs')
+                .insert(mergedPayload)
+                .select('id')
+                .single();
+
+            if (!paError) {
+                await sb.from('players')
+                    .update({ avatar_config_id: newPlayerAvatar.id })
+                    .eq('id', playerId);
+            }
+        }
+    } catch (e) {
+        console.error("Error syncing avatar:", e);
+    }
+}

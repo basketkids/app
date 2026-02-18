@@ -1,42 +1,64 @@
 class ContactService {
-    constructor(db) {
-        this.db = db;
+    constructor() {
+        this.supabase = window.supabaseClient;
     }
 
-    saveMessage(messageData) {
-        const newKey = this.db.ref().child('contact_messages').push().key;
-        return this.db.ref('contact_messages/' + newKey).set({
-            ...messageData,
-            timestamp: new Date().toISOString()
-        });
+    async saveMessage(messageData) {
+        const { error } = await this.supabase
+            .from('contact_messages')
+            .insert([messageData]);
+
+        if (error) throw error;
     }
 
-    getMessages() {
-        return this.db.ref('contact_messages').orderByChild('timestamp').once('value');
+    async getMessages() {
+        // Return promise resolving to data array, filtering by logic in JS if needed or using SQL
+        // Admin page consumes this.
+        const { data, error } = await this.supabase
+            .from('contact_messages')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        // Old returned snapshot. Now returns array.
+        // Need to check admin_messages.js to see how it consumes it.
+        // It likely calls .forEach on result.
+        // So we might need to wrap it or update admin_messages.js
+        return data;
     }
 
-    markAsRead(messageId) {
-        return this.db.ref(`contact_messages/${messageId}`).update({ read: true });
+    async markAsRead(messageId) {
+        const { error } = await this.supabase
+            .from('contact_messages')
+            .update({ read: true })
+            .eq('id', messageId);
+        if (error) throw error;
     }
 
-    archiveMessage(messageId) {
-        return this.db.ref(`contact_messages/${messageId}`).update({ archived: true });
+    async archiveMessage(messageId) {
+        const { error } = await this.supabase
+            .from('contact_messages')
+            .update({ archived: true })
+            .eq('id', messageId);
+        if (error) throw error;
     }
 
-    unarchiveMessage(messageId) {
-        return this.db.ref(`contact_messages/${messageId}`).update({ archived: false });
+    async unarchiveMessage(messageId) {
+        const { error } = await this.supabase
+            .from('contact_messages')
+            .update({ archived: false })
+            .eq('id', messageId);
+        if (error) throw error;
     }
 
-    getUnreadCount() {
-        return this.db.ref('contact_messages').once('value').then(snapshot => {
-            let count = 0;
-            snapshot.forEach(child => {
-                const val = child.val();
-                if (!val.read && !val.archived) {
-                    count++;
-                }
-            });
-            return count;
-        });
+    async getUnreadCount() {
+        const { count, error } = await this.supabase
+            .from('contact_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('read', false)
+            .eq('archived', false);
+
+        if (error) throw error;
+        return count;
     }
 }

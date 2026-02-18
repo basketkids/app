@@ -1,36 +1,81 @@
 class TeamMembersService {
-    constructor(db) {
-        this.db = db;
+    constructor() {
+        this.supabase = window.supabaseClient;
     }
 
-    getMembers(ownerUid, teamId, callback) {
-        const ref = this.db.ref(`usuarios/${ownerUid}/equipos/${teamId}/members`);
-        if (callback) ref.on('value', callback);
-        return ref;
+    async getMembers(ownerUid, teamId, callback) {
+        const fetchMembers = async () => {
+            const { data, error } = await this.supabase
+                .from('team_members')
+                .select(`
+                    *,
+                    profiles:user_id (email, display_name, photo_url)
+                `)
+                .eq('team_id', teamId);
+
+            if (!error && callback) {
+                callback(data || []);
+            }
+        };
+        fetchMembers();
     }
 
     async addMember(ownerUid, teamId, memberUid, role = 'follower') {
-        return this.db.ref(`usuarios/${ownerUid}/equipos/${teamId}/members/${memberUid}`).set({
-            role: role,
-            addedAt: firebase.database.ServerValue.TIMESTAMP
-        });
+        const { error } = await this.supabase
+            .from('team_members')
+            .upsert({
+                team_id: teamId,
+                user_id: memberUid,
+                role: role
+            });
+
+        if (error) throw error;
     }
 
     async updateMemberRole(ownerUid, teamId, memberUid, role) {
-        return this.db.ref(`usuarios/${ownerUid}/equipos/${teamId}/members/${memberUid}/role`).set(role);
+        const { error } = await this.supabase
+            .from('team_members')
+            .update({ role: role })
+            .eq('team_id', teamId)
+            .eq('user_id', memberUid);
+
+        if (error) throw error;
     }
 
     async linkPlayer(ownerUid, teamId, memberUid, playerId) {
-        return this.db.ref(`usuarios/${ownerUid}/equipos/${teamId}/members/${memberUid}/linkedPlayerId`).set(playerId);
+        const { error } = await this.supabase
+            .from('team_members')
+            .update({ linked_player_id: playerId })
+            .eq('team_id', teamId)
+            .eq('user_id', memberUid);
+
+        if (error) throw error;
     }
 
     async removeMember(ownerUid, teamId, memberUid) {
-        return this.db.ref(`usuarios/${ownerUid}/equipos/${teamId}/members/${memberUid}`).remove();
+        const { error } = await this.supabase
+            .from('team_members')
+            .delete()
+            .eq('team_id', teamId)
+            .eq('user_id', memberUid);
+
+        if (error) throw error;
     }
 
     getFollowers(ownerUid, teamId, callback) {
-        const ref = this.db.ref(`usuarios/${ownerUid}/equipos/${teamId}/followers`);
-        if (callback) ref.on('value', callback);
-        return ref;
+        const fetchFollowers = async () => {
+            const { data, error } = await this.supabase
+                .from('team_followers')
+                .select(`
+                    *,
+                    profiles:user_id (email, display_name, photo_url)
+                `)
+                .eq('team_id', teamId);
+
+            if (!error && callback) {
+                callback(data || []);
+            }
+        };
+        fetchFollowers();
     }
 }

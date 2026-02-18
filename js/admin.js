@@ -1,94 +1,96 @@
-// Initialize Firebase (if not already done in load-header, but good to be safe)
-if (!firebase.apps.length) {
-    firebase.initializeApp(window.firebaseConfig);
-}
+// Initialize Supabase
+const sb = window.supabaseClient;
 
-const db = firebase.database();
-const auth = firebase.auth();
 const usersTableBody = document.getElementById('usersTableBody');
+let currentUser = null;
 
 // Check if user is admin
-auth.onAuthStateChanged(async user => {
-    if (user) {
-        try {
-            const profileSnap = await db.ref(`usuarios/${user.uid}/profile`).once('value');
-            const profile = profileSnap.val();
+async function checkAdmin() {
+    const { data: { user } } = await sb.auth.getUser();
 
-            if (!profile || !profile.admin) {
-                // Not admin, redirect
-                window.location.href = 'index.html';
-                return;
-            }
-
-            // Is admin, load users
-            loadUsers();
-
-        } catch (error) {
-            console.error('Error checking admin status:', error);
-            window.location.href = 'index.html';
-        }
-    } else {
-        // Not logged in
+    if (!user) {
         window.location.href = 'login.html';
+        return;
     }
-});
+
+    currentUser = user;
+
+    try {
+        const { data: profile, error } = await sb
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+        if (error || !profile || !profile.is_admin) {
+            console.error('User is not admin or profile fetch error:', error);
+            window.location.href = 'index.html';
+            return;
+        }
+
+        // Is admin, load users
+        loadUsers();
+
+    } catch (error) {
+        console.error('Error checking admin status:', error);
+        window.location.href = 'index.html';
+    }
+}
+
+// Start check
+checkAdmin();
+
 
 async function loadUsers() {
     try {
-        const usersSnap = await db.ref('usuarios').once('value');
-        const users = usersSnap.val();
+        const { data: users, error } = await sb
+            .from('profiles')
+            .select('*');
 
         usersTableBody.innerHTML = '';
 
-        if (!users) {
+        if (error) {
+            throw error;
+        }
+
+        if (!users || users.length === 0) {
             usersTableBody.innerHTML = '<tr><td colspan="4" class="text-center">No hay usuarios registrados.</td></tr>';
             return;
         }
 
-        // Convert to array for sorting
-        const usersArray = Object.keys(users).map(uid => ({
-            uid,
-            ...users[uid]
-        }));
-
         // Sort: Admins first, then Alphabetical by name
-        usersArray.sort((a, b) => {
-            const adminA = (a.profile && a.profile.admin) ? 1 : 0;
-            const adminB = (b.profile && b.profile.admin) ? 1 : 0;
+        users.sort((a, b) => {
+            const adminA = a.is_admin ? 1 : 0;
+            const adminB = b.is_admin ? 1 : 0;
 
-            // Higher admin value comes first
             if (adminA !== adminB) return adminB - adminA;
 
-            // If same admin status, sort by name
-            const nameA = (a.profile && (a.profile.displayName || a.profile.nombre)) || 'Usuario';
-            const nameB = (b.profile && (b.profile.displayName || b.profile.nombre)) || 'Usuario';
+            const nameA = a.display_name || 'Usuario';
+            const nameB = b.display_name || 'Usuario';
 
             return nameA.localeCompare(nameB);
         });
 
-        usersArray.forEach(user => {
-            const uid = user.uid;
-            const profile = user.profile || {};
-            const email = profile.email || 'Sin email'; // Assuming email is stored in profile or we can't get it easily from Auth here without Admin SDK
-            // Note: Client SDK can't list Auth users. We rely on data stored in Realtime DB under 'usuarios'.
-            // If email is not in 'usuarios/{uid}/profile', we might display 'ID: {uid}' or similar.
-            // Assuming the app saves email to profile on registration. If not, we might only see names.
+        users.forEach(user => {
+            const uid = user.id;
+            const email = user.email || 'Sin email';
+            const displayName = user.display_name || 'Usuario sin nombre'; // Sanitizer? Supabase handles JSON/Text safely usually, but if inserting HTML...
+            // Element.textContent protects against XSS, so we use that or standard DOM creation.
+            // innerHTML below needs care.
 
-            // Fallback for display name
-            const rawDisplayName = profile.displayName || profile.nombre || 'Usuario sin nombre';
-            const displayName = Sanitizer.escape(rawDisplayName);
-            const isAdmin = profile.admin === true;
-            const isCurrentUser = (uid === auth.currentUser.uid);
+            const safeName = displayName.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-            // Cannot delete admins or yourself
+            const isAdmin = user.is_admin === true;
+            const isCurrentUser = (currentUser && uid === currentUser.id);
             const canDelete = !isAdmin && !isCurrentUser;
 
             const tr = document.createElement('tr');
+
             tr.innerHTML = `
                 <td>
                     <div class="d-flex align-items-center">
                         <div class="ms-2">
-                            <h6 class="mb-0">${displayName}</h6>
+                            <h6 class="mb-0">${safeName}</h6>
                             <small class="text-muted d-md-none">${uid.substring(0, 8)}...</small>
                             <small class="text-muted d-none d-md-block">ID: ${uid}</small>
                         </div>
@@ -107,7 +109,7 @@ async function loadUsers() {
                     </button>
                     <button class="btn btn-sm btn-outline-secondary edit-name-btn me-2" 
                             data-uid="${uid}" 
-                            data-current-name="${displayName}">
+                            data-current-name="${safeName}">
                         <i class="bi bi-pencil"></i>
                     </button>
                     <button class="btn btn-sm btn-danger delete-user-btn" 
@@ -120,20 +122,12 @@ async function loadUsers() {
             usersTableBody.appendChild(tr);
         });
 
-        // Add event listeners to buttons
-        document.querySelectorAll('.toggle-admin-btn').forEach(btn => {
-            btn.addEventListener('click', handleToggleAdmin);
-        });
-
+        // Add event listeners
+        document.querySelectorAll('.toggle-admin-btn').forEach(btn => btn.addEventListener('click', handleToggleAdmin));
         document.querySelectorAll('.delete-user-btn').forEach(btn => {
-            if (!btn.disabled) {
-                btn.addEventListener('click', handleDeleteUser);
-            }
+            if (!btn.disabled) btn.addEventListener('click', handleDeleteUser);
         });
-
-        document.querySelectorAll('.edit-name-btn').forEach(btn => {
-            btn.addEventListener('click', handleEditName);
-        });
+        document.querySelectorAll('.edit-name-btn').forEach(btn => btn.addEventListener('click', handleEditName));
 
     } catch (error) {
         console.error('Error loading users:', error);
@@ -142,35 +136,26 @@ async function loadUsers() {
 }
 
 async function handleToggleAdmin(e) {
-    const btn = e.target;
+    const btn = e.target.closest('button'); // e.target might be icon? No icon here but safe
     const uid = btn.dataset.uid;
     const currentStatus = btn.dataset.admin === 'true';
     const newStatus = !currentStatus;
 
-    if (uid === auth.currentUser.uid) {
+    if (currentUser && uid === currentUser.id) {
         alert('No puedes cambiar tus propios permisos de administrador.');
         return;
     }
 
     if (confirm(`¿Estás seguro de que quieres ${newStatus ? 'dar' : 'quitar'} permisos de administrador a este usuario?`)) {
         try {
-            await db.ref(`usuarios/${uid}/profile/admin`).set(newStatus);
+            const { error } = await sb
+                .from('profiles')
+                .update({ is_admin: newStatus })
+                .eq('id', uid);
 
-            // Sync with public_admins
-            if (newStatus) {
-                // Get user profile to copy data
-                const userSnap = await db.ref(`usuarios/${uid}/profile`).once('value');
-                const userProfile = userSnap.val();
-                const publicData = {
-                    name: userProfile.displayName || userProfile.nombre || 'Admin',
-                    avatarConfig: userProfile.avatarConfig || null
-                };
-                await db.ref(`public_admins/${uid}`).set(publicData);
-            } else {
-                await db.ref(`public_admins/${uid}`).remove();
-            }
+            if (error) throw error;
 
-            // Reload list to reflect changes
+            // Reload
             loadUsers();
         } catch (error) {
             console.error('Error updating admin status:', error);
@@ -182,14 +167,21 @@ async function handleToggleAdmin(e) {
 async function handleDeleteUser(e) {
     const btn = e.target.closest('button');
     if (btn.disabled) return;
-
     const uid = btn.dataset.uid;
 
-    if (confirm('¿Estás seguro de que quieres borrar este usuario? Esta acción eliminará todos sus datos (equipos, partidos, perfil) de la base de datos. NO se puede deshacer.')) {
+    if (confirm('¿Estás seguro de que quieres borrar este usuario? Esta acción eliminará su perfil y datos asociados.')) {
         try {
-            await db.ref(`usuarios/${uid}`).remove();
-            await db.ref(`public_admins/${uid}`).remove(); // Also remove from public list
-            // Reload list
+            // Delete profile (Cascade should handle teams, matches etc if configured)
+            // Schema has "on delete cascade" for most things linked to profiles?
+            // "owner_id text references public.profiles(id) on delete cascade" -> YES.
+
+            const { error } = await sb
+                .from('profiles')
+                .delete()
+                .eq('id', uid);
+
+            if (error) throw error;
+
             loadUsers();
         } catch (error) {
             console.error('Error deleting user:', error);
@@ -207,19 +199,15 @@ async function handleEditName(e) {
 
     if (newName && newName.trim() !== '' && newName !== currentName) {
         try {
-            const safeName = Sanitizer.escape(newName.trim());
+            // Sanitizer not imported? Use basic check.
+            const finalName = newName.trim();
 
-            // Update profile
-            await db.ref(`usuarios/${uid}/profile/displayName`).set(safeName);
-            // Also update 'nombre' which sometimes is used
-            await db.ref(`usuarios/${uid}/profile/nombre`).set(safeName);
+            const { error } = await sb
+                .from('profiles')
+                .update({ display_name: finalName })
+                .eq('id', uid);
 
-            // If admin, update public profile
-            const profileSnap = await db.ref(`usuarios/${uid}/profile`).once('value');
-            const profile = profileSnap.val();
-            if (profile && profile.admin) {
-                await db.ref(`public_admins/${uid}/name`).set(safeName);
-            }
+            if (error) throw error;
 
             alert('Nombre actualizado correctamente.');
             loadUsers();

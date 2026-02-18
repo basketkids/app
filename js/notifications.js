@@ -1,9 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
-    firebase.auth().onAuthStateChanged(user => {
-        if (user) {
-            loadNotifications(user.uid);
-            setupDeleteAll(user.uid);
+    const sb = window.supabaseClient;
+
+    // Check auth
+    sb.auth.onAuthStateChange((event, session) => {
+        if (session) {
+            loadNotifications(session.user.id);
+            setupDeleteAll(session.user.id);
         } else {
+            // Check if we are just loading
+            // If strictly needed to be logged in:
             window.location.href = 'index.html';
         }
     });
@@ -11,14 +16,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function setupDeleteAll(uid) {
     const btn = document.getElementById('deleteAllBtn');
+    const sb = window.supabaseClient;
     if (btn) {
-        btn.onclick = () => {
+        btn.onclick = async () => {
             if (confirm('¿Estás seguro de que quieres borrar todas las notificaciones?')) {
-                firebase.database().ref(`usuarios/${uid}/notifications`).remove()
-                    .then(() => {
-                        // UI update handled by on('value') listener
-                    })
-                    .catch(err => console.error('Error deleting all notifications:', err));
+                const { error } = await sb
+                    .from('notifications')
+                    .delete()
+                    .eq('user_id', uid);
+
+                if (error) console.error('Error deleting all notifications:', error);
+                else {
+                    // UI will update via realtime or manual reload? 
+                    // Let's manually reload list for simplicity/certainty
+                    loadNotifications(uid);
+                }
             }
         };
     }
@@ -27,117 +39,151 @@ function setupDeleteAll(uid) {
 function loadNotifications(uid) {
     const notificationsList = document.getElementById('notificationsList');
     const deleteAllBtn = document.getElementById('deleteAllBtn');
-    const db = firebase.database();
+    const sb = window.supabaseClient;
 
-    db.ref(`usuarios/${uid}/notifications`).orderByChild('timestamp').on('value', snapshot => {
-        notificationsList.innerHTML = '';
+    // Initial Load
+    const fetchAndRender = async () => {
+        const { data, error } = await sb
+            .from('notifications')
+            .select('*')
+            .eq('user_id', uid)
+            .order('created_at', { ascending: false });
 
-        if (!snapshot.exists()) {
-            notificationsList.innerHTML = '<div class="alert alert-info text-center">No tienes notificaciones.</div>';
-            if (deleteAllBtn) deleteAllBtn.style.display = 'none';
+        if (error) {
+            console.error(error);
             return;
         }
+        renderNotifications(data || [], uid);
+    };
 
-        if (deleteAllBtn) deleteAllBtn.style.display = 'block';
+    fetchAndRender();
 
-        const notifications = [];
-        snapshot.forEach(child => {
-            notifications.push({ id: child.key, ...child.val() });
-        });
+    // Subscribe to changes
+    sb.channel('my-notifications')
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${uid}` },
+            (payload) => {
+                fetchAndRender();
+            }
+        )
+        .subscribe();
+}
 
-        // Sort by timestamp descending
-        notifications.sort((a, b) => b.timestamp - a.timestamp);
+function renderNotifications(notifications, uid) {
+    const notificationsList = document.getElementById('notificationsList');
+    const deleteAllBtn = document.getElementById('deleteAllBtn');
 
-        notifications.forEach(notif => {
-            const item = document.createElement('div'); // Changed to div to handle nested buttons better
-            item.className = `list-group-item list-group-item-action ${!notif.read ? 'active-notification' : ''} mb-2 border rounded shadow-sm d-flex align-items-center p-2`;
-            item.style.cursor = 'pointer';
-            item.style.transition = "transform 0.1s";
-            item.onmouseover = () => item.style.transform = "scale(1.01)";
-            item.onmouseout = () => item.style.transform = "scale(1)";
+    notificationsList.innerHTML = '';
 
-            // Main click handler
-            item.onclick = (e) => handleNotificationClick(e, notif, uid);
+    if (notifications.length === 0) {
+        notificationsList.innerHTML = '<div class="alert alert-info text-center">No tienes notificaciones.</div>';
+        if (deleteAllBtn) deleteAllBtn.style.display = 'none';
+        return;
+    }
 
-            const date = new Date(notif.timestamp).toLocaleString();
+    if (deleteAllBtn) deleteAllBtn.style.display = 'block';
 
-            let icon = '<i class="bi bi-info-circle-fill text-primary me-3 fs-4"></i>';
-            let titleClass = 'text-primary';
+    notifications.forEach(notif => {
+        const item = document.createElement('div');
+        item.className = `list-group-item list-group-item-action ${!notif.read ? 'active-notification' : ''} mb-2 border rounded shadow-sm d-flex align-items-center p-2`;
+        item.style.cursor = 'pointer';
+        item.style.transition = "transform 0.1s";
+        item.onmouseover = () => item.style.transform = "scale(1.01)";
+        item.onmouseout = () => item.style.transform = "scale(1)";
 
-            if (notif.type === 'new_follower') {
-                icon = '<i class="bi bi-person-plus-fill text-success me-3 fs-4"></i>';
-                titleClass = 'text-success';
+        item.onclick = (e) => handleNotificationClick(e, notif, uid);
+
+        const date = new Date(notif.created_at).toLocaleString();
+
+        let icon = '<i class="bi bi-info-circle-fill text-primary me-3 fs-4"></i>';
+        let titleClass = 'text-primary';
+
+        if (notif.type === 'new_follower') {
+            icon = '<i class="bi bi-person-plus-fill text-success me-3 fs-4"></i>';
+            titleClass = 'text-success';
+        } else if (notif.type === 'scorer_request') {
+            icon = '<i class="bi bi-pencil-square text-warning me-3 fs-4"></i>';
+            titleClass = 'text-warning';
+        } else if (notif.type === 'stats_update') {
+            icon = '<i class="bi bi-bar-chart-fill text-info me-3 fs-4"></i>';
+            titleClass = 'text-info';
+        }
+
+        let message = notif.message || '';
+        // If message not set, construct from type/data
+        if (!message && notif.data) {
+            const d = notif.data;
+            if (notif.type === 'new_follower') { // Legacy support if data structure varies
+                message = '¡Tienes un nuevo seguidor en tu equipo!';
             } else if (notif.type === 'scorer_request') {
-                icon = '<i class="bi bi-pencil-square text-warning me-3 fs-4"></i>';
-                titleClass = 'text-warning';
-            } else if (notif.type === 'stats_update') {
-                icon = '<i class="bi bi-bar-chart-fill text-info me-3 fs-4"></i>';
-                titleClass = 'text-info';
+                message = `${d.requesterName || 'Un usuario'} ha solicitado permiso para anotar en un partido.`;
             }
+        }
 
-            let message = notif.message || '';
-            if (!message) {
-                if (notif.type === 'new_follower') {
-                    message = '¡Tienes un nuevo seguidor en tu equipo!';
-                } else if (notif.type === 'scorer_request') {
-                    message = `${notif.requesterName || 'Un usuario'} ha solicitado permiso para anotar en un partido.`;
-                }
-            }
+        item.innerHTML = `
+    ${icon}
+    <div class="flex-grow-1">
+      <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+        <h5 class="mb-0 fw-bold ${titleClass}">${notif.title || 'Notificación'}</h5>
+        <small class="text-muted ms-2"><i class="bi bi-clock"></i> ${date}</small>
+      </div>
+      <p class="mb-1 text-dark">${message}</p>
+      ${!notif.read ? '<span class="badge bg-danger rounded-pill">Nueva</span>' : ''}
+    </div>
+    <button class="btn btn-link text-danger ms-3 delete-btn" title="Borrar notificación">
+        <i class="bi bi-trash"></i>
+    </button>
+  `;
 
-            item.innerHTML = `
-        ${icon}
-        <div class="flex-grow-1">
-          <div class="d-flex w-100 justify-content-between align-items-center mb-1">
-            <h5 class="mb-0 fw-bold ${titleClass}">${notif.title || 'Notificación'}</h5>
-            <small class="text-muted ms-2"><i class="bi bi-clock"></i> ${date}</small>
-          </div>
-          <p class="mb-1 text-dark">${message}</p>
-          ${!notif.read ? '<span class="badge bg-danger rounded-pill">Nueva</span>' : ''}
-        </div>
-        <button class="btn btn-link text-danger ms-3 delete-btn" title="Borrar notificación">
-            <i class="bi bi-trash"></i>
-        </button>
-      `;
+        const deleteBtn = item.querySelector('.delete-btn');
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            deleteNotification(uid, notif.id);
+        };
 
-            // Add delete listener specifically to the button
-            const deleteBtn = item.querySelector('.delete-btn');
-            deleteBtn.onclick = (e) => {
-                e.stopPropagation(); // Prevent triggering the main click
-                deleteNotification(uid, notif.id);
-            };
-
-            notificationsList.appendChild(item);
-        });
+        notificationsList.appendChild(item);
     });
 }
 
-function deleteNotification(uid, notifId) {
+async function deleteNotification(uid, notifId) {
     if (confirm('¿Borrar esta notificación?')) {
-        firebase.database().ref(`usuarios/${uid}/notifications/${notifId}`).remove()
-            .catch(err => console.error('Error deleting notification:', err));
+        const sb = window.supabaseClient;
+        const { error } = await sb
+            .from('notifications')
+            .delete()
+            .eq('id', notifId);
+
+        if (error) console.error('Error deleting notification:', error);
     }
 }
 
 async function handleNotificationClick(e, notif, uid) {
     e.preventDefault();
+    const sb = window.supabaseClient;
 
-    // Mark as read
     if (!notif.read) {
-        await firebase.database().ref(`usuarios/${uid}/notifications/${notif.id}`).update({ read: true });
+        await sb
+            .from('notifications')
+            .update({ read: true })
+            .eq('id', notif.id);
     }
 
-    // Action based on type
-    if (notif.link) {
-        window.location.href = notif.link;
-    } else if (notif.type === 'scorer_request' && notif.matchId) {
-        if (notif.teamId && notif.compId && notif.matchId) {
-            window.location.href = `partido.html?idEquipo=${notif.teamId}&idCompeticion=${notif.compId}&idPartido=${notif.matchId}`;
+    // Access 'data' JSON column 
+    const data = notif.data || {};
+
+    if (data.link) {
+        window.location.href = data.link;
+    } else if (notif.type === 'scorer_request' && data.matchId) {
+        if (data.teamId && data.compId && data.matchId) {
+            window.location.href = `partido.html?idEquipo=${data.teamId}&idCompeticion=${data.compId}&idPartido=${data.matchId}`;
         } else {
-            window.location.href = `public/partido.html?id=${notif.matchId}`;
+            // Fallback
+            window.location.href = `partido.html`;
         }
-    } else if (notif.type === 'new_follower' && notif.teamId) {
-        window.location.href = `equipo.html?idEquipo=${notif.teamId}&section=miembros`;
-    } else if (notif.teamId) {
-        window.location.href = `equipo.html?idEquipo=${notif.teamId}`;
+    } else if (notif.type === 'new_follower' && data.teamId) {
+        window.location.href = `equipo.html?idEquipo=${data.teamId}&section=miembros`;
+    } else if (data.teamId) {
+        window.location.href = `equipo.html?idEquipo=${data.teamId}`;
     }
 }

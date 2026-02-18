@@ -1,386 +1,265 @@
 class DataService {
-  constructor(db, userId, teamId, competitionId, matchId) {
-    this.db = db;
+  constructor(userId, teamId, competitionId, matchId) {
+    this.supabase = window.supabaseClient;
     this.userId = userId;
     this.teamId = teamId;
     this.competitionId = competitionId;
     this.matchId = matchId;
   }
 
-  // Referencia Firebase al nodo del partido específico
-  get partidoRef() {
-    return this.db.ref(`usuarios/${this.userId}/equipos/${this.teamId}/competiciones/${this.competitionId}/partidos/${this.matchId}`);
-  }
-
   /**
    * Carga todos los datos del partido.
-   * Retorna un objeto partido con estructura aproximada:
-   * {
-   *   convocados: { jugadorId: { dorsal: number, nombre: string }, ... },
-   *   jugadoresEnPista: { jugadorId: true, ... },
-   *   estadisticasJugadores: { jugadorId: { puntos: number, asistencias: number, ... }, ... },
-   *   configuracion: "4x10" | "6x8",
-   *   parteActual: number,
-   *   estado: "no empezado" | "en curso" | "finalizado",
-   *   puntosEquipo: number,
-   *   puntosRival: number,
-   *   faltasEquipo: number,
-   *   faltasRival: number,
-   *   eventos: { ... } // nodo con lista cronológica de eventos
-   * }
+   * Retorna un objeto partido con la estructura completa.
    */
-  cargarPartido() {
-    return this.partidoRef.once('value').then(snap => {
-      if (snap.exists()) {
-        let partido = snap.val();
+  async cargarPartido() {
+    try {
+      const { data: match, error } = await this.supabase
+        .from('matches')
+        .select('*')
+        .eq('id', this.matchId)
+        .single();
 
-        // Validar campos clave y asignar valores por defecto si faltan
-        partido.convocados = partido.convocados || {};
-        partido.jugadoresEnPista = partido.jugadoresEnPista || {};
-        partido.estadisticasJugadores = partido.estadisticasJugadores || {};
+      if (error) throw error;
+      if (!match) return null;
 
-        partido.configuracion = partido.configuracion || '4x10';
-        partido.parteActual = partido.parteActual || 1;
-        partido.duracionParte = partido.duracionParte || (partido.configuracion === '6x8' ? 8 * 60 : 10 * 60);
-        partido.totalPartes = partido.totalPartes || (partido.configuracion === '6x8' ? 6 : 4);
+      // Si existe live_state, úsalo como fuente principal.
+      // Si no, inicializa desde columnas o valores por defecto.
+      let partido = match.live_state || {};
 
-        partido.estado = partido.estado || 'no empezado';
+      // Asegurar que campos críticos estén sincronizados con las columnas
+      partido.id = match.id;
+      partido.equipoId = match.team_id; // Mapping team_id column to internal teamId? 
+      // Actually PartidoApp uses equipoId, matchId etc.
+      partido.competicionId = match.competition_id;
+      // partido.rivalId = match.rival_id; // Sync if column changed?
 
-        partido.puntosEquipo = partido.puntosEquipo || 0;
-        partido.puntosRival = partido.puntosRival || 0;
-        partido.faltasEquipo = partido.faltasEquipo || 0;
-        partido.faltasRival = partido.faltasRival || 0;
+      // Defaults
+      partido.convocados = partido.convocados || {};
+      partido.jugadoresEnPista = partido.jugadoresEnPista || {};
+      partido.estadisticasJugadores = partido.estadisticasJugadores || {};
 
-        partido.eventos = partido.eventos || {};
+      partido.configuracion = partido.configuracion || match.match_config || '4x10';
+      partido.parteActual = partido.parteActual || match.current_period || 1;
+      partido.duracionParte = partido.duracionParte || (match.period_duration || (partido.configuracion === '6x8' ? 8 * 60 : 10 * 60));
+      partido.totalPartes = partido.totalPartes || (partido.configuracion === '6x8' ? 6 : 4);
 
-        // Ensure IDs are present
-        partido.equipoId = this.teamId;
-        partido.competicionId = this.competitionId;
+      partido.estado = partido.estado || match.state || 'no empezado';
 
-        // Ensure global data is synced (e.g. to add teamId if missing)
-        this._sincronizarPartidoGlobal();
+      partido.puntosEquipo = partido.puntosEquipo || 0;
+      partido.puntosRival = partido.puntosRival || 0;
+      partido.faltasEquipo = partido.faltasEquipo || 0;
+      partido.faltasRival = partido.faltasRival || 0;
 
-        return partido;
-      } else {
-        return null;
-      }
-    });
+      partido.eventos = partido.eventos || {};
+
+      // Sync basic info that might have been edited in 'edit details' independently of live_state
+      partido.fechaHora = match.date;
+      partido.pabellon = match.location;
+      partido.nombreRival = match.rival_name;
+      partido.esLocal = match.is_local;
+      partido.rivalId = match.rival_id;
+
+      return partido;
+    } catch (e) {
+      console.error("Error cargando partido:", e);
+      return null;
+    }
   }
 
   /**
-   * Carga la plantilla de jugadores como array:
-   * [
-   *   { id: string, dorsal: number, nombre: string, ... },
-   *   ...
-   * ]
+   * Carga la plantilla de jugadores del equipo.
    */
-  cargarPlantilla() {
-    return this.db.ref(`usuarios/${this.userId}/equipos/${this.teamId}/plantilla`).once('value').then(snap => {
-      const lista = [];
-      snap.forEach(child => {
-        lista.push({ id: child.key, ...child.val() });
-      });
-      return lista;
-    });
+  async cargarPlantilla() {
+    // Assuming players table has all info needed
+    // Plantilla array: [{ id, dorsal, nombre, ... }]
+    const { data, error } = await this.supabase
+      .from('players')
+      .select('*')
+      .eq('team_id', this.teamId);
+
+    if (error) {
+      console.error("Error cargando plantilla:", error);
+      return [];
+    }
+
+    return data.map(p => ({
+      id: p.id,
+      nombre: p.name,
+      dorsal: p.number,
+      avatarConfig: p.avatar_config || null
+    }));
   }
 
   /**
    * Carga la lista de rivales de la competición.
-   * Retorna un array de objetos: [{ id: string, nombre: string }, ...]
    */
-  cargarRivales() {
-    return this.db.ref(`usuarios/${this.userId}/equipos/${this.teamId}/competiciones/${this.competitionId}/rivales`).once('value').then(snap => {
-      const lista = [];
-      snap.forEach(child => {
-        lista.push({ id: child.key, ...child.val() });
-      });
-      return lista;
-    });
+  async cargarRivales() {
+    const { data, error } = await this.supabase
+      .from('rivals')
+      .select('*')
+      .eq('competition_id', this.competitionId);
+
+    if (error) {
+      console.error("Error cargando rivales:", error);
+      return [];
+    }
+
+    return data.map(r => ({
+      id: r.id,
+      nombre: r.name
+    }));
   }
 
   /**
-   * Guarda el objeto completo del partido.
-   * @param {Object} partidoObj - Objeto completo del partido con toda la estructura.
+   * Guarda el objeto completo del partido (live_state) y actualiza columnas clave.
+   * @param {Object} partidoObj - Objeto completo del partido.
    */
-  guardarPartido(partidoObj) {
-    return this.partidoRef.set(partidoObj)
-      .then(() => this._sincronizarPartidoGlobal());
+  async guardarPartido(partidoObj) {
+    try {
+      // Map properties back to columns for query-ability
+      const updatePayload = {
+        live_state: partidoObj,
+        current_period: partidoObj.parteActual,
+        state: partidoObj.estado,
+        match_config: partidoObj.configuracion,
+        period_duration: partidoObj.duracionParte
+      };
+
+      // Update basic fields if they are in partidoObj (from edit modal)
+      if (partidoObj.fechaHora) updatePayload.date = partidoObj.fechaHora;
+      if (partidoObj.pabellon) updatePayload.location = partidoObj.pabellon;
+      if (partidoObj.nombreRival) updatePayload.rival_name = partidoObj.nombreRival;
+      if (partidoObj.rivalId) updatePayload.rival_id = partidoObj.rivalId;
+      if (partidoObj.esLocal !== undefined) updatePayload.is_local = partidoObj.esLocal;
+
+      const { error } = await this.supabase
+        .from('matches')
+        .update(updatePayload)
+        .eq('id', this.matchId);
+
+      if (error) throw error;
+    } catch (e) {
+      console.error("Error guardando partido:", e);
+      throw e;
+    }
   }
 
   /**
-   * Guarda datos simples en ruta relativa dentro del partido y sincroniza globalmente.
-   * @param {string} path - Camino relativo (ej: "convocados", "estado", etc).
-   * @param {Object} data - Datos JSON serializables a guardar.
+   * Helpers mostly to maintain compatibility if logic used them. 
+   * But main logic uses guardarPartido(this.partido) so we are good.
    */
-  guardarDatos(path, data) {
-    return this.partidoRef.child(path).set(data)
-      .then(() => this._sincronizarPartidoGlobal());
-  }
 
   getNewEventKey() {
-    return this.partidoRef.child('eventos').push().key;
+    // Generate a UUID locally or just let Supabase handle it for the table.
+    // But PartidoApp expects a key immediateley sometimes?
+    // PartidoApp logic: pushEvento(evento) returns key.
+    return crypto.randomUUID();
   }
 
-  /**
-   * Agrega un evento al partido (canasta, falta, cambio pista, estadistica)
-   * Y actualiza las estadísticas y marcadores automáticamente.
-   * @param {Object} evento - Evento que contiene:
-   *  tipo, jugadorId, nombre, dorsal, cuarto, tiempoSegundos, detalle,
-   *  puntos?, estadisticaTipo?, cantidad?
-   * @param {string} [key] - Optional key to use. If not provided, a new one is generated.
-   */
-  pushEvento(evento, key = null) {
-    // console.log('Guardando evento:', evento);
-    const eventosRef = this.partidoRef.child('eventos');
-    const newRef = key ? eventosRef.child(key) : eventosRef.push();
-    return newRef.set(evento)
-      .then(() => this._procesarEvento(evento))
-      .then(() => this._sincronizarPartidoGlobal())
-      .then(() => newRef.key);
-  }
+  async pushEvento(evento, key = null) {
+    const eventoId = key || this.getNewEventKey();
+    evento.id = eventoId; // Store ID in event object too
 
-  // Procesa internamente un evento para actualizar estadísticas y marcadores
-  _procesarEvento(evento) {
-    if (evento.tipo === 'finCuarto' || evento.tipo === 'inicioCuarto') {
-      return Promise.resolve();
-    }
-
-    return this._actualizarMasMenos(evento).then(() => {
-      if (evento.dorsal >= 0) {
-        const estadisticasRef = this.partidoRef.child('estadisticasJugadores');
-
-        switch (evento.tipo) {
-          case 'puntos':
-            return estadisticasRef.once('value').then(snap => {
-              const stats = snap.val() || {};
-              if (!stats[evento.jugadorId]) stats[evento.jugadorId] = this._inicializarEstadisticas();
-
-              // Actualizar puntos totales
-              stats[evento.jugadorId].puntos = (stats[evento.jugadorId].puntos || 0) + (evento.cantidad || 0);
-
-              // Actualizar tiros convertidos (1, 2 o 3)
-              const valor = evento.cantidad || 0;
-              if (valor >= 1 && valor <= 3) {
-                const key = `t${valor}_convertidos`;
-                stats[evento.jugadorId][key] = (stats[evento.jugadorId][key] || 0) + 1;
-              }
-
-              return estadisticasRef.set(stats).then(() => this._actualizarMarcador(evento));
-            });
-
-          case 'fallo':
-            return estadisticasRef.once('value').then(snap => {
-              const stats = snap.val() || {};
-              if (!stats[evento.jugadorId]) stats[evento.jugadorId] = this._inicializarEstadisticas();
-
-              // Actualizar tiros fallados (1, 2 o 3)
-              const valor = evento.valor || 0;
-              if (valor >= 1 && valor <= 3) {
-                const key = `t${valor}_fallados`;
-                stats[evento.jugadorId][key] = (stats[evento.jugadorId][key] || 0) + 1;
-              }
-
-              return estadisticasRef.set(stats);
-            });
-
-          case 'cambioPista':
-            return Promise.resolve();
-
-          default:
-            // console.log("otros")
-            return estadisticasRef.once('value').then(snap => {
-              const stats = snap.val() || {};
-              if (!stats[evento.jugadorId]) stats[evento.jugadorId] = this._inicializarEstadisticas();
-              if (evento.estadisticaTipo && evento.cantidad)
-                stats[evento.jugadorId][evento.estadisticaTipo] = (stats[evento.jugadorId][evento.estadisticaTipo] || 0) + evento.cantidad;
-              return estadisticasRef.set(stats).then(() => this._actualizarFaltas(evento));
-            });
-        }
-      } else {
-        if (evento.tipo == "puntos") {
-          this._actualizarMarcador(evento);
-
-        } else {
-          this._actualizarFaltas(evento);
-
-        }
-      }
-    });
-  }
-
-
-
-  // Elimina un evento y revierte sus efectos
-  deleteEvento(eventoId, evento) {
-    // console.log('Eliminando evento:', evento);
-    // console.log('Eliminando evento:', eventoId);
-    return this.partidoRef.child('eventos').child(eventoId).remove()
-      .then(() => this._revertirEvento(evento))
-      .then(() => this._sincronizarPartidoGlobal());
-  }
-
-  // Revierte los efectos de un evento (lógica inversa a _procesarEvento)
-  _revertirEvento(evento) {
-    if (evento.tipo === 'finCuarto' || evento.tipo === 'inicioCuarto') {
-      return Promise.resolve();
-    }
-
-    return this._actualizarMasMenos(evento, true).then(() => {
-      if (evento.dorsal >= 0) {
-        const estadisticasRef = this.partidoRef.child('estadisticasJugadores');
-
-        switch (evento.tipo) {
-          case 'puntos':
-            return estadisticasRef.once('value').then(snap => {
-              const stats = snap.val() || {};
-              if (stats[evento.jugadorId]) {
-                stats[evento.jugadorId].puntos = (stats[evento.jugadorId].puntos || 0) - (evento.cantidad || 0);
-
-                // Revertir tiros convertidos
-                const valor = evento.cantidad || 0;
-                if (valor >= 1 && valor <= 3) {
-                  const key = `t${valor}_convertidos`;
-                  stats[evento.jugadorId][key] = (stats[evento.jugadorId][key] || 0) - 1;
-                }
-
-                return estadisticasRef.set(stats).then(() => this._actualizarMarcador(evento, true));
-              }
-              return Promise.resolve();
-            });
-
-          case 'fallo':
-            return estadisticasRef.once('value').then(snap => {
-              const stats = snap.val() || {};
-              if (stats[evento.jugadorId]) {
-                // Revertir tiros fallados
-                const valor = evento.valor || 0;
-                if (valor >= 1 && valor <= 3) {
-                  const key = `t${valor}_fallados`;
-                  stats[evento.jugadorId][key] = (stats[evento.jugadorId][key] || 0) - 1;
-                }
-                return estadisticasRef.set(stats);
-              }
-              return Promise.resolve();
-            });
-
-          case 'cambioPista':
-            return Promise.resolve();
-
-          default:
-            return estadisticasRef.once('value').then(snap => {
-              const stats = snap.val() || {};
-              if (stats[evento.jugadorId]) {
-                if (evento.estadisticaTipo && evento.cantidad) {
-                  stats[evento.jugadorId][evento.estadisticaTipo] = (stats[evento.jugadorId][evento.estadisticaTipo] || 0) - evento.cantidad;
-                }
-                return estadisticasRef.set(stats).then(() => this._actualizarFaltas(evento, true));
-              }
-              return Promise.resolve();
-            });
-        }
-      } else {
-        if (evento.tipo == "puntos") {
-          // console.log("actualizarMarcador")
-          return this._actualizarMarcador(evento, true);
-        } else {
-          // console.log("actualizarFaltas")
-          return this._actualizarFaltas(evento, true);
-        }
-      }
-    });
-  }
-
-  // Actualiza marcador según evento. Si revertir es true, resta.
-  _actualizarMarcador(evento, revertir = false) {
-    const factor = revertir ? -1 : 1;
-    if (evento.dorsal === -1) {
-      const puntosRivalRef = this.partidoRef.child('puntosRival');
-      return puntosRivalRef.transaction(v => (v || 0) + (evento.cantidad || 0) * factor);
-    } else {
-      const puntosEquipoRef = this.partidoRef.child('puntosEquipo');
-      return puntosEquipoRef.transaction(v => (v || 0) + (evento.cantidad || 0) * factor);
-    }
-  }
-
-  // Actualiza faltas según evento. Si revertir es true, resta.
-  _actualizarFaltas(evento, revertir = false) {
-    const factor = revertir ? -1 : 1;
-    if (evento.dorsal === -1) {
-      const faltasRivalRef = this.partidoRef.child('faltasRival');
-      return faltasRivalRef.transaction(v => (v || 0) + 1 * factor);
-    } else {
-      const faltasEquipoRef = this.partidoRef.child('faltasEquipo');
-      return faltasEquipoRef.transaction(v => (v || 0) + 1 * factor);
-    }
-  }
-
-  _actualizarMasMenos(evento, revertir = false) {
-    if (evento.tipo !== 'puntos' || !evento.jugadoresEnPista) return Promise.resolve();
-
-    const factor = revertir ? -1 : 1;
-    const cantidad = (evento.cantidad || 0) * factor;
-    // Si anota equipo (dorsal >= 0) suma, si anota rival (dorsal < 0) resta
-    const delta = (evento.dorsal >= 0) ? cantidad : -cantidad;
-
-    const estadisticasRef = this.partidoRef.child('estadisticasJugadores');
-    return estadisticasRef.once('value').then(snap => {
-      const stats = snap.val() || {};
-      let updated = false;
-      evento.jugadoresEnPista.forEach(id => {
-        if (!stats[id]) stats[id] = this._inicializarEstadisticas();
-        stats[id].masMenos = (stats[id].masMenos || 0) + delta;
-        updated = true;
-      });
-      if (updated) return estadisticasRef.set(stats);
-      return Promise.resolve();
-    });
-  }
-
-  // Inicializa estructura de estadísticas para un jugador
-  _inicializarEstadisticas() {
-    return {
-      puntos: 0, asistencias: 0, rebotes: 0, robos: 0, tapones: 0, faltas: 0, masMenos: 0,
-      t1_convertidos: 0, t1_fallados: 0,
-      t2_convertidos: 0, t2_fallados: 0,
-      t3_convertidos: 0, t3_fallados: 0
+    // 1. Log to match_events table
+    const dbEvento = {
+      id: eventoId,
+      match_id: this.matchId,
+      player_id: (evento.jugadorId && evento.jugadorId !== 'rival') ? evento.jugadorId : null, // Handle 'rival' or null
+      type: evento.tipo,
+      quarter: evento.cuarto,
+      timestamp: evento.tiempoSegundos,
+      value: evento.cantidad || (evento.valor || 0),
+      properties: evento // Store full object as JSONB for fidelity
     };
+
+    // We don't await this insert to block UI? Better to allow fire & forget or return promise.
+    // We'll return logic promise.
+
+    const insertPromise = this.supabase.from('match_events').insert([dbEvento]);
+
+    // 2. Process locally to update stats in live_state
+    // This function modifies 'estadisticasJugadores' in memory? 
+    // No, DataService is stateless regarding 'this.partido' here, it receives data via 'guardarPartido' usually.
+    // BUT PartidoApp calls pushEvento AND expects DataService to update the state?
+    // Wait, original DataService `pushEvento`:
+    // `return newRef.set(evento).then(() => this._procesarEvento(evento))`
+    // `_procesarEvento` reads `partidoRef`, modifies it, writes it back!
+
+    // PROBLEM: `DataService.js` in Supabase version doesn't hold `partido`.
+    // `PartidoApp.js` holds `this.partido`.
+    // `PartidoApp.js` calls `pushEvento`.
+    // If `DataService` is responsible for calculating stats (business logic), it needs access to the current state.
+    // Option A: `PartidoApp` passes current state to `pushEvento`.
+    // Option B: `DataService` fetches state, updates, saves. (Slow, race conditions).
+    // Option C: Move `_procesarEvento` logic to `PartidoApp` (or a helper class) and just use DataService for storage.
+    // Option C is best for refactoring. The Business Logic of "points -> stats update" belongs in the App or Domain layer, not purely in the Persistence layer if Persistence is dumb.
+    // However, `DataService` contained the logic previously.
+    // To minimize `PartidoApp.js` changes, I can keep the logic here IF I can access the state.
+
+    // But `DataService` methods `_procesarEvento` used `partidoRef.once('value')`... reading DB.
+    // In Supabase, reading DB every event is costly/slow.
+    // `PartidoApp` ALREADY has `this.partido` in memory!
+    // I should change `PartidoApp` to handle the state update locally, then call `DataService.guardarPartido`.
+    // AND call `DataService.logEvent`.
+
+    // This is a paradigm shift.
+
+    // OLD FLOW:
+    // UI -> pushEvento -> Firebase Write -> _procesarEvento (Firebase Read/Write) -> Firebase Write.
+
+    // NEW FLOW (Recommended):
+    // UI -> Update `this.partido` (State) locally -> DataService.saveState(this.partido) AND DataService.logEvent(event).
+
+    // This means I MUST refactor `PartidoApp.js` to contain the logic of `_procesarEvento`.
+    // `PartidoApp.js` currently relies on `pushEvento` doing the magic.
+
+    // I will put `procesarEvento` logic into `PartidoApp.js` (or `MatchLogic.js` helper).
+    // For now, I'll put it in `PartidoApp.js`.
+
+    // So DataService.pushEvento becomes:
+    // logEvent(event) -> insert to match_events table.
+
+    // I'll rename `pushEvento` to `logEvento` in DataService to be clear, 
+    // and update PartidoApp to call `logEvento` AND `guardarPartido`.
+
+    // Wait, `PartidoApp.js` is huge.
+    // I can add `procesarEvento` to `PartidoApp`.
+    // I will verify this plan.
+
+    return insertPromise.then(({ error }) => {
+      if (error) console.error("Error logging event:", error);
+      return eventoId;
+    });
   }
 
-  // Sincroniza el partido actual dentro del nodo global 'partidosGlobales'
-  _sincronizarPartidoGlobal() {
-    // console.log("sincronizandoooo")
-    const refGlobal = this.db.ref(`partidosGlobales/${this.matchId}`);
-    return this.partidoRef.once('value')
-      .then(snapshot => {
-        if (!snapshot.exists()) return refGlobal.remove();
-        const data = snapshot.val();
-        // Inject teamId, competitionId, and ownerUid for global context
-        data.equipoId = this.teamId;
-        data.competicionId = this.competitionId;
-        data.ownerUid = this.userId;
-        return refGlobal.set(data);
-      });
+  async deleteEvento(eventoId, evento) {
+    // Delete from match_events
+    const { error } = await this.supabase
+      .from('match_events')
+      .delete()
+      .eq('id', eventoId);
+
+    if (error) console.error("Error deleting event:", error);
+
+    // The state reversion logic must happen in PartidoApp now.
   }
 }
 
-
-
 class PartidosGlobalesDataService {
-  constructor(db) {
-    this.db = db; // instancia de Firebase database
-    this.rootPath = 'partidosGlobales'; // nodo raíz para partidos globales
+  constructor() {
+    this.supabase = window.supabaseClient;
   }
 
-  // Obtener partido global por ID, devuelve Promise con datos
-  getPartidoGlobal(partidoId) {
-    const partidoRef = this.db.ref(`${this.rootPath}/${partidoId}`);
-    return partidoRef.once('value')
-      .then(snapshot => {
-        if (snapshot.exists()) {
-          return snapshot.val();
-        } else {
-          throw new Error('Partido global no encontrado');
-        }
-      });
+  async getPartidoGlobal(partidoId) {
+    // In Supabase, we can just fetch the match from 'matches' table
+    // assuming RLS allows valid access (it does, 'viewable by everyone').
+    const { data, error } = await this.supabase
+      .from('matches')
+      .select('*')
+      .eq('id', partidoId)
+      .single();
+
+    if (error) throw error;
+    return data.live_state; // Return the app-readable state
   }
 }

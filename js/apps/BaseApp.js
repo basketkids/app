@@ -1,32 +1,48 @@
 class BaseApp {
     constructor() {
-        this.initFirebase();
-        this.auth = firebase.auth();
-        this.db = firebase.database();
+        // Supabase client is already initialized in supabase-config.js
+        this.supabase = window.supabaseClient;
+        this.auth = this.supabase.auth;
         this.currentUser = null;
     }
 
-    initFirebase() {
-        if (!firebase.apps.length) {
-            firebase.initializeApp(window.firebaseConfig);
-        }
-    }
-
     init() {
-        this.auth.onAuthStateChanged(user => {
-            if (!user) {
-                this.handleNoUser();
-            } else {
-                this.currentUser = user;
-                this.onUserLoggedIn(user);
-            }
+        // Check initial session
+        this.supabase.auth.getSession().then(({ data: { session } }) => {
+            this._handleSession(session);
+        });
+
+        // Listen for changes
+        this.supabase.auth.onAuthStateChange((_event, session) => {
+            this._handleSession(session);
         });
     }
 
+    _handleSession(session) {
+        if (!session) {
+            this.handleNoUser();
+        } else {
+            const user = session.user;
+            // Normalize for legacy compatibility
+            user.uid = user.id;
+            user.displayName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario';
+            user.photoURL = user.user_metadata?.avatar_url || null;
+
+            this.currentUser = user;
+            this.onUserLoggedIn(user);
+        }
+    }
+
     handleNoUser() {
-        // Default behavior: redirect to index.html if not already there
-        if (!window.location.pathname.endsWith('index.html') && !window.location.pathname.endsWith('/')) {
-            window.location.href = 'index.html';
+        // Default behavior: redirect to login.html if not already there and not in public area
+        // Note: Logic changed slightly: Check if we are in a public page or not?
+        // Index.html logic: if not logged in, mapping to public/ is handled by onAuthStateChanged in auth.js?
+        // auth.js handles login page redirection. 
+        // BaseApp handles protected pages.
+
+        const path = window.location.pathname;
+        if (!path.endsWith('login.html') && !path.includes('/public/')) {
+            window.location.href = 'login.html';
         }
     }
 

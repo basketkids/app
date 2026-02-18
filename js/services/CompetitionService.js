@@ -1,92 +1,176 @@
 class CompetitionService {
-    constructor(db) {
-        this.db = db;
+    constructor() {
+        this.supabase = window.supabaseClient;
     }
 
-    get(userId, teamId, compId) {
-        return this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones/${compId}`).once('value');
+    async get(userId, teamId, compId) {
+        const { data, error } = await this.supabase
+            .from('competitions')
+            .select('*')
+            .eq('id', compId)
+            .single();
+
+        if (error) throw error;
+        return data;
     }
 
-    getAll(userId, teamId, callback) {
-        const ref = this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones`);
-        if (callback) ref.on('value', callback);
-        return ref;
-    }
+    async getAll(userId, teamId, callback) {
+        const fetchCompetitions = async () => {
+            const { data, error } = await this.supabase
+                .from('competitions')
+                .select('*')
+                .eq('team_id', teamId);
 
-    create(userId, teamId, name) {
-        return this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones`).push({ nombre: name });
-    }
-
-    getRivals(userId, teamId, compId, callback) {
-        const ref = this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones/${compId}/rivales`);
-        if (callback) ref.on('value', callback);
-        return ref;
-    }
-
-    addRival(userId, teamId, compId, name) {
-        return this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones/${compId}/rivales`).push({ nombre: name });
-    }
-
-    deleteRival(userId, teamId, compId, rivalId) {
-        return this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones/${compId}/rivales/${rivalId}`).remove();
-    }
-
-    update(userId, teamId, compId, updates) {
-        return this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones/${compId}`).update(updates);
-    }
-
-    updateRival(userId, teamId, compId, rivalId, name) {
-        return this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones/${compId}/rivales/${rivalId}`).update({ nombre: name });
-    }
-
-    getMatches(userId, teamId, compId, callback) {
-        const ref = this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones/${compId}/partidos`);
-        if (callback) ref.on('value', callback);
-        return ref;
-    }
-
-    createMatch(userId, teamId, compId, matchData) {
-        // matchData should include everything needed
-        const ref = this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones/${compId}/partidos`);
-        const newRef = ref.push();
-        return newRef.set(matchData).then(() => newRef); // Return the ref/promise resolving to ref
-    }
-
-    deleteMatch(userId, teamId, compId, matchId) {
-        return this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones/${compId}/partidos/${matchId}`).remove();
-    }
-
-    getMatchRival(userId, teamId, compId, rivalId) {
-        return this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones/${compId}/rivales/${rivalId}`).once('value');
-    }
-
-    /**
-     * Find a rival by name, or create it if it doesn't exist
-     * @param {string} userId - User ID
-     * @param {string} teamId - Team ID
-     * @param {string} compId - Competition ID
-     * @param {string} rivalName - Name of the rival team
-     * @returns {Promise<string>} - Promise resolving to the rival ID
-     */
-    findOrCreateRival(userId, teamId, compId, rivalName) {
-        const rivalsRef = this.db.ref(`usuarios/${userId}/equipos/${teamId}/competiciones/${compId}/rivales`);
-
-        return rivalsRef.once('value').then(snapshot => {
-            const rivals = snapshot.val();
-
-            // Search for existing rival with the same name (case-insensitive)
-            if (rivals) {
-                for (const [id, rival] of Object.entries(rivals)) {
-                    if (rival.nombre && rival.nombre.toLowerCase() === rivalName.toLowerCase()) {
-                        return id; // Return existing rival ID
-                    }
-                }
+            if (!error && callback) {
+                callback(data || []);
             }
+        };
 
-            // Rival doesn't exist, create it
-            return this.addRival(userId, teamId, compId, rivalName).then(newRef => {
-                return newRef.key; // Return new rival ID
-            });
-        });
+        fetchCompetitions();
+
+        // Optional: Subscription
+        // const channel = this.supabase.channel(...)
+        // ...
+        // returning channel to allow unsubscribe implies changing the contract
+    }
+
+    async create(userId, teamId, name) {
+        const { data, error } = await this.supabase
+            .from('competitions')
+            .insert([{ team_id: teamId, name: name }])
+            .select();
+
+        if (error) throw error;
+        return data[0];
+    }
+
+    async getRivals(userId, teamId, compId, callback) {
+        const fetchRivals = async () => {
+            const { data, error } = await this.supabase
+                .from('rivals')
+                .select('*')
+                .eq('competition_id', compId);
+
+            if (!error && callback) {
+                callback(data || []);
+            }
+        };
+        fetchRivals();
+    }
+
+    async addRival(userId, teamId, compId, name) {
+        const { data, error } = await this.supabase
+            .from('rivals')
+            .insert([{ competition_id: compId, name: name }])
+            .select();
+
+        if (error) throw error;
+        return data[0]; // returns object with id
+    }
+
+    async deleteRival(userId, teamId, compId, rivalId) {
+        const { error } = await this.supabase
+            .from('rivals')
+            .delete()
+            .eq('id', rivalId);
+        if (error) throw error;
+    }
+
+    async update(userId, teamId, compId, updates) {
+        const { error } = await this.supabase
+            .from('competitions')
+            .update(updates)
+            .eq('id', compId);
+        if (error) throw error;
+    }
+
+    async updateRival(userId, teamId, compId, rivalId, name) {
+        const { error } = await this.supabase
+            .from('rivals')
+            .update({ name: name })
+            .eq('id', rivalId);
+        if (error) throw error;
+    }
+
+    async getMatches(userId, teamId, compId, callback) {
+        const fetchMatches = async () => {
+            const { data, error } = await this.supabase
+                .from('matches')
+                .select('*')
+                .eq('competition_id', compId)
+                .order('date', { ascending: true }); // Assuming date field
+
+            if (!error && callback) {
+                callback(data || []);
+            }
+        };
+        fetchMatches();
+    }
+
+    async createMatch(userId, teamId, compId, matchData) {
+        // matchData needs to be mapped to schema keys
+        const payload = {
+            competition_id: compId,
+            team_id: teamId,
+            rival_name: matchData.rival, // matchData passes 'rival' as name
+            date: matchData.fecha,
+            location: matchData.lugar,
+            notes: matchData.notas || '',
+            is_local: matchData.is_local !== undefined ? matchData.is_local : true,
+            team_score: matchData.team_score || 0,
+            rival_score: matchData.rival_score || 0,
+            state: matchData.state || 'scheduled'
+        };
+
+        // If matchData has 'rivalId' (from select), use that to look up name?
+        // Schema has rival_name (text). logic says 'rival' field in firebase was name string.
+
+        const { data, error } = await this.supabase
+            .from('matches')
+            .insert([payload])
+            .select();
+
+        if (error) throw error;
+        return data[0];
+    }
+
+    async deleteMatch(userId, teamId, compId, matchId) {
+        const { error } = await this.supabase
+            .from('matches')
+            .delete()
+            .eq('id', matchId);
+        if (error) throw error;
+    }
+
+    async getMatchRival(userId, teamId, compId, rivalId) {
+        const { data, error } = await this.supabase
+            .from('rivals')
+            .select('*')
+            .eq('id', rivalId)
+            .single();
+        if (error) throw error;
+        return data;
+    }
+
+    async findOrCreateRival(userId, teamId, compId, rivalName) {
+        // 1. Search
+        const { data: existing, error } = await this.supabase
+            .from('rivals')
+            .select('*')
+            .eq('competition_id', compId)
+            .ilike('name', rivalName) // Case insensitive
+            .maybeSingle();
+
+        if (existing) return existing.id;
+
+        // 2. Create
+        const { data: newRival, error: createError } = await this.supabase
+            .from('rivals')
+            .insert([{ competition_id: compId, name: rivalName }])
+            .select()
+            .single();
+
+        if (createError) throw createError;
+        return newRival.id;
     }
 }

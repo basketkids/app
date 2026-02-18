@@ -6,12 +6,13 @@ class PartidosGlobalesApp {
     this.segundosRestantes = 0; // Para controlar display tiempo
     this.parteActual = 1;       // Para controlar el cuarto actual
     this.matchRenderer = new MatchRenderer();
-    this.teamService = new TeamService(firebase.database());
+    this.teamService = new TeamService(); // Supabase logic inside
     this.currentUser = null;
+    this.supabase = window.supabaseClient;
 
     // Auth listener
-    firebase.auth().onAuthStateChanged(user => {
-      this.currentUser = user;
+    this.supabase.auth.onAuthStateChange((event, session) => {
+      this.currentUser = session ? session.user : null;
       if (this.partido) {
         this.updateFollowButton();
         this.updateRequestButton();
@@ -32,10 +33,11 @@ class PartidosGlobalesApp {
   cargarPartidoGlobal(partidoId) {
     return this.dataService.getPartidoGlobal(partidoId)
       .then(partido => {
-        this.partido = partido;
-        this.partido.id = partidoId;
-        // console.log(this.partido.id);
+        if (!partido) throw new Error("Partido no encontrado o no inicializado (live_state vacío)");
 
+        this.partido = partido;
+        // Ensure some fields are present
+        this.partido.id = partidoId;
 
         // Obtén el último evento válido para establecer cuarto y tiempo
         const eventosArray = partido.eventos ? Object.values(partido.eventos) : [];
@@ -61,7 +63,7 @@ class PartidosGlobalesApp {
       })
       .catch(error => {
         console.error('Error cargando partido global:', error);
-        this.mostrarError('No se pudo cargar el partido global.');
+        // this.mostrarError('No se pudo cargar el partido global.');
       });
   }
 
@@ -73,29 +75,38 @@ class PartidosGlobalesApp {
     }
 
     // Don't show if user is owner
-    if (this.currentUser.uid === this.partido.ownerUid) {
+    if (this.currentUser.id === this.partido.ownerUid) { // Supabase user has .id, not .uid
       btn.style.display = 'none';
       return;
     }
 
-    // Check if already has permission (e.g. is statistician) - simplified check
-    // For now, just check if request exists
-    if (!this.partido.ownerUid || !this.partido.equipoId || !this.partido.competicionId) {
-      console.warn("Missing data for request check:", this.partido);
-      btn.style.display = 'none';
-      return;
-    }
-
-    const requestRef = firebase.database().ref(`usuarios/${this.partido.ownerUid}/equipos/${this.partido.equipoId}/competiciones/${this.partido.competicionId}/partidos/${this.partido.id}/requests/${this.currentUser.uid}`);
-
+    // Check if already has request
     try {
-      const snap = await requestRef.once('value');
-      if (snap.exists()) {
+      const { data, error } = await this.supabase
+        .from('match_requests')
+        .select('*')
+        .eq('match_id', this.partido.id)
+        .eq('user_id', this.currentUser.id)
+        .maybeSingle();
+
+      if (data) {
+        // Request exists
         btn.style.display = 'inline-block';
         btn.disabled = true;
-        btn.innerHTML = '<i class="bi bi-clock-history"></i> Solicitud enviada';
-        btn.classList.remove('btn-outline-warning');
-        btn.classList.add('btn-secondary');
+
+        if (data.status === 'accepted') {
+          btn.innerHTML = '<i class="bi bi-check-circle"></i> Aceptada';
+          btn.classList.remove('btn-secondary');
+          btn.classList.add('btn-success');
+        } else if (data.status === 'rejected') {
+          btn.innerHTML = '<i class="bi bi-x-circle"></i> Rechazada';
+          btn.classList.add('btn-danger');
+        } else {
+          btn.innerHTML = '<i class="bi bi-clock-history"></i> Solicitud enviada';
+          btn.classList.remove('btn-outline-warning');
+          btn.classList.add('btn-secondary');
+        }
+
       } else {
         btn.style.display = 'inline-block';
         btn.disabled = false;
@@ -113,36 +124,51 @@ class PartidosGlobalesApp {
 
     if (!confirm("¿Quieres solicitar permiso al propietario para anotar estadísticas en este partido?")) return;
 
-    const db = firebase.database();
-    const updates = {};
-
-    // Path for the request itself
-    const requestPath = `usuarios/${this.partido.ownerUid}/equipos/${this.partido.equipoId}/competiciones/${this.partido.competicionId}/partidos/${this.partido.id}/requests/${this.currentUser.uid}`;
-    updates[requestPath] = {
-      email: this.currentUser.email,
-      displayName: this.currentUser.displayName || 'Usuario',
-      photoURL: this.currentUser.photoURL || null, // Add photoURL if available
-      timestamp: firebase.database.ServerValue.TIMESTAMP,
-      status: 'pending'
-    };
-
-    // Add notification for the owner
-    const notificationRef = db.ref(`usuarios/${this.partido.ownerUid}/notifications`).push();
-    updates[`usuarios/${this.partido.ownerUid}/notifications/${notificationRef.key}`] = {
-      type: 'scorer_request',
-      teamId: this.partido.equipoId,
-      compId: this.partido.competicionId,
-      matchId: this.partido.id,
-      requesterUid: this.currentUser.uid,
-      requesterName: this.currentUser.displayName || 'Usuario',
-      timestamp: firebase.database.ServerValue.TIMESTAMP,
-      read: false
-    };
-
     try {
-      await db.ref().update(updates);
+      // Create match_request
+      const { error } = await this.supabase
+        .from('match_requests')
+        .insert([
+          {
+            match_id: this.partido.id,
+            user_id: this.currentUser.id,
+            status: 'pending'
+          }
+        ]);
+
+      if (error) throw error;
+
+      // Create notification for owner
+      // owner_id (Supabase needs to know who the owner is).
+      // this.partido.ownerUid came from DataService/match object via Firebase style?
+      // DataService loading from matches table... 'matches' table has 'team_id'.
+      // 'teams' table has 'owner_id'.
+      // We actually need to join or fetch owner_id if not present in match object.
+      // match object loaded via DataService.getPartidoGlobal comes from live_state?
+
+      let ownerId = this.partido.ownerUid;
+      if (!ownerId && this.partido.equipoId) {
+        // fetch team owner
+        const { data: team } = await this.supabase.from('teams').select('owner_id').eq('id', this.partido.equipoId).single();
+        if (team) ownerId = team.owner_id;
+      }
+
+      if (ownerId) {
+        await this.supabase.from('notifications').insert([{
+          user_id: ownerId,
+          type: 'scorer_request',
+          title: 'Solicitud de anotador',
+          message: `${this.currentUser.email || 'Alguien'} quiere anotar en tu partido.`,
+          data: {
+            matchId: this.partido.id,
+            requesterId: this.currentUser.id
+          }
+        }]);
+      }
+
       alert("Solicitud enviada. El propietario debe aprobarla.");
       this.updateRequestButton();
+
     } catch (e) {
       console.error("Error sending request", e);
       alert("Error al enviar solicitud: " + e.message);
@@ -151,19 +177,24 @@ class PartidosGlobalesApp {
 
   async updateFollowButton() {
     const followBtn = document.getElementById('followBtn');
-    // console.log("updateFollowButton check:", {
-    //     btn: !!followBtn,
-    //     partido: !!this.partido,
-    //     ownerUid: this.partido?.ownerUid,
-    //     equipoId: this.partido?.equipoId
-    // });
 
-    if (!followBtn || !this.partido || !this.partido.ownerUid || !this.partido.equipoId) {
-      if (followBtn && (!this.partido.ownerUid || !this.partido.equipoId)) {
-        console.warn("Follow button hidden because ownerUid or equipoId is missing in match data.");
-      }
+    if (!followBtn || !this.partido || !this.partido.equipoId) {
+      // Need equipoId to follow
       return;
     }
+
+    // ownerUid needed? TeamService uses teamId mainly now?
+    // TeamService.followTeam(ownerUid, teamId, userUid) -> implementation uses team_id. ownerUid used for notification only.
+
+    let ownerId = this.partido.ownerUid; // Might be missing in live_state if not populated
+    if (!ownerId) {
+      // try fetch
+      const { data: team } = await this.supabase.from('teams').select('owner_id').eq('id', this.partido.equipoId).single();
+      if (team) ownerId = team.owner_id;
+      this.partido.ownerUid = ownerId;
+    }
+
+    if (!ownerId) return; // Can't follow without owner/team
 
     followBtn.style.display = 'inline-block';
 
@@ -175,7 +206,7 @@ class PartidosGlobalesApp {
     }
 
     try {
-      const isFollowing = await this.teamService.isFollowing(this.partido.ownerUid, this.partido.equipoId, this.currentUser.uid);
+      const isFollowing = await this.teamService.isFollowing(ownerId, this.partido.equipoId, this.currentUser.id);
       if (isFollowing) {
         followBtn.innerHTML = '<i class="bi bi-heart-fill"></i> Siguiendo';
         followBtn.classList.remove('btn-outline-primary');
@@ -191,7 +222,7 @@ class PartidosGlobalesApp {
   }
 
   async toggleFollow() {
-    if (!this.partido) return;
+    if (!this.partido || !this.partido.ownerUid || !this.partido.equipoId) return;
 
     if (!this.currentUser) {
       alert("Debes iniciar sesión para seguir a un equipo.");
@@ -202,11 +233,11 @@ class PartidosGlobalesApp {
     followBtn.disabled = true;
 
     try {
-      const isFollowing = await this.teamService.isFollowing(this.partido.ownerUid, this.partido.equipoId, this.currentUser.uid);
+      const isFollowing = await this.teamService.isFollowing(this.partido.ownerUid, this.partido.equipoId, this.currentUser.id);
       if (isFollowing) {
-        await this.teamService.unfollowTeam(this.partido.ownerUid, this.partido.equipoId, this.currentUser.uid);
+        await this.teamService.unfollowTeam(this.partido.ownerUid, this.partido.equipoId, this.currentUser.id);
       } else {
-        await this.teamService.followTeam(this.partido.ownerUid, this.partido.equipoId, this.currentUser.uid);
+        await this.teamService.followTeam(this.partido.ownerUid, this.partido.equipoId, this.currentUser.id);
       }
       this.updateFollowButton();
     } catch (error) {
@@ -222,9 +253,7 @@ class PartidosGlobalesApp {
 
     // Renderizar nombre del partido
     const nombreElem = document.getElementById('nombrePartido');
-    if (nombreElem) nombreElem.textContent = this.partido.nombreEquipo + " vs " + this.partido.nombreRival;
-
-
+    if (nombreElem) nombreElem.textContent = (this.partido.nombreEquipo || 'Equipo') + " vs " + (this.partido.nombreRival || 'Rival');
 
     const ne = document.getElementById('nombreEquipoMarcador');
     if (ne) ne.textContent = this.partido.nombreEquipo;
@@ -242,11 +271,6 @@ class PartidosGlobalesApp {
     const marcadorRival = document.getElementById('marcadorRival');
     if (marcadorRival) marcadorRival.textContent = this.partido.puntosRival || 0;
 
-    // Renderizar faltas rival
-    // const faltasRival = document.getElementById('faltasRival');
-    // if (faltasRival) faltasRival.textContent = `F: ${this.partido.faltasRival || 0}`;
-
-    this.actualizarLucesFaltas();
     this.actualizarLucesFaltas();
     this.actualizarDisplay();
     this.actualizarOrdenMarcador(); // New order logic
@@ -315,11 +339,11 @@ class PartidosGlobalesApp {
     const btnDefensa = document.getElementById('btnQuintetoDefensa');
 
     if (tipo === 'ataque') {
-      btnAtaque.classList.add('active');
-      btnDefensa.classList.remove('active');
+      btnAtaque?.classList.add('active');
+      btnDefensa?.classList.remove('active');
     } else {
-      btnAtaque.classList.remove('active');
-      btnDefensa.classList.add('active');
+      btnAtaque?.classList.remove('active');
+      btnDefensa?.classList.add('active');
     }
 
     this.renderQuintetos();
@@ -337,7 +361,6 @@ class PartidosGlobalesApp {
         elem.textContent = `${min.toString().padStart(2, '0')}:${seg.toString().padStart(2, '0')}`;
       }
     }
-    // else block removed as hiding header is not desired behavior for finished game with new design
   }
 
   actualizarOrdenMarcador() {
@@ -396,8 +419,6 @@ class PartidosGlobalesApp {
     this.matchRenderer.renderEventosEnVivo('listaEventosEnVivo', this.partido);
   }
 
-
-
   iniciarRefrescoSiEnCurso() {
     // Limpia refresco previo si existe
     if (this.refrescoInterval) {
@@ -406,10 +427,11 @@ class PartidosGlobalesApp {
     }
     //console.log(this.partido.estado)
     if (this.partido && this.partido.estado != 'finalizado') {
-      // Refrescar cada 30 segundos recargando datos desde Firebase
-
+      // Refrescar cada 30 segundos recargando datos desde Supabase
       this.refrescoInterval = setInterval(() => {
-        this.cargarPartidoGlobal(this.partido.id);
+        if (this.partido && this.partido.id) {
+          this.cargarPartidoGlobal(this.partido.id);
+        }
       }, 30000);
 
     }
@@ -428,7 +450,7 @@ class PartidosGlobalesApp {
 
     if (this.partido.eventos) {
       Object.values(this.partido.eventos).forEach(evento => {
-        if (evento.cuarto === cuartoActual && evento.estadisticaTipo === 'faltas') {
+        if (evento.cuarto === cuartoActual && (evento.tipo === 'faltas' || evento.estadisticaTipo === 'faltas')) {
           if (evento.dorsal >= 0) {
             faltasEquipo++;
           } else {
@@ -452,5 +474,4 @@ class PartidosGlobalesApp {
       }
     });
   }
-
 }

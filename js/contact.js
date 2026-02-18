@@ -1,10 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
     const contactForm = document.getElementById('contactForm');
     const contactMessageAlert = document.getElementById('contactMessageAlert');
-    const contactService = new ContactService(firebase.database());
+    const contactService = new ContactService(); // Uses window.supabaseClient internally
+    const sb = window.supabaseClient;
 
     // Pre-fill form if user is logged in
-    firebase.auth().onAuthStateChanged(async user => {
+    async function checkUser() {
+        const { data: { user } } = await sb.auth.getUser();
         if (user) {
             const emailInput = document.getElementById('contactEmail');
             const nameInput = document.getElementById('contactName');
@@ -12,18 +14,24 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!emailInput.value) emailInput.value = user.email || '';
 
             try {
-                const snapshot = await firebase.database().ref(`usuarios/${user.uid}/profile`).once('value');
-                const profile = snapshot.val();
-                if (profile && profile.nombre && !nameInput.value) {
-                    nameInput.value = profile.nombre;
-                } else if (user.displayName && !nameInput.value) {
-                    nameInput.value = user.displayName;
+                // Fetch profile
+                const { data: profile } = await sb
+                    .from('profiles')
+                    .select('display_name')
+                    .eq('id', user.id)
+                    .single();
+
+                if (profile && profile.display_name && !nameInput.value) {
+                    nameInput.value = profile.display_name;
+                } else if (!nameInput.value) {
+                    nameInput.value = user.email ? user.email.split('@')[0] : '';
                 }
             } catch (error) {
                 console.error('Error fetching user profile for contact form:', error);
             }
         }
-    });
+    }
+    checkUser();
 
     contactForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -45,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await contactService.saveMessage({
                 name: Sanitizer.escape(name),
-                email: Sanitizer.escape(email), // Email is usually validated but good to escape for display
+                email: Sanitizer.escape(email),
                 phone: Sanitizer.escape(phone),
                 message: Sanitizer.escape(message)
             });
