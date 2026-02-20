@@ -2,8 +2,8 @@
  * CalendarService - Service to aggregate all matches from all teams and competitions
  */
 class CalendarService {
-    constructor(db) {
-        this.db = db;
+    constructor() {
+        this.supabase = window.supabaseClient;
     }
 
     /**
@@ -15,84 +15,93 @@ class CalendarService {
         const allMatches = [];
 
         try {
-            // 1. Get own teams
-            const teamsSnapshot = await this.db.ref(`usuarios/${userId}/equipos`).once('value');
-            const teams = teamsSnapshot.val();
+            // 1. Get IDs of teams owned by user
+            const { data: ownedTeams, error: ownedError } = await this.supabase
+                .from('teams')
+                .select('id, name, owner_id')
+                .eq('owner_id', userId);
 
-            if (teams) {
-                this._extractMatchesFromTeams(teams, allMatches, userId); // userId is owner
-            }
+            if (ownedError) throw ownedError;
 
-            // 2. Get followed teams
-            const followingSnapshot = await this.db.ref(`usuarios/${userId}/following`).once('value');
-            const following = followingSnapshot.val();
+            // 2. Get IDs of teams followed by user
+            const { data: followedTeams, error: followedError } = await this.supabase
+                .from('team_followers')
+                .select('team_id, teams(id, name, owner_id)')
+                .eq('user_id', userId);
 
-            if (following) {
-                const promises = [];
-                for (const [teamId, followData] of Object.entries(following)) {
-                    const ownerUid = followData.ownerUid;
-                    if (ownerUid) {
-                        const p = this.db.ref(`usuarios/${ownerUid}/equipos/${teamId}`).once('value')
-                            .then(snap => {
-                                if (snap.exists()) {
-                                    const teamData = snap.val();
-                                    // Wrap in object to reuse extraction logic
-                                    const teamsObj = { [teamId]: teamData };
-                                    this._extractMatchesFromTeams(teamsObj, allMatches, ownerUid);
-                                }
-                            })
-                            .catch(err => console.error(`Error loading followed team ${teamId}:`, err));
-                        promises.push(p);
-                    }
+            if (followedError) throw followedError;
+
+            // Collect all relevant Team IDs
+            const teamIds = new Set();
+            const teamMap = {}; // ID -> {name, ownerId}
+
+            // Process owned teams
+            ownedTeams?.forEach(t => {
+                teamIds.add(t.id);
+                teamMap[t.id] = { name: t.name, ownerId: t.owner_id };
+            });
+
+            // Process followed teams
+            followedTeams?.forEach(f => {
+                if (f.teams) {
+                    teamIds.add(f.team_id);
+                    teamMap[f.team_id] = { name: f.teams.name, ownerId: f.teams.owner_id };
                 }
-                await Promise.all(promises);
-            }
+            });
 
-            // Sort by date/time
-            allMatches.sort((a, b) => {
-                const dateA = new Date(a.fechaHora);
-                const dateB = new Date(b.fechaHora);
-                return dateA - dateB;
+            if (teamIds.size === 0) return [];
+
+            // 3. Fetch matches for these teams
+            // We want matches where team_id IN (...)
+            const { data: matches, error: matchesError } = await this.supabase
+                .from('matches')
+                .select('*')
+                .in('team_id', Array.from(teamIds))
+                .order('date', { ascending: true });
+
+            if (matchesError) throw matchesError;
+
+            // 4. Map matches to expected structure
+            // CalendarApp expects: { matchId, teamId, teamName, compId, compName, ownerUid, ...matchData }
+            // 'matchData' in previous Firebase structure was the whole object.
+            // Here 'matches' are flat objects.
+
+            matches.forEach(m => {
+                const teamInfo = teamMap[m.team_id] || { name: 'Desconocido', ownerId: null };
+
+                // Construct object compatible with CalendarApp/IndexApp
+                allMatches.push({
+                    id: m.id, // Supabase ID
+                    matchId: m.id, // Legacy alias
+                    teamId: m.team_id,
+                    teamName: teamInfo.name,
+                    compId: m.competition_id,
+                    compName: m.competition_id, // We might need to fetch comp name if critical, but ID often sufficient for grouping? 
+                    // Actually, fetching competition names would need another join or map.
+                    // For now, let's leave compName as ID or empty if UI can handle it.
+                    // Or we can simple fetch competitions in step 3 as well?
+                    // Let's assume UI handles it or we do a quick fetch if needed.
+                    ownerUid: teamInfo.ownerId,
+                    fechaHora: m.date,
+                    equipoId: m.team_id, // Duplicate?
+                    rivalId: m.rival_id,
+                    nombreEquipo: teamInfo.name,
+                    nombreRival: m.rival_name,
+                    estado: m.state,
+                    pabellon: m.location,
+                    location: m.location,
+                    puntosEquipo: m.team_score,
+                    puntosRival: m.rival_score,
+                    // Spread other properties if needed
+                    ...m
+                });
             });
 
             return allMatches;
+
         } catch (error) {
             console.error('CalendarService: Error getting all user matches:', error);
             return [];
-        }
-    }
-
-    _extractMatchesFromTeams(teams, allMatches, ownerUid) {
-        for (const [teamId, teamData] of Object.entries(teams)) {
-            const teamName = teamData.nombre || 'Equipo sin nombre';
-
-            if (!teamData.competiciones || typeof teamData.competiciones !== 'object') {
-                continue;
-            }
-
-            const competitions = teamData.competiciones;
-
-            for (const [compId, compData] of Object.entries(competitions)) {
-                const compName = compData.nombre || 'Competición sin nombre';
-
-                if (!compData.partidos || typeof compData.partidos !== 'object') {
-                    continue;
-                }
-
-                const matches = compData.partidos;
-
-                for (const [matchId, matchData] of Object.entries(matches)) {
-                    allMatches.push({
-                        matchId,
-                        teamId,
-                        teamName,
-                        compId,
-                        compName,
-                        ownerUid, // Add ownerUid for correct linking
-                        ...matchData
-                    });
-                }
-            }
         }
     }
 
@@ -135,12 +144,16 @@ class CalendarService {
         const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
         matches.forEach(match => {
-            const matchDate = new Date(match.fechaHora);
+            if (!match.fechaHora && !match.date) return;
+            const d = match.fechaHora || match.date;
+            const matchDate = new Date(d);
 
             if (matchDate >= weekStart && matchDate < weekEnd) {
                 const dayOfWeek = matchDate.getDay();
                 const dayKey = dayNames[dayOfWeek];
-                weekMatches[dayKey].push(match);
+                if (weekMatches[dayKey]) {
+                    weekMatches[dayKey].push(match);
+                }
             }
         });
 

@@ -20,6 +20,12 @@
 <body>
   <div id="header-container"></div>
 
+  <div id="loadingOverlay" style="display: none;">
+    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+  </div>
+
   <div class="container my-3">
 
     <h2 id="nombrePartido" class="mb-4">Gestión de Partido</h2>
@@ -223,61 +229,6 @@
       </div>
       <!-- Tab: Crónica -->
       <div class="tab-pane fade" id="cronica" role="tabpanel" aria-labelledby="tab-cronica">
-        <div class="d-flex justify-content-between align-items-center mt-3 mb-3">
-          <h5 class="mb-0">Crónica del Partido</h5>
-          <button id="btnConfigApiKey" class="btn btn-sm btn-outline-secondary" title="Configurar API Key">
-            <i class="bi bi-gear"></i> Configurar IA
-          </button>
-        </div>
-
-        <div class="mb-3 d-flex flex-wrap gap-2">
-          <button id="btnGenerarCronica" class="btn btn-sm btn-outline-primary">
-            <i class="bi bi-magic"></i> Generar con IA
-          </button>
-          <button id="btnManualMode" class="btn btn-sm btn-outline-secondary">
-            <i class="bi bi-pencil-square"></i> Manual
-          </button>
-          <button id="btnBorrarCronica" class="btn btn-sm btn-outline-danger" style="display: none;">
-            <i class="bi bi-trash"></i> Borrar
-          </button>
-        </div>
-
-        <div id="manualCronicaContainer" class="card mb-3 bg-light" style="display: none;">
-          <div class="card-body">
-            <h6 class="card-title">Modo Manual</h6>
-            <p class="small text-muted">Copia el prompt, úsalo en tu IA favorita (ChatGPT, etc.) y pega el resultado
-              aquí.</p>
-
-            <div class="mb-2">
-              <label class="form-label small">Prompt para la IA:</label>
-              <div class="input-group">
-                <textarea id="promptForAI" class="form-control" rows="3" readonly></textarea>
-                <button id="btnCopyPrompt" class="btn btn-outline-secondary" type="button"
-                  title="Copiar al portapapeles">
-                  <i class="bi bi-clipboard"></i>
-                </button>
-              </div>
-            </div>
-
-            <div class="mb-2">
-              <label for="manualCronicaInput" class="form-label small">Pegar Crónica Generada:</label>
-              <textarea id="manualCronicaInput" class="form-control" rows="6"
-                placeholder="Pega aquí el texto de la crónica..."></textarea>
-            </div>
-
-            <button id="btnSaveManualCronica" class="btn btn-success w-100 text-white">
-              <i class="bi bi-save"></i> Guardar Crónica Manual
-            </button>
-          </div>
-        </div>
-
-        <div id="loadingCronica" class="text-center my-4" style="display: none;">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Generando...</span>
-          </div>
-          <p class="mt-2 text-muted">La IA está analizando el partido y escribiendo la crónica...</p>
-        </div>
-
         <style>
           #cronicaContent h1,
           #cronicaContent h2,
@@ -295,7 +246,42 @@
             text-align: justify;
           }
         </style>
-        <div id="cronicaContent" class="card p-3 bg-light" style="display: none;"></div>
+        <div id="cronicaContent" class="card p-3 bg-light">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Crónica del Partido</h5>
+            <div>
+              <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal"
+                data-bs-target="#modalApiKey">
+                <i class="bi bi-gear-fill"></i> Config. API
+              </button>
+            </div>
+          </div>
+
+          <div class="alert alert-info small mb-3" role="alert">
+            <i class="bi bi-stars"></i> Genera una crónica automática usando Inteligencia Artificial o escribe la tuya
+            propia.
+          </div>
+
+          <div class="d-flex gap-2 mb-3">
+            <button id="btnGenerateCronica" class="btn btn-primary flex-grow-1">
+              <i class="bi bi-cpu-fill"></i> Generar con IA
+            </button>
+            <button id="btnCopyPrompt" class="btn btn-outline-primary" title="Copiar Prompt para ChatGPT/Claude">
+              <i class="bi bi-clipboard"></i> Copiar Prompt
+            </button>
+          </div>
+
+          <div class="mb-3">
+            <textarea id="manualCronicaText" class="form-control" rows="10"
+              placeholder="La crónica aparecerá aquí..."></textarea>
+          </div>
+
+          <div class="d-grid">
+            <button id="btnSaveManualCronica" class="btn btn-success">
+              <i class="bi bi-save"></i> Guardar Crónica
+            </button>
+          </div>
+        </div>
       </div>
       <!-- Tab: Fantasy -->
       <div class="tab-pane fade" id="fantasy" role="tabpanel" aria-labelledby="tab-fantasy">

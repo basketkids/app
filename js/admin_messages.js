@@ -1,19 +1,23 @@
 document.addEventListener('DOMContentLoaded', () => {
     const messagesTableBody = document.getElementById('messagesTableBody');
-    const contactService = new ContactService(firebase.database());
+    const contactService = new ContactService(); // Supabase version
     const btnInbox = document.getElementById('btnInbox');
     const btnArchived = document.getElementById('btnArchived');
+    const sb = window.supabaseClient;
 
-    // Check admin status (reusing logic from admin.js or similar check)
-    // Check if user is admin
-    firebase.auth().onAuthStateChanged(async user => {
+    // Check admin status
+    async function checkAdmin() {
+        const { data: { user } } = await sb.auth.getUser();
+
         if (user) {
             try {
-                const profileSnap = await firebase.database().ref(`usuarios/${user.uid}/profile`).once('value');
-                const profile = profileSnap.val();
+                const { data: profile, error } = await sb
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single();
 
-                if (!profile || !profile.admin) {
-                    // Not admin, redirect
+                if (error || !profile || !profile.is_admin) {
                     window.location.href = 'index.html';
                     return;
                 }
@@ -26,10 +30,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.location.href = 'index.html';
             }
         } else {
-            // Not logged in
             window.location.href = 'login.html';
         }
-    });
+    }
+
+    checkAdmin();
 
     let allMessages = [];
     let currentFilter = 'inbox'; // 'inbox' or 'archived'
@@ -37,13 +42,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const itemsPerPage = 20;
 
     // Filter buttons
-    btnInbox.addEventListener('click', () => {
-        setFilter('inbox');
-    });
+    if (btnInbox) {
+        btnInbox.addEventListener('click', () => {
+            setFilter('inbox');
+        });
+    }
 
-    btnArchived.addEventListener('click', () => {
-        setFilter('archived');
-    });
+    if (btnArchived) {
+        btnArchived.addEventListener('click', () => {
+            setFilter('archived');
+        });
+    }
 
     function setFilter(filter) {
         currentFilter = filter;
@@ -62,25 +71,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadMessages() {
         try {
-            const snapshot = await contactService.getMessages();
+            const messages = await contactService.getMessages();
             messagesTableBody.innerHTML = '';
 
-            if (!snapshot.exists()) {
+            if (!messages || messages.length === 0) {
                 messagesTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4">No hay mensajes</td></tr>';
                 renderPagination();
                 return;
             }
 
-            allMessages = [];
-            snapshot.forEach(childSnapshot => {
-                allMessages.push({
-                    id: childSnapshot.key,
-                    ...childSnapshot.val()
-                });
-            });
+            allMessages = messages;
 
-            // Sort by timestamp descending
-            allMessages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            // Sort by timestamp descending (created_at is string iso)
+            // contactService.getMessages() already orders by created_at desc in SQL.
+            // But let's sort to be safe if client side manipulation happens.
+            // contact_messages has 'timestamp' (bigint) and 'created_at'.
+            // Prefer created_at if available, else timestamp.
+            allMessages.sort((a, b) => {
+                const tA = new Date(a.created_at || a.timestamp).getTime();
+                const tB = new Date(b.created_at || b.timestamp).getTime();
+                return tB - tA;
+            });
 
             renderMessages();
             renderPagination();
@@ -110,7 +121,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const pageMessages = filteredMessages.slice(start, end);
 
         pageMessages.forEach(msg => {
-            const date = new Date(msg.timestamp).toLocaleString();
+            // Timestamp might be millis (Firebase) or ISO string (Supabase)
+            let dateStr = 'Fecha desconocida';
+            if (msg.created_at) {
+                dateStr = new Date(msg.created_at).toLocaleString();
+            } else if (msg.timestamp) {
+                dateStr = new Date(msg.timestamp).toLocaleString();
+            }
+
             const tr = document.createElement('tr');
 
             // Style for unread messages
@@ -118,16 +136,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 tr.classList.add('fw-bold', 'table-active');
             }
 
-            const fullMessage = escapeHtml(msg.message);
+            const fullMessage = escapeHtml(msg.message || '');
             const firstLine = fullMessage.split('\n')[0];
             const isLong = fullMessage.length > 50 || fullMessage.includes('\n');
             const truncatedMessage = isLong ? (firstLine.length > 50 ? firstLine.substring(0, 50) + '...' : firstLine + '...') : fullMessage;
 
+            const name = escapeHtml(msg.name || 'Anónimo');
+            const email = escapeHtml(msg.email || '');
+            const phone = msg.phone ? escapeHtml(msg.phone) : '-';
+
             tr.innerHTML = `
-                <td class="d-none d-md-table-cell">${date}</td>
-                <td>${escapeHtml(msg.name)}</td>
-                <td class="d-none d-lg-table-cell"><a href="mailto:${escapeHtml(msg.email)}">${escapeHtml(msg.email)}</a></td>
-                <td class="d-none d-xl-table-cell">${msg.phone ? escapeHtml(msg.phone) : '-'}</td>
+                <td class="d-none d-md-table-cell">${dateStr}</td>
+                <td>${name}</td>
+                <td class="d-none d-lg-table-cell"><a href="mailto:${email}">${email}</a></td>
+                <td class="d-none d-xl-table-cell">${phone}</td>
                 <td>
                     <div class="message-content">
                         <span class="message-text">${isLong ? truncatedMessage : fullMessage}</span>
@@ -273,6 +295,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function escapeHtml(text) {
-        return Sanitizer.escape(text);
+        if (!text) return '';
+        if (typeof Sanitizer !== 'undefined') {
+            return Sanitizer.escape(text);
+        }
+        // Basic fallback
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
 });

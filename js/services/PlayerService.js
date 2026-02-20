@@ -9,14 +9,16 @@ class PlayerService {
         // Queries should just filter by team_id
         const { data, error } = await this.supabase
             .from('players')
-            .select('*')
+            .select('*, avatar_configs(*)')
             .eq('team_id', teamId);
 
         if (error) throw error;
-        // Map to object if necessary or keep as array
-        // Old code returned snapshot with .val() which was an object with keys.
-        // We should normalize to array in the App consumers.
-        return data;
+
+        // Map avatar_configs to avatarConfig property for compatibility
+        return data.map(p => ({
+            ...p,
+            avatarConfig: p.avatar_configs
+        }));
     }
 
     async add(userId, teamId, name, dorsal) {

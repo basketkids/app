@@ -70,6 +70,11 @@
         const btnStartJson = document.getElementById('btnStartJson');
         const jsonFileInput = document.getElementById('jsonFile');
 
+        // Global maps for cross-references
+        const globalTeamMap = new Map(); // FirebaseTeamId -> SupabaseTeamId
+        const globalPlayerMap = new Map(); // FirebasePlayerId -> SupabasePlayerId
+        const globalCompMap = new Map(); // FirebaseCompId -> SupabaseCompId
+
         jsonFileInput.addEventListener('change', () => {
             btnStartJson.disabled = !jsonFileInput.files.length;
         });
@@ -81,6 +86,11 @@
 
             btnStartJson.disabled = true;
             log(`Leyendo archivo JSON...`);
+
+            // Reset maps
+            globalTeamMap.clear();
+            globalPlayerMap.clear();
+            globalCompMap.clear();
 
             const reader = new FileReader();
             reader.onload = async (e) => {
@@ -94,8 +104,12 @@
                     log(`Encontrados ${uids.length} usuarios para migrar.`);
 
                     // Migrate Contact Messages
-                    if (data.messages) {
-                        await migrateMessages(data.messages, dryRun);
+                    // Check for 'contact_messages' OR 'messages'
+                    const messagesNode = data.contact_messages || data.messages;
+                    if (messagesNode) {
+                        await migrateMessages(messagesNode, dryRun);
+                    } else {
+                        log("No se encontraron mensajes (contact_messages/messages).");
                     }
 
                     let count = 0;
@@ -104,15 +118,21 @@
 
                         const userObj = {
                             uid: uid,
-                            email: userData.profile?.email || null, // Check usage in profile.js
-                            displayName: userData.profile?.displayName || 'Usuario',
-                            photoURL: userData.profile?.photoURL || null,
+                            email: userData.profile?.email || userData.email || null,
+                            displayName: userData.profile?.displayName || userData.displayName || 'Usuario',
+                            photoURL: userData.profile?.photoURL || userData.photoURL || null,
                             ...userData
                         };
 
                         log(`Migrando usuario ${count + 1}/${uids.length}: ${uid}`);
                         await migrateUserRecursive(userObj, dryRun);
                         count++;
+                    }
+
+                    // Migrate Global Matches (partidosGlobales)
+                    if (data.partidosGlobales) {
+                        log("Migrando partidos globales...");
+                        await migrateGlobalMatches(data.partidosGlobales, dryRun);
                     }
 
                     log(`Migración masiva completada. ${count} usuarios procesados.`, 'success');
@@ -142,25 +162,40 @@
             }
         }
 
-        async function migrateAvatarConfig(config, dryRun) {
-            if (!config || dryRun) return null;
+        async function migrateAvatarConfig(config, dryRun, contextLabel = '') {
+            if (!config) return null;
+
+            // Normalize keys (handle camelCase vs snake_case if mixed in JSON)
+            // But usually JSON from Firebase uses camelCase for these properties if came from Flutter/JS app.
+            // We map to snake_case for Supabase.
 
             const payload = {
-                skin_color: config.skinColor,
+                skin_color: config.skinColor || config.skin_color,
                 top: config.top,
-                hair_color: config.hairColor,
-                hat_color: config.hatColor,
-                facial_hair_type: config.facialHairType,
-                facial_hair_color: config.facialHairColor,
+                hair_color: config.hairColor || config.hair_color,
+                hat_color: config.hatColor || config.hat_color,
+                facial_hair_type: config.facialHairType || config.facial_hair_type,
+                facial_hair_color: config.facialHairColor || config.facial_hair_color,
                 eyes: config.eyes,
                 eyebrows: config.eyebrows,
                 mouth: config.mouth,
-                accessories_type: config.accessoriesType,
-                accessories_color: config.accessoriesColor,
+                accessories_type: config.accessoriesType || config.accessories_type,
+                accessories_color: config.accessoriesColor || config.accessories_color,
                 clothing: config.clothing,
-                clothes_color: config.clothesColor,
-                clothing_graphic: config.clothingGraphic
+                clothes_color: config.clothesColor || config.clothes_color,
+                clothing_graphic: config.clothingGraphic || config.clothing_graphic
             };
+
+            // Check if payload is empty (all undefined)
+            if (Object.values(payload).every(v => v === undefined)) {
+                // log(`[Avatar] Config vacía o formato desconocido para ${contextLabel}`, 'info');
+                return null;
+            }
+
+            if (dryRun) {
+                // log(`[Avatar] Detectado para ${contextLabel}: ${JSON.stringify(payload)}`, 'info');
+                return 'dry-run-avatar-id';
+            }
 
             const { data, error } = await sb.from('avatar_configs').insert(payload).select('id').single();
             if (error) {
@@ -174,11 +209,9 @@
             log(`Migrando perfil... ${user.uid}`);
 
             let isAdmin = false;
-            if (user.profile && user.profile.admin === true) {
-                isAdmin = true;
-            } else {
-                if (user.profile?.admin === true) isAdmin = true;
-            }
+            // Handle different admin flag locations
+            if (user.profile && user.profile.admin === true) isAdmin = true;
+            else if (user.admin === true) isAdmin = true;
 
             if (dryRun) {
                 log(`Perfil: ${user.email} (Admin: ${isAdmin})`);
@@ -187,9 +220,15 @@
 
             // Avatar Config
             let avatarConfigId = null;
-            const avatarParams = user.avatarConfig || user.profile?.avatarConfig;
+            // Try determine where avatar config is
+            const avatarParams = user.avatarConfig || user.profile?.avatarConfig || user.avatar;
             if (avatarParams) {
-                avatarConfigId = await migrateAvatarConfig(avatarParams, dryRun);
+                avatarConfigId = await migrateAvatarConfig(avatarParams, dryRun, `User ${user.uid}`);
+            }
+
+            if (dryRun) {
+                log(`[Perfil] ${user.email} (Admin: ${isAdmin}) - Avatar: ${!!avatarParams}`);
+                return;
             }
 
             const { error } = await sb.from('profiles').upsert({
@@ -203,7 +242,7 @@
             }, { onConflict: 'id' });
 
             if (error) throw new Error("Error perfil Supabase: " + error.message);
-            log("Perfil migrado OK.");
+            // log("Perfil migrado OK.");
         }
 
         async function migrateTeam(userId, teamId, teamData, dryRun) {
@@ -218,7 +257,7 @@
                     club: teamData.club || null,
                     category: teamData.categoria || null,
                     city: teamData.ciudad || null,
-                    color: teamData.color || null
+                    color: teamData.jerseyColor || teamData.color || null // Handle jerseyColor from JSON
                 }).select().single();
 
                 if (error) {
@@ -226,32 +265,39 @@
                     return;
                 }
                 sbTeamId = data.id;
-                log(`-> Equipo creado en SB con ID: ${sbTeamId}`);
+                globalTeamMap.set(teamId, sbTeamId);
+                // log(`-> Equipo creado en SB con ID: ${sbTeamId}`);
             } else {
                 sbTeamId = 'dry-run-id';
+                globalTeamMap.set(teamId, sbTeamId);
             }
 
-            // Players
-            const playerMap = new Map(); // FirebaseId -> SupabaseId
-            if (teamData.jugadores) {
-                await migratePlayers(sbTeamId, teamData.jugadores, dryRun, playerMap);
+            // Players (Handle 'plantilla' or 'jugadores')
+            const playersData = teamData.plantilla || teamData.jugadores;
+
+            if (playersData) {
+                await migratePlayers(sbTeamId, playersData, dryRun);
+            } else {
+                log(`-> Equipo sin jugadores/plantilla.`);
             }
 
             // Competitions
             if (teamData.competiciones) {
-                await migrateCompetitions(userId, sbTeamId, teamData.competiciones, dryRun, playerMap);
+                await migrateCompetitions(userId, sbTeamId, teamData.competiciones, dryRun);
             }
         }
 
-        async function migratePlayers(sbTeamId, playersData, dryRun, playerMap) {
+        async function migratePlayers(sbTeamId, playersData, dryRun) {
             const playerIds = Object.keys(playersData);
             log(`-> Migrando ${playerIds.length} jugadores...`);
 
             for (const fid of playerIds) {
                 const p = playersData[fid];
                 let avatarId = null;
-                if (!dryRun && p.avatarConfig) {
-                    avatarId = await migrateAvatarConfig(p.avatarConfig, dryRun);
+                // Avatar key varies: 'avatarConfig', 'avatar', or nested.
+                const avConfig = p.avatarConfig || p.avatar;
+                if (avConfig) {
+                    avatarId = await migrateAvatarConfig(avConfig, dryRun, `Player ${p.nombre}`);
                 }
 
                 if (!dryRun) {
@@ -268,14 +314,16 @@
 
                     if (error) log(`Error jugadores: ${error.message}`, 'error');
                     else {
-                        if (data) playerMap.set(fid, data.id);
+                        if (data) globalPlayerMap.set(fid, data.id);
                     }
+                } else {
+                    globalPlayerMap.set(fid, 'dry-run-player-id');
                 }
             }
-            if (!dryRun) log(`-> Jugadores insertados.`);
+            // if (!dryRun) log(`-> Jugadores insertados.`);
         }
 
-        async function migrateCompetitions(userId, sbTeamId, compsData, dryRun, playerMap) {
+        async function migrateCompetitions(userId, sbTeamId, compsData, dryRun) {
             const compIds = Object.keys(compsData);
             log(`-> Migrando ${compIds.length} competiciones...`);
 
@@ -291,6 +339,9 @@
 
                     if (error) { log(`Error competición: ${error.message}`, 'error'); continue; }
                     sbCompId = data.id;
+                    globalCompMap.set(compFid, sbCompId);
+                } else {
+                    globalCompMap.set(compFid, sbCompId);
                 }
 
                 // Rivals
@@ -301,14 +352,14 @@
 
                 // Matches
                 if (comp.partidos) {
-                    await migrateMatches(userId, sbTeamId, sbCompId, comp.partidos, rivalsMap, dryRun, playerMap);
+                    await migrateMatches(userId, sbTeamId, sbCompId, comp.partidos, rivalsMap, dryRun);
                 }
             }
         }
 
         async function migrateRivals(sbCompId, rivalsData, rivalsMap, dryRun) {
             const rivalIds = Object.keys(rivalsData);
-            log(`--> Migrando ${rivalIds.length} rivales...`);
+            // log(`--> Migrando ${rivalIds.length} rivales...`);
             for (const rId of rivalIds) {
                 const r = rivalsData[rId];
                 if (!dryRun) {
@@ -322,73 +373,156 @@
             }
         }
 
-        async function migrateMatches(userId, sbTeamId, sbCompId, matchesData, rivalsMap, dryRun, playerMap) {
+        async function migrateMatches(userId, sbTeamId, sbCompId, matchesData, rivalsMap, dryRun) {
             const matchIds = Object.keys(matchesData);
             log(`--> Migrando ${matchIds.length} partidos...`);
 
             for (const mId of matchIds) {
                 const m = matchesData[mId];
-                let sbMatchId = 'dry-run-match-id';
+                await insertMatch(mId, m, sbTeamId, sbCompId, rivalsMap, dryRun);
+            }
+        }
 
-                let matchDate = null;
-                if (m.fecha) {
-                    matchDate = m.fecha;
-                    if (m.hora) matchDate += 'T' + m.hora;
-                }
-                // Fallback if date is in m.fechaHora (old format?) or m.date
-                if (!matchDate && m.fechaHora) matchDate = m.fechaHora;
+        async function migrateGlobalMatches(matchesData, dryRun) {
+            const matchIds = Object.keys(matchesData);
+            log(`--> Migrando ${matchIds.length} partidos GLOBALES...`);
 
-                let rivalId = null;
-                if (m.rivalId && rivalsMap.has(m.rivalId)) {
-                    rivalId = rivalsMap.get(m.rivalId);
-                }
+            for (const mId of matchIds) {
+                const m = matchesData[mId];
 
-                if (!dryRun) {
-                    const { data, error } = await sb.from('matches').insert({
-                        competition_id: sbCompId,
-                        team_id: sbTeamId,
-                        rival_id: rivalId,
-                        rival_name: m.nombreRival || m.rival || 'Rival',
-                        date: matchDate,
-                        location: m.lugar || m.pabellon,
-                        is_local: (m.esLocal !== false),
-                        state: m.estado || 'scheduled',
-                        match_config: m.configuracion || '4x10',
-                        team_score: m.puntosEquipo || 0,
-                        rival_score: m.puntosRival || 0,
-                        chronicle: m.cronica || null,
-                        live_state: m
-                    }).select().single();
-
-                    if (error) { log(`Error partido ${mId}: ${error.message}`, 'error'); continue; }
-                    sbMatchId = data.id;
+                // Try to find the Supabase Team ID
+                let sbTeamId = null;
+                if (m.equipoId && globalTeamMap.has(m.equipoId)) {
+                    sbTeamId = globalTeamMap.get(m.equipoId);
                 }
 
-                // Migrate Match Stats (New Relational Table)
-                await migrateMatchStats(sbMatchId, m, dryRun, playerMap);
+                if (!sbTeamId) {
+                    log(`Skipping global match ${mId} - Team not found (ID: ${m.equipoId})`, 'info');
+                    continue;
+                }
 
-                if (m.eventos) {
-                    await migrateEvents(sbMatchId, m.eventos, dryRun, playerMap);
+                // Try to find Supabase Comp ID
+                // Note: partidosGlobales might link to competiciones NOT in the team structure? 
+                // Or links to competiciones we already migrated?
+                // For now, if we can't find comp ID, we create a "Global/Imported" competition or skip?
+                // Let's check if we have it.
+                let sbCompId = null;
+                if (m.competicionId && globalCompMap.has(m.competicionId)) {
+                    sbCompId = globalCompMap.get(m.competicionId);
+                }
+
+                if (!sbCompId) {
+                    // Create a placeholder competition if needed? 
+                    // Or maybe it's fine. For now, try to insert without comp or create ad-hoc?
+                    // Matches table requires competition_id usually? Let's check schema.
+                    // Schema says: competition_id uuid references public.competitions(id) on delete cascade not null
+                    // So we NEED a competition.
+                    if (!dryRun) {
+                        // Find or Create ad-hoc competition for this team
+                        // But we don't want to create duplicates. 
+                        // Let's create a "Partidos Importados" competition for the team?
+                        // Or try to create the competition if we can derive name?
+                        // m.competicionId is useless if we don't have the data.
+                        // Let's look up competition name from somewhere? Not possible here.
+                        // Fallback: Create generic competition for team.
+                        const { data: compData, error: compError } = await sb.from('competitions')
+                            .insert({ team_id: sbTeamId, name: 'Partidos Importados' })
+                            .select().single();
+                        if (!compError) sbCompId = compData.id;
+                    } else {
+                        sbCompId = 'dry-run-comp-id';
+                    }
+                }
+
+                // Rivals Map?
+                // Global matches usually don't have a separate list of rivals, 
+                // they might use rivalId referring to the rival list inside competition... 
+                // BUT we just created a new competition or used on existing.
+                // We'll pass a empty rivals map and rely on m.nombreRival or create generic rival.
+
+                if (sbTeamId && sbCompId) {
+                    await insertMatch(mId, m, sbTeamId, sbCompId, new Map(), dryRun);
                 }
             }
         }
 
-        async function migrateMatchStats(sbMatchId, matchData, dryRun, playerMap) {
+        async function insertMatch(mId, m, sbTeamId, sbCompId, rivalsMap, dryRun) {
+            let sbMatchId = 'dry-run-match-id';
+
+            let matchDate = null;
+            if (m.fecha) {
+                matchDate = m.fecha;
+                if (m.hora) matchDate += 'T' + m.hora;
+            }
+            if (!matchDate && m.fechaHora) matchDate = m.fechaHora;
+
+            let rivalId = null;
+            if (m.rivalId && rivalsMap.has(m.rivalId)) {
+                rivalId = rivalsMap.get(m.rivalId);
+            } else if (!dryRun && m.nombreRival) {
+                // Try to find if rival exists in this competition by name
+                // (omitted for speed, just insert or leave null if not critical?)
+                // Better to create one if possible.
+                // let's create a rival on the fly?
+                if (sbCompId && m.nombreRival) {
+                    const { data: rData, error: rError } = await sb.from('rivals')
+                        .insert({ competition_id: sbCompId, name: m.nombreRival })
+                        .select().single();
+                    if (!rError) rivalId = rData.id;
+                }
+            }
+
+            if (!dryRun) {
+                const { data, error } = await sb.from('matches').insert({
+                    competition_id: sbCompId,
+                    team_id: sbTeamId,
+                    rival_id: rivalId,
+                    rival_name: m.nombreRival || m.rival || 'Rival',
+                    date: matchDate,
+                    location: m.lugar || m.pabellon,
+                    is_local: (m.esLocal !== false),
+                    state: m.estado || 'scheduled',
+                    match_config: m.configuracion || '4x10',
+                    team_score: m.puntosEquipo || 0,
+                    rival_score: m.puntosRival || 0,
+                    chronicle: m.cronica || null,
+                    live_state: m
+                }).select().single();
+
+                if (error) {
+                    log(`Error partido ${mId}: ${error.message}`, 'error');
+                    return;
+                }
+                sbMatchId = data.id;
+            }
+
+            // Migrate Match Stats
+            await migrateMatchStats(sbMatchId, m, dryRun);
+
+            if (m.eventos) {
+                await migrateEvents(sbMatchId, m.eventos, dryRun);
+            }
+        }
+
+        async function migrateMatchStats(sbMatchId, matchData, dryRun) {
             if (dryRun) return;
 
             const statsMap = matchData.estadisticasJugadores || {};
             const roster = matchData.convocados || {};
+            // Also need to check if 'jugadores' or 'plantilla' keys are used inside match? 
+            // Usually 'convocados' keys are Firebase UIDs.
 
             const rosterIds = Object.keys(roster);
             const statsPayload = [];
 
             for (const fid of rosterIds) {
                 // Resolve Supabase Player ID
-                if (!playerMap || !playerMap.has(fid)) {
-                    // It's possible player was deleted or not migrated?
-                    continue;
+                let sbPlayerId = null;
+                if (globalPlayerMap.has(fid)) {
+                    sbPlayerId = globalPlayerMap.get(fid);
                 }
-                const sbPlayerId = playerMap.get(fid);
+
+                if (!sbPlayerId) continue; // Skip unknown players
 
                 const s = statsMap[fid] || {};
                 const playerInfo = roster[fid] || {};
@@ -396,7 +530,7 @@
                 statsPayload.push({
                     match_id: sbMatchId,
                     player_id: sbPlayerId,
-                    dorsal: playerInfo.dorsal || null,
+                    dorsal: playerInfo.dorsal || null, // Ensure dorsal is captured
                     points: s.puntos || 0,
                     rebounds: s.rebotes || 0,
                     asistencias: s.asistencias || 0,
@@ -413,19 +547,18 @@
             }
         }
 
-        async function migrateEvents(sbMatchId, eventsData, dryRun, playerMap) {
+        async function migrateEvents(sbMatchId, eventsData, dryRun) {
             if (dryRun) return;
-            // EVENTS are usually an array in JSON or object with keys?
-            // Firebase uses object keys usually.
             const eventKeys = Object.keys(eventsData);
             const eventsPayload = [];
 
             for (const k of eventKeys) {
                 const ev = eventsData[k];
-                // Resolve Player UUID
                 let playerId = null;
-                if (ev.jugadorId && playerMap && playerMap.has(ev.jugadorId)) {
-                    playerId = playerMap.get(ev.jugadorId);
+
+                // Try resolve player
+                if (ev.jugadorId && globalPlayerMap.has(ev.jugadorId)) {
+                    playerId = globalPlayerMap.get(ev.jugadorId);
                 }
 
                 eventsPayload.push({
@@ -455,7 +588,8 @@
             const messagesPayload = messageIds.map(k => {
                 const msg = messagesData[k];
                 return {
-                    id: k,
+                    id: k, // Store original ID if you want or generate new. 
+                    // Schema usually expects TEXT or UUID. If TEXT, we can reuse. 
                     name: msg.name || 'Anónimo',
                     email: msg.email || null,
                     phone: msg.phone || null,

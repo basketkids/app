@@ -5,7 +5,7 @@ create extension if not exists "uuid-ossp";
 -- En Supabase, la base de datos ya está creada (por defecto 'postgres').
 -- No es necesario ejecutar 'CREATE DATABASE'. Este script crea las tablas en el esquema 'public'.
 
--- DESTROY EXISTING TABLES (ORDER MATTERS DUE TO DEPENDENCIES)
+-- 1. DESTROY EXISTING TABLES (ORDER MATTERS DUE TO DEPENDENCIES)
 drop table if exists public.match_requests cascade;
 
 drop table if exists public.notifications cascade;
@@ -35,6 +35,8 @@ drop table if exists public.avatar_configs cascade;
 drop table if exists public.event_types cascade;
 
 drop table if exists public.contact_messages cascade;
+
+-- 2. CREATE TABLES
 
 -- EVENT TYPES
 create table public.event_types (
@@ -131,7 +133,7 @@ create table public.avatar_configs (
 
 -- PROFILES
 create table public.profiles (
-  id text not null primary key, -- Firebase UID (Text)
+  id text not null primary key, -- Text to support potential manual IDs, but usually UUID
   email text,
   display_name text,
   photo_url text,
@@ -144,7 +146,7 @@ create table public.profiles (
 -- TEAMS
 create table public.teams (
   id uuid default uuid_generate_v4() primary key,
-  owner_id text references public.profiles(id) on delete cascade not null, -- References Firebase UID
+  owner_id text references public.profiles(id) on delete cascade on update cascade not null, 
   name text not null,
   coach text,
   club text,
@@ -223,57 +225,38 @@ create table public.match_player_stats (
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- CONTACT MESSAGES
-create table public.contact_messages (
-  id text primary key, -- Firebase ID
-  name text,
-  email text,
-  phone text,
-  message text,
-  timestamp bigint,
-  read boolean default false,
-  archived boolean default false,
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
-
 -- MATCH EVENTS
 create table public.match_events (
   id uuid default uuid_generate_v4() primary key,
   match_id uuid references public.matches(id) on delete cascade not null,
-  type text, -- Deprecated in favor of event_type_id, but kept for raw string if needed? No, let's use event_type_id as primary.
+  type text, -- Deprecated in favor of event_type_id
   event_type_id text references public.event_types(id) on delete set null,
-  player_id uuid references public.players(id) on delete set null, -- Linked player
+  player_id uuid references public.players(id) on delete set null,
   quarter integer,
-  timestamp integer, -- Seconds from start?
+  timestamp integer, -- Seconds from start
   value integer,
   properties jsonb, -- Extra data
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- POLICIES (Simple Setup - ADJUST AS NEEDED)
--- Enable RLS
-alter table public.profiles enable row level security;
-
-alter table public.teams enable row level security;
-
-alter table public.players enable row level security;
-
-alter table public.competitions enable row level security;
-
-alter table public.rivals enable row level security;
-
-alter table public.matches enable row level security;
-
-alter table public.match_events enable row level security;
-
--- MIGRATION HELPERS
--- alter table public.profiles disable row level security;
+-- CONTACT MESSAGES
+create table public.contact_messages (
+  id text primary key, -- Firebase ID or UUID
+  name text,
+  email text,
+  phone text,
+  message text,
+  timestamp timestamp with time zone, -- or date
+  read boolean default false,
+  archived boolean default false,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
 
 -- TEAM MEMBERS
 create table public.team_members (
   id uuid default uuid_generate_v4() primary key,
   team_id uuid references public.teams(id) on delete cascade not null,
-  user_id text references public.profiles(id) on delete cascade not null,
+  user_id text references public.profiles(id) on delete cascade on update cascade not null,
   role text default 'follower', -- 'admin', 'editor', 'follower'
   linked_player_id uuid references public.players(id) on delete set null,
   created_at timestamp with time zone default timezone('utc'::text, now()),
@@ -284,7 +267,7 @@ create table public.team_members (
 create table public.team_followers (
   id uuid default uuid_generate_v4() primary key,
   team_id uuid references public.teams(id) on delete cascade not null,
-  user_id text references public.profiles(id) on delete cascade not null,
+  user_id text references public.profiles(id) on delete cascade on update cascade not null,
   created_at timestamp with time zone default timezone('utc'::text, now()),
   unique(team_id, user_id)
 );
@@ -292,7 +275,7 @@ create table public.team_followers (
 -- NOTIFICATIONS
 create table public.notifications (
   id uuid default uuid_generate_v4() primary key,
-  user_id text references public.profiles(id) on delete cascade not null,
+  user_id text references public.profiles(id) on delete cascade on update cascade not null,
   type text not null,
   title text,
   message text,
@@ -301,34 +284,102 @@ create table public.notifications (
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- Enable RLS for new tables
-alter table public.team_members enable row level security;
-
-alter table public.team_followers enable row level security;
-
-alter table public.notifications enable row level security;
-
 -- MATCH REQUESTS
 create table public.match_requests (
   id uuid default uuid_generate_v4() primary key,
   match_id uuid references public.matches(id) on delete cascade not null,
-  user_id text references public.profiles(id) on delete cascade not null,
+  user_id text references public.profiles(id) on delete cascade on update cascade not null,
   status text default 'pending', -- 'pending', 'accepted', 'rejected'
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
-alter table public.match_requests enable row level security;
+-- 3. ENABLE RLS (Row Level Security)
+-- alter table public.profiles enable row level security;
+-- alter table public.teams enable row level security;
+-- alter table public.players enable row level security;
+-- alter table public.competitions enable row level security;
+-- alter table public.rivals enable row level security;
+-- alter table public.matches enable row level security;
+-- alter table public.match_events enable row level security;
+-- alter table public.match_player_stats enable row level security;
+-- alter table public.team_members enable row level security;
+-- alter table public.team_followers enable row level security;
+-- alter table public.notifications enable row level security;
+-- alter table public.match_requests enable row level security;
+-- alter table public.contact_messages enable row level security;
+-- usually admin only
 
--- TRIGGER FOR NEW PLAYERS
-create or replace function public.handle_new_user()
-returns trigger as $$
-begin
-  insert into public.profiles (id, email, display_name, photo_url)
-  values (new.id, new.email, new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'avatar_url');
-  return new;
-end;
-$$ language plpgsql security definer;
+-- 4. POLICIES (Simple Setup - ADJUST AS NEEDED)
+-- Allow public access for now or implement specific policies here.
+-- By default (with RLS on), nothing is accessible. You need policies!
+-- For migration purposes, you might want to temporarily disable RLS or add open policies.
+-- Ideally, you'd add:
+-- CREATE POLICY "Public profiles are viewable by everyone." ON public.profiles FOR SELECT USING (true);
+-- CREATE POLICY "Users can insert their own profile." ON public.profiles FOR INSERT WITH CHECK (auth.uid()::text = id);
+-- check existing policies if needed.
 
-create or replace trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure public.handle_new_user();
+-- 5. TRIGGER FOR NEW USER HANDLING (Smart Linking)
+-- This function handles user creation:
+-- 1. Checks if a profile with the same email already exists (migrated from Firebase).
+-- 2. If it exists, TAKES OWNERSHIP by updating the profile ID (Firebase UID) to the new Supabase Auth UUID.
+-- 3. If not, creates a new profile.
+
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+DECLARE
+  legacy_profile_id text;
+  legacy_email text;
+BEGIN
+  -- Log for debugging (visible in Supabase Database > Postgres Logs)
+  RAISE LOG 'Handle New User Trigger Fired for Email: %', NEW.email;
+
+  -- Check for existing profile by email (case insensitive)
+  -- We select ID and Email to be sure
+  SELECT id, email INTO legacy_profile_id, legacy_email
+  FROM public.profiles 
+  WHERE lower(email) = lower(NEW.email)
+  LIMIT 1;
+
+  IF legacy_profile_id IS NOT NULL THEN
+    RAISE LOG 'Found Legacy Profile ID: % for Email: %', legacy_profile_id, legacy_email;
+
+    -- Legacy profile found: Update ID to new Auth UUID
+    -- Cascading FKs will update references in teams, etc.
+    -- We perform an UPDATE on the ID itself.
+    -- IMPORTANT: This requires ON UPDATE CASCADE on Foreign Keys (which we added in full_schema.sql)
+    
+    UPDATE public.profiles
+    SET id = NEW.id::text,
+        updated_at = now()
+    WHERE id = legacy_profile_id;
+    
+    RAISE LOG 'Updated Profile ID from % to %', legacy_profile_id, NEW.id;
+    
+  ELSE
+    RAISE LOG 'No Legacy Profile found. Creating new profile for %', NEW.email;
+
+    -- No legacy profile: Create new
+    INSERT INTO public.profiles (id, email, display_name, photo_url)
+    VALUES (
+      NEW.id::text,
+      NEW.email,
+      NEW.raw_user_meta_data->>'full_name',
+      NEW.raw_user_meta_data->>'avatar_url'
+    )
+    ON CONFLICT (id) DO NOTHING;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Bind trigger to auth.users
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- FINAL NOTES:
+-- Execute this entire script in the Supabase SQL Editor.
+-- Ensure you have 'uuid-ossp' enabled (included at top).

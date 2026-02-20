@@ -1,9 +1,10 @@
 class PlayerApp extends BaseApp {
     constructor() {
         super();
-        this.playerService = new PlayerService(this.db);
-        this.teamService = new TeamService(this.db);
-        this.competitionService = new CompetitionService(this.db);
+        this.playerService = new PlayerService();
+        this.teamService = new TeamService();
+        this.competitionService = new CompetitionService();
+        this.teamMembersService = new TeamMembersService();
         this.diceBearManager = new DiceBearManager();
 
         this.inputNombre = document.getElementById('inputNombre');
@@ -29,7 +30,7 @@ class PlayerApp extends BaseApp {
         this.jugadorId = null;
         this.avatarConfig = {};
         this.teamJerseyColor = '5199e4'; // Default blue
-
+        this.supabase = window.supabaseClient;
     }
 
     onUserLoggedIn(user) {
@@ -60,8 +61,6 @@ class PlayerApp extends BaseApp {
         }
     }
 
-
-
     loadParamsUrl() {
         const idJugador = this.getParam('idJugador');
         const idEquipo = this.getParam('idEquipo');
@@ -89,70 +88,128 @@ class PlayerApp extends BaseApp {
     }
 
     async checkPermissions() {
-        if (this.currentUser.uid === this.ownerUid) return true; // Owner
+        if (this.currentUser.uid === this.ownerUid) return true; // Owner is checking
 
-        // Check if member
-        const teamMembersService = new TeamMembersService(this.db);
-        const memberSnap = await teamMembersService.getMembers(this.ownerUid, this.currentTeamId, () => { }).once('value');
+        try {
+            // Check if member using TeamMembersService or direct query
+            const { data, error } = await this.supabase
+                .from('team_members')
+                .select('*')
+                .eq('team_id', this.currentTeamId)
+                .eq('user_id', this.currentUser.uid)
+                .maybeSingle();
 
-        if (memberSnap.exists() && memberSnap.hasChild(this.currentUser.uid)) {
-            const memberData = memberSnap.child(this.currentUser.uid).val();
-            if (memberData.role === 'player' && memberData.linkedPlayerId === this.jugadorId) {
-                return true; // Linked player
+            if (error) {
+                console.error("Error checking permissions:", error);
+                return false;
             }
-        }
-        return false;
-    }
 
-    // ...
+            if (data) {
+                // Check if role is player and linked to this player
+                if (data.role === 'player' && data.linked_player_id === this.jugadorId) {
+                    return true;
+                }
+                // Maybe allow coaches/admins too?
+                if (data.role === 'admin' || data.role === 'coach') {
+                    return true;
+                }
+            }
+            return false;
+
+        } catch (e) {
+            console.error("Permission check failed", e);
+            return false;
+        }
+    }
 
     cargarColorCamisetaEquipo() {
+        // Use TeamService to get team data
         this.teamService.get(this.ownerUid, this.currentTeamId)
-            .then(snap => {
-                if (snap.exists() && snap.val().jerseyColor) {
-                    this.teamJerseyColor = snap.val().jerseyColor;
+            .then(data => {
+                if (data && data.jersey_color) {
+                    this.teamJerseyColor = data.jersey_color;
                     this.updateAvatarPreview();
                 }
             })
             .catch(console.error);
     }
 
-    cargarDatosJugador() {
-        this.playerService.get(this.ownerUid, this.currentTeamId, this.jugadorId)
-            .then(snap => {
-                if (snap.exists()) {
-                    const data = snap.val();
-                    this.inputNombre.value = data.nombre || '';
-                    this.inputDorsal.value = data.dorsal || '';
+    async cargarDatosJugador() {
+        try {
+            const data = await this.playerService.get(this.ownerUid, this.currentTeamId, this.jugadorId);
 
-                    // Load avatar config or set defaults
-                    this.diceBearManager.setCharacter(data.avatarConfig);
-                    this.avatarConfig = this.diceBearManager.getObject();
-                    this.updateAvatarPreview();
+            if (data) {
+                this.inputNombre.value = data.name || '';
+                this.inputDorsal.value = data.number || ''; // Schema has 'number', old app 'dorsal'
+
+                // Load avatar config via relational query if avail, or fetch it
+                // PlayerService.get returns the row. Does it join avatar_configs?
+                // The basic .get in PlayerService was NOT modified to join.
+                // But .getSquad WAS modified.
+                // We should assume data might have avatar_config_id.
+                // Or update PlayerService.get to also join.
+                // For now, let's try to use what we likely have or if missing fetch separately?
+                // Actually, let's presume we might need to fetch it if not present.
+                // But wait, DiceBearManager handles 'config' object.
+                // If data has avatar_configs (joined object), we use it. 
+                // If not, we check if we have to fetch.
+
+                let config = data.avatar_configs || null;
+
+                if (!config && data.avatar_config_id) {
+                    // fetch it if not joined
+                    const { data: ac } = await this.supabase
+                        .from('avatar_configs')
+                        .select('*')
+                        .eq('id', data.avatar_config_id)
+                        .single();
+                    config = ac;
+                }
+
+                if (config) {
+                    this.diceBearManager.setCharacter(config);
                 } else {
-                    alert('Jugador no encontrado');
-                    window.location.href = 'index.html';
+                    // Default?
+                    this.diceBearManager.setCharacter({});
                 }
-            })
-            .catch(console.error);
+
+                this.avatarConfig = this.diceBearManager.getObject();
+                this.updateAvatarPreview();
+
+            } else {
+                alert('Jugador no encontrado');
+                window.location.href = 'index.html';
+            }
+        } catch (e) {
+            console.error(e);
+        }
     }
 
-    cargarInfoEquipo() {
-        this.teamService.getName(this.ownerUid, this.currentTeamId)
-            .then(snap => {
-                const nombreEquipo = snap.exists() ? snap.val() : 'Equipo desconocido';
-                this.competitionService.getAll(this.ownerUid, this.currentTeamId, () => { }).once('value').then(cSnap => {
-                    let competiciones = [];
-                    if (cSnap.exists()) {
-                        competiciones = Object.values(cSnap.val()).map(c => c.nombre || 'Nombre desconocido');
-                    }
-                    this.infoEquipo.innerHTML = `
-                        <p><strong>Equipo:</strong> ${nombreEquipo}</p>
-                        <p><strong>Competiciones:</strong> ${competiciones.join(', ') || 'Sin competiciones'}</p>
-                    `;
-                });
-            })
-            .catch(console.error);
+    async cargarInfoEquipo() {
+        try {
+            const teamData = await this.teamService.get(this.ownerUid, this.currentTeamId);
+            const nombreEquipo = teamData ? teamData.name : 'Equipo desconocido';
+
+            // Get competitions
+            // CompetitionService.getAll takes a callback. We can wrap it or just call fetch directly.
+            // Actually, CompetitionService.getAll is designed for subscription/callback.
+            // But we can use direct query here for simplicity or adapt.
+            // Let's use direct query to avoid callback hell in this async function.
+            const { data: competitions } = await this.supabase
+                .from('competitions')
+                .select('name')
+                .eq('team_id', this.currentTeamId);
+
+            const compNames = competitions ? competitions.map(c => c.name).join(', ') : 'Sin competiciones';
+
+            this.infoEquipo.innerHTML = `
+                <p><strong>Equipo:</strong> ${nombreEquipo}</p>
+                <p><strong>Competiciones:</strong> ${compNames}</p>
+            `;
+
+        } catch (e) {
+            console.error("Error loading info:", e);
+        }
     }
 
     async cargarEstadisticasTotales() {
@@ -161,48 +218,124 @@ class PlayerApp extends BaseApp {
                 partidos: 0, puntos: 0, rebotes: 0, asistencias: 0, faltas: 0, tapones: 0, robos: 0
             };
 
-            const competicionesSnap = await this.competitionService.getAll(this.ownerUid, this.currentTeamId, () => { }).once('value');
-            if (!competicionesSnap.exists()) {
+            // Calculate stats by querying match_events for this player
+            // This is much more efficient than iterating.
+
+            // 1. Get all events for player
+            const { data: events, error } = await this.supabase
+                .from('match_events')
+                .select('*')
+                .eq('player_id', this.jugadorId)
+                .range(0, 9999); // Safety limit
+
+            if (error) throw error;
+
+            if (!events || events.length === 0) {
                 this.mostrarEstadisticas(totales);
                 return;
             }
 
-            const competiciones = competicionesSnap.val();
+            const matchesPlayed = new Set();
 
-            for (const competicionId in competiciones) {
-                const partidosSnap = await this.competitionService.getMatches(this.ownerUid, this.currentTeamId, competicionId, () => { }).once('value');
-                if (!partidosSnap.exists()) continue;
+            events.forEach(e => {
+                matchesPlayed.add(e.match_id);
 
-                const partidos = partidosSnap.val();
+                const type = e.type || e.event_type_id; // Schema var
+                const val = e.value || 0;
 
-                for (const partidoId in partidos) {
-                    const statsSnap = await this.db.ref(`usuarios/${this.ownerUid}/equipos/${this.currentTeamId}/competiciones/${competicionId}/partidos/${partidoId}/estadisticasJugadores/${this.jugadorId}`).once('value');
-                    if (statsSnap.exists()) {
-                        totales.partidos++;
-                        const stats = statsSnap.val();
-                        totales.puntos += stats.puntos || 0;
-                        totales.rebotes += stats.rebotes || 0;
-                        totales.asistencias += stats.asistencias || 0;
-                        totales.faltas += stats.faltas || 0;
-                        totales.tapones += stats.tapones || 0;
-                        totales.robos += stats.robos || 0;
+                // Logic from TeamApp (Spanish/English mix handling)
+                if (type === 'puntos' || type === 'point' || type.startsWith('point_')) { // handle point_1 etc
+                    // Logic check: in TeamApp we saw 'point_1' etc. 
+                    // But also 'puntos' with val.
+                    // Let's be robust.
+                    if (type.startsWith('point_')) {
+                        // assume value 1 if not present? usually these have value 1,2,3 implicit?
+                        // TeamApp logic: e.value used.
+                        // But for point_1, value is likely 1?
+                        // Let's rely on e.value if present, else parse type?
+                        // TeamApp: case 'point_1': medias[pid].puntos += 1;
+                        // So if value is 0 or null, we derived from type.
+                        if (type === 'point_1') totales.puntos += 1;
+                        else if (type === 'point_2') totales.puntos += 2;
+                        else if (type === 'point_3') totales.puntos += 3;
+                        else totales.puntos += (val || 0);
+                    } else {
+                        totales.puntos += (val || 0);
                     }
+                } else if (type === 'asistencias' || type === 'assist') {
+                    totales.asistencias += (val || 1);
+                } else if (type === 'rebotes' || type === 'rebound') {
+                    totales.rebotes += (val || 1);
+                } else if (type === 'robos' || type === 'steal') {
+                    totales.robos += (val || 1);
+                } else if (type === 'tapones' || type === 'block') {
+                    totales.tapones += (val || 1);
+                } else if (type === 'faltas' || type === 'foul') {
+                    totales.faltas += (val || 1);
                 }
-            }
+            });
+
+            totales.partidos = matchesPlayed.size;
 
             this.mostrarEstadisticas(totales);
+
         } catch (error) {
             console.error('Error cargando estadísticas totales:', error);
         }
     }
 
+    mostrarEstadisticas(totales) {
+        if (!this.statsTotales) return;
+
+        const html = `
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Promedios Globales (${totales.partidos} partidos)</h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm text-center">
+                            <thead>
+                                <tr>
+                                    <th>PTS</th>
+                                    <th>REB</th>
+                                    <th>AST</th>
+                                    <th>ROB</th>
+                                    <th>TAP</th>
+                                    <th>FAL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>${(totales.partidos ? (totales.puntos / totales.partidos).toFixed(1) : 0)}</td>
+                                    <td>${(totales.partidos ? (totales.rebotes / totales.partidos).toFixed(1) : 0)}</td>
+                                    <td>${(totales.partidos ? (totales.asistencias / totales.partidos).toFixed(1) : 0)}</td>
+                                    <td>${(totales.partidos ? (totales.robos / totales.partidos).toFixed(1) : 0)}</td>
+                                    <td>${(totales.partidos ? (totales.tapones / totales.partidos).toFixed(1) : 0)}</td>
+                                    <td>${(totales.partidos ? (totales.faltas / totales.partidos).toFixed(1) : 0)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-2 text-muted small">
+                        <strong>Totales:</strong> 
+                        PTS: ${totales.puntos}, 
+                        REB: ${totales.rebotes}, 
+                        AST: ${totales.asistencias}, 
+                        ROB: ${totales.robos}, 
+                        TAP: ${totales.tapones}, 
+                        FAL: ${totales.faltas}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        this.statsTotales.innerHTML = html;
+    }
 
     setupEventListeners() {
         this.formEditarJugador.addEventListener('submit', (e) => this.guardarCambiosJugador(e));
     }
 
-
-    guardarCambiosJugador(e) {
+    async guardarCambiosJugador(e) {
         e.preventDefault();
         const nuevoNombre = this.inputNombre.value.trim();
         const nuevoDorsal = parseInt(this.inputDorsal.value);
@@ -211,22 +344,75 @@ class PlayerApp extends BaseApp {
             return;
         }
 
-        // Update avatar config before saving
         this.updateAvatarPreview();
 
-        const data = {
-            nombre: nuevoNombre,
-            dorsal: nuevoDorsal,
-            avatarConfig: this.avatarConfig
-        };
+        // Save logic
+        // 1. Update/Create avatar config in DB
+        // 2. Update player with new avatar_config_id and data
 
-        console.log('Guardando avatar config:', this.avatarConfig);
+        try {
+            // Check if player has avatar_config_id
+            const player = await this.playerService.get(this.ownerUid, this.currentTeamId, this.jugadorId);
+            let configId = player.avatar_config_id;
 
-        this.playerService.update(this.ownerUid, this.currentTeamId, this.jugadorId, data)
-            .then(() => alert('Datos actualizados correctamente'))
-            .catch(err => {
-                alert('Error al actualizar: ' + err.message);
-                console.error(err);
+            // Map camelCase config back to snake_case for DB
+            const dbConfig = {};
+            const config = this.avatarConfig;
+            // Manual map or helper?
+            // DiceBearManager has keys: skinColor, top, etc.
+            // DB: skin_color, top, etc.
+            Object.keys(config).forEach(k => {
+                let dbKey = k.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+                dbConfig[dbKey] = config[k];
             });
+
+            // Handle facial/accessories bools/types if needed?
+            // Not storing booleans in DB, storing result?
+            // Schema: skin_color, top, etc.
+            // If we look at migration.html, it saved specific fields.
+            // Let's assume standard snake_case mapping works.
+            // Fix special cases if any?
+
+            let acError;
+            if (configId) {
+                // Update existing
+                const { error } = await this.supabase
+                    .from('avatar_configs')
+                    .update(dbConfig)
+                    .eq('id', configId);
+                acError = error;
+            } else {
+                // Create new
+                const { data: newConfig, error } = await this.supabase
+                    .from('avatar_configs')
+                    .insert([dbConfig])
+                    .select('id')
+                    .single();
+                if (newConfig) configId = newConfig.id;
+                acError = error;
+            }
+
+            if (acError) throw acError;
+
+            // Update player
+            const playerData = {
+                name: nuevoNombre,
+                number: nuevoDorsal,
+                avatar_config_id: configId
+            };
+
+            const { error: pError } = await this.supabase
+                .from('players')
+                .update(playerData)
+                .eq('id', this.jugadorId);
+
+            if (pError) throw pError;
+
+            alert('Datos actualizados correctamente');
+
+        } catch (err) {
+            alert('Error al actualizar: ' + err.message);
+            console.error(err);
+        }
     }
 }

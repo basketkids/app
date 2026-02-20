@@ -64,6 +64,7 @@ class PartidoApp extends BaseApp {
 
   async initMatch() {
     try {
+      // 1. Load Data (Metadata + Events + Queue) from DataService
       this.partido = await this.dataService.cargarPartido();
 
       if (!this.partido) throw new Error('Partido no encontrado');
@@ -71,6 +72,10 @@ class PartidoApp extends BaseApp {
       this.plantillaJugadores = await this.dataService.cargarPlantilla();
       this.rivales = await this.dataService.cargarRivales();
 
+      // 2. Reconstruct State from Events (Relational Core)
+      this.reconstructState();
+
+      // 3. Initialize UI State
       this.configuracionPartido = this.partido.configuracion || '4x10';
       this.parteActual = this.partido.parteActual || 1;
 
@@ -84,10 +89,53 @@ class PartidoApp extends BaseApp {
       this.applyPermissions();
       this.loadRequests();
 
+      // 4. Start Sync Loop if Online
+      if (navigator.onLine) {
+        this.dataService.syncQueue();
+      }
+
     } catch (error) {
       console.error(error);
       alert('Error cargando los datos del partido: ' + error.message);
     }
+  }
+
+  /**
+   * Replays all confirmed DB events and pending Queue events to build the current state.
+   */
+  reconstructState() {
+    // Reset Stats (Keep metadata like config, date, etc.)
+    this.partido.puntosEquipo = 0;
+    this.partido.puntosRival = 0;
+    this.partido.faltasEquipo = 0;
+    this.partido.faltasRival = 0;
+    this.partido.estadisticasJugadores = {};
+    this.partido.eventos = {}; // Clear regex object if we want to rebuild it or just use array? 
+    // The app uses this.partido.eventos object (keyed by ID) for UI list.
+    // So we must rebuild it.
+
+    const allEvents = [
+      ...(this.partido.dbEvents || []),
+      ...(this.partido.pendingEvents || [])
+    ];
+
+    // Sort by timestamp/order is crucial but dbEvents are ordered by SQL.
+    // pendingEvents are pushed in order.
+    // We assume dbEvents come before pendingEvents time-wise usually.
+
+    allEvents.forEach(evt => {
+      // Add to events map for UI
+      this.partido.eventos[evt.id] = evt.properties || evt;
+
+      // Apply Logic
+      // Note: evt.properties usually contains the full 'evento' object expected by MatchLogic.
+      // If loaded from DB, 'evt' might be the row, and 'evt.properties' the JSON blob.
+      // We need to ensure we pass the right object.
+      const logicEvent = evt.properties || evt;
+      MatchLogic.applyEvent(this.partido, logicEvent);
+    });
+
+    console.log("State reconstructed from", allEvents.length, "events.");
   }
 
   calcularTiempoRestante() {
@@ -101,7 +149,11 @@ class PartidoApp extends BaseApp {
         }
       });
       const ultimaJugada = eventosArray[0];
-      this.partido.parteActual = ultimaJugada.cuarto || this.partido.parteActual || 1;
+      // Sync Period/Time with last event if we trust events more than metadata? 
+      // For now, metadata (parteActual) is authority for "Current State" but events show history.
+      // If we rely on relational, maybe we should derive parteActual from events? 
+      // Let's stick to metadata for period for now to avoid jumpiness.
+
       const duracionParte = this.partido.duracionParte || (this.configuracionPartido === '6x8' ? 8 * 60 : 10 * 60);
       this.segundosRestantes = duracionParte - (ultimaJugada.tiempoSegundos || 0);
       if (this.segundosRestantes < 0) this.segundosRestantes = 0;
@@ -160,6 +212,8 @@ class PartidoApp extends BaseApp {
   }
 
   prepararEventos() {
+    if (this.eventsBound) return;
+
     this.selectConfiguracion?.addEventListener('change', e => this.configurarPartido(e.target.value));
 
     this.selectCuarto?.addEventListener('change', e => {
@@ -207,8 +261,9 @@ class PartidoApp extends BaseApp {
 
     document.getElementById('csvFileInput')?.addEventListener('change', (e) => this.handleFileUpload(e));
 
-    // Manual Mode / AI
-    document.getElementById('btnManualMode')?.addEventListener('click', () => this.toggleManualMode());
+    // AI & Cronica
+    document.getElementById('btnSaveApiKey')?.addEventListener('click', () => this.saveApiKey());
+    document.getElementById('btnGenerateCronica')?.addEventListener('click', () => this.generateCronica());
     document.getElementById('btnCopyPrompt')?.addEventListener('click', () => this.copyPromptToClipboard());
     document.getElementById('btnSaveManualCronica')?.addEventListener('click', () => this.guardarCronicaManual());
 
@@ -256,6 +311,8 @@ class PartidoApp extends BaseApp {
         this.agregarEstadistica('', 'faltas', 1);
       };
     }
+
+    this.eventsBound = true;
   }
 
   triggerButtonEffect(btn) {
@@ -518,6 +575,7 @@ class PartidoApp extends BaseApp {
     this.actualizarOrdenMarcador();
     this.renderFantasy();
     this.renderQuintetos();
+    this.renderCronica();
   }
 
   renderListaJugadoresPlantilla() {
@@ -745,35 +803,242 @@ class PartidoApp extends BaseApp {
     this.matchRenderer.renderFantasy('fantasyContainer', this.partido, this.jerseyColor, this.plantillaJugadores);
   }
 
+  cambiarVistaQuinteto(tipo) {
+    this.vistaQuinteto = tipo;
+
+    // Update buttons
+    const btnAtaque = document.getElementById('btnQuintetoAtaque');
+    const btnDefensa = document.getElementById('btnQuintetoDefensa');
+
+    if (tipo === 'ataque') {
+      btnAtaque?.classList.add('active');
+      btnDefensa?.classList.remove('active');
+    } else {
+      btnAtaque?.classList.remove('active');
+      btnDefensa?.classList.add('active');
+    }
+
+    this.renderQuintetos();
+  }
+
   renderQuintetos() {
     this.matchRenderer.renderQuintetos('quintetosContainer', this.partido, this.vistaQuinteto || 'ataque');
   }
 
-  // AI Manual Mode
-  toggleManualMode() {
-    this.manualMode = !this.manualMode;
-    const div = document.getElementById('manualModeContainer');
-    if (div) div.style.display = this.manualMode ? 'block' : 'none';
+  // AI & API Key Management
+  saveApiKey() {
+    const key = document.getElementById('inputApiKey')?.value;
+    if (key) {
+      localStorage.setItem('basketkids_ai_key', key);
+      alert('API Key guardada correctamente.');
+      bootstrap.Modal.getInstance(document.getElementById('modalApiKey')).hide();
+    } else {
+      alert('Por favor introduce una API Key válida.');
+    }
+  }
+
+  getApiKey() {
+    return localStorage.getItem('basketkids_ai_key');
+  }
+
+  async generateCronica() {
+    const apiKey = this.getApiKey();
+    if (!apiKey) {
+      alert('Primero debes configurar tu API Key de Google Gemini en el botón de configuración.');
+      new bootstrap.Modal(document.getElementById('modalApiKey')).show();
+      return;
+    }
+
+    const btn = document.getElementById('btnGenerateCronica');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generando...';
+
+    try {
+      // Build Prompt using the complex logic
+      const prompt = await this.getMatchSummaryForAI();
+
+      // Call Gemini API
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: prompt }]
+          }]
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const generatedText = data.candidates[0].content.parts[0].text;
+
+      document.getElementById('manualCronicaText').value = generatedText;
+      this.guardarCronicaManual(); // Save immediately draft
+
+    } catch (error) {
+      console.error(error);
+      alert('Error generando crónica: ' + error.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
   }
 
   async copyPromptToClipboard() {
-    // Create prompt based on match stats
-    const stats = this.partido.estadisticasJugadores || {};
-    let prompt = `Escribe una crónica para el partido ${this.partido.nombreEquipo || 'Equipo'} vs ${this.partido.nombreRival || 'Rival'}. Resultado: ${this.partido.puntosEquipo}-${this.partido.puntosRival}. Destacados: `;
-    // Add logic to find top scorers
-    prompt += "Basado en las estadísticas adjuntas.";
+    console.log("Attempting to copy prompt...");
+    // Build same prompt for manual copy (requires await so we make the handler async, handled in bindEvents)
+    const prompt = await this.getMatchSummaryForAI();
+
     try {
+      if (!navigator.clipboard) {
+        throw new Error("Clipboard API not available (HTTP?)");
+      }
       await navigator.clipboard.writeText(prompt);
-      alert('Prompt copiado');
-    } catch (e) { alert('Error copiando'); }
+      alert('Prompt copiado al portapapeles');
+    } catch (e) {
+      console.error("Clipboard error:", e);
+      // Fallback
+      const textArea = document.createElement("textarea");
+      textArea.value = prompt;
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        alert('Prompt copiado (modo fallback)');
+      } catch (err) {
+        alert('No se pudo copiar el prompt automatically. Por favor fallo manual.');
+        console.error('Fallback failed', err);
+      }
+      document.body.removeChild(textArea);
+    }
+  }
+
+  async getMatchSummaryForAI() {
+    const p = this.partido;
+    const fecha = p.fechaHora ? new Date(p.fechaHora).toLocaleDateString() : 'Fecha desconocida';
+    const lugar = p.pabellon || 'Pabellón desconocido';
+
+    // Determine Local/Visitor context
+    const esLocal = (p.esLocal !== false); // Default true
+    let equipoLocal, equipoVisitante, marcador;
+
+    if (esLocal) {
+      equipoLocal = p.nombreEquipo || 'Equipo Local';
+      equipoVisitante = p.nombreRival || 'Equipo Rival';
+      marcador = `${p.puntosEquipo} - ${p.puntosRival}`;
+    } else {
+      equipoLocal = p.nombreRival || 'Equipo Rival';
+      equipoVisitante = p.nombreEquipo || 'Equipo Visitante';
+      marcador = `${p.puntosRival} - ${p.puntosEquipo}`;
+    }
+
+    // Fetch coach name securely using Supabase data layer
+    let nombreEntrenador = '';
+    if (this.dataService && this.dataService.teamId) {
+      try {
+        const { data: teamData } = await this.dataService.supabase
+          .from('teams')
+          .select('coach')
+          .eq('id', this.dataService.teamId)
+          .single();
+
+        if (teamData && teamData.coach) {
+          nombreEntrenador = teamData.coach;
+        }
+      } catch (e) {
+        console.error('Error fetching coach name:', e);
+      }
+    }
+
+    let statsJugadores = '';
+    if (p.estadisticasJugadores) {
+      Object.entries(p.estadisticasJugadores).forEach(([id, stats]) => {
+        let nombre = 'Jugador';
+        let dorsal = '#';
+        // Check convocados first
+        if (p.convocados && p.convocados[id]) {
+          nombre = p.convocados[id].nombre || 'Jugador';
+          dorsal = p.convocados[id].dorsal || '#';
+        } else {
+          // Fallback to plantilla
+          const player = this.plantillaJugadores.find(pl => pl.id === id);
+          if (player) {
+            nombre = player.nombre;
+            dorsal = player.dorsal;
+          }
+        }
+
+        // Include ALL players, even with 0 stats
+        statsJugadores += `- ${nombre} (#${dorsal}): ${stats.puntos || 0} pts, ${stats.asistencias || 0} ast, ${stats.rebotes || 0} reb, ${stats.robos || 0} rob, ${stats.tapones || 0} tap.\n`;
+      });
+    }
+
+    // Calcular parciales por cuarto
+    let parciales = '';
+    if (p.eventos) {
+      const puntosPorCuarto = {};
+      Object.values(p.eventos).forEach(ev => {
+        if (ev.tipo === 'puntos' || ev.estadisticaTipo === 'puntos') {
+          if (!puntosPorCuarto[ev.cuarto]) puntosPorCuarto[ev.cuarto] = { equipo: 0, rival: 0 };
+
+          if (ev.dorsal >= 0) {
+            puntosPorCuarto[ev.cuarto].equipo += ev.cantidad;
+          } else {
+            puntosPorCuarto[ev.cuarto].rival += ev.cantidad;
+          }
+        }
+      });
+      Object.keys(puntosPorCuarto).sort((a, b) => a - b).forEach(c => {
+        const ptsEquipo = puntosPorCuarto[c].equipo;
+        const ptsRival = puntosPorCuarto[c].rival;
+        const parcial = esLocal ? `${ptsEquipo}-${ptsRival}` : `${ptsRival}-${ptsEquipo}`;
+        parciales += `Cuarto ${c}: ${parcial}. `;
+      });
+    }
+
+    const miEquipoNombre = p.nombreEquipo || 'Mi Equipo';
+    let entrenadorInfo = nombreEntrenador ? `Entrenador del equipo ${miEquipoNombre}: ${nombreEntrenador}` : '';
+
+    return `
+      Actúa como un periodista deportivo experto en baloncesto juvenil. Escribe una crónica emocionante y detallada del siguiente partido:
+      
+      Partido: ${equipoLocal} (Local) vs ${equipoVisitante} (Visitante)
+      Fecha: ${fecha}
+      Lugar: ${lugar}
+      Resultado Final: ${marcador}
+      Parciales: ${parciales}
+      ${entrenadorInfo}
+      
+      Jugadores del equipo ${miEquipoNombre} (Estadísticas):
+      ${statsJugadores}
+      
+      Instrucciones:
+      - Usa un tono periodístico, narrativo y motivador.
+      - Ten en cuenta quién jugaba como local (${equipoLocal}) y quién como visitante (${equipoVisitante}).
+      - IMPORTANTE: Menciona SIEMPRE al entrenador ${nombreEntrenador} (si hay nombre) y destaca su dirección del equipo.
+      - IMPORTANTE: Intenta mencionar a TODOS los jugadores de la lista anterior, aunque sea brevemente o agrupando a los que no anotaron destacando su esfuerzo defensivo o compañerismo.
+      - IMPORTANTE: Sé SIEMPRE respetuoso con el equipo rival (${p.nombreRival || 'Rival'}), reconociendo su esfuerzo y buen juego, independientemente del resultado.
+      - Destaca a los jugadores con mejores estadísticas.
+      - Analiza brevemente el flujo del partido basándote en los parciales.
+      - No inventes datos que no estén aquí, pero puedes añadir "color" narrativo.
+      - Usa formato HTML básico PERO ESTRICTO: Solo puedes usar las etiquetas <h2> para títulos, <p> para párrafos y <strong> para negritas. No uses ninguna otra etiqueta.
+    `;
   }
 
   guardarCronicaManual() {
     const text = document.getElementById('manualCronicaText')?.value;
     if (text) {
       this.partido.cronica = text;
-      this.guardarPartido();
-      alert('Crónica guardada');
+      // Also save to DB as metadata
+      this.guardarDatosPartido();
+      alert('Crónica guardada localmente.');
     }
   }
 
@@ -975,6 +1240,9 @@ class PartidoApp extends BaseApp {
 
   // basic cronica
   renderCronica() {
-    // Not used heavily, justplaceholder
+    const textArea = document.getElementById('manualCronicaText');
+    if (textArea && this.partido.cronica) {
+      textArea.value = this.partido.cronica;
+    }
   }
 }

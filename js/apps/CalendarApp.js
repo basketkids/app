@@ -13,7 +13,7 @@ class CalendarApp extends BaseApp {
 
     async init() {
         await super.init();
-        this.calendarService = new CalendarService(this.db);
+        this.calendarService = new CalendarService();
         this.currentWeekStart = this.calendarService.getCurrentWeekStart();
         this.setupEventListeners();
     }

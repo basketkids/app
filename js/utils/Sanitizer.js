@@ -40,7 +40,7 @@ class Sanitizer {
     }
 
     static _cleanNode(node) {
-        const allowedTags = ['B', 'STRONG', 'I', 'EM', 'P', 'BR'];
+        const allowedTags = ['H2', 'P', 'STRONG'];
         const children = Array.from(node.childNodes);
 
         children.forEach(child => {

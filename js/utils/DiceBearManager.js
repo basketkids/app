@@ -46,23 +46,47 @@ class DiceBearManager {
 
         // Apply user config or defaults
         if (config) {
+            // MAP snake_case to camelCase for compatibility with Supabase data
+            const mappedConfig = {};
             Object.keys(config).forEach(key => {
+                let newKey = key;
+                if (key === 'skin_color') newKey = 'skinColor';
+                if (key === 'hair_color') newKey = 'hairColor';
+                if (key === 'hat_color') newKey = 'hatColor';
+                if (key === 'facial_hair_type') newKey = 'facialHairType';
+                if (key === 'facial_hair_color') newKey = 'facialHairColor';
+                if (key === 'accessories_type') newKey = 'accessoriesType';
+                if (key === 'accessories_color') newKey = 'accessoriesColor';
+                if (key === 'clothes_color') newKey = 'clothesColor';
+                if (key === 'clothing_graphic') newKey = 'clothingGraphic';
+                mappedConfig[newKey] = config[key];
+            });
+
+            Object.keys(mappedConfig).forEach(key => {
                 // Skip hasFacialHair and hasAccessories as they're handled separately
-                if (key === 'hasFacialHair' || key === 'hasAccessories') return;
-                params.push(`${key}=${config[key]}`);
+                // Also skip internal keys like id, created_at
+                // Skip null or undefined values
+                if (key === 'hasFacialHair' || key === 'hasAccessories' || key === 'id' || key === 'created_at') return;
+                if (mappedConfig[key] === null || mappedConfig[key] === undefined || mappedConfig[key] === 'null') return;
+
+                // Skip keys that we want to force-override later (like clothing? actually we want config to win usually, unless we force team kit)
+                // But in the user's url, clothing=null came first, then clothing=shirtScoopNeck later.
+                // The API might take the first one or last one. Use unique params.
+
+                params.push(`${key}=${mappedConfig[key]}`);
             });
 
             // Handle facial hair
-            if (config.hasFacialHair) {
-                params.push('facialHairType=beardMajestic'); // Default to light beard
+            if (mappedConfig.hasFacialHair || (mappedConfig.facialHairType && mappedConfig.facialHairType !== 'none' && mappedConfig.facialHairType !== 'null')) {
+                if (!mappedConfig.facialHairType) params.push('facialHairType=beardMajestic');
                 params.push('facialHairProbability=100');
             } else {
                 params.push('facialHairProbability=0');
             }
 
             // Handle accessories
-            if (config.hasAccessories) {
-                params.push('accessoriesType=round');
+            if (mappedConfig.hasAccessories || (mappedConfig.accessoriesType && mappedConfig.accessoriesType !== 'none' && mappedConfig.accessoriesType !== 'null')) {
+                if (!mappedConfig.accessoriesType) params.push('accessoriesType=round');
                 params.push('accessoriesProbability=100');
             } else {
                 params.push('accessoriesProbability=0');
@@ -79,8 +103,35 @@ class DiceBearManager {
             params.push('accessoriesProbability=0');
         }
 
-        // Fixed clothing with team color
-        params.push('clothing=shirtScoopNeck');
+        // Fixed clothing with team color is appended.
+        // If config already had clothing, we might have 2 now.
+        // But we want to enforce team jersey color on the clothing.
+        // If config had clothing, we should probably keep style but change color?
+        // Current implementation: appends clothing=shirtScoopNeck (forcing style)
+        // AND clothesColor. 
+        // If user selected clothing in editor, we should respect it?
+        // Editor has clothing select.
+        // So we should NOT force clothing=shirtScoopNeck if it is present in config.
+
+        let hasClothing = false;
+        let hasClothesColor = false;
+
+        // Check if we already added them
+        params.forEach(p => {
+            if (p.startsWith('clothing=')) hasClothing = true;
+            if (p.startsWith('clothesColor=')) hasClothesColor = true;
+        });
+
+        if (!hasClothing) {
+            params.push('clothing=shirtScoopNeck');
+        }
+
+        // Always force team jersey color? Or respect user choice?
+        // Usually team app implies team jersey.
+        // But if user tailored it...
+        // Let's force teamJerseyColor as per original design intention likely.
+        // But remove the previous clothesColor if exists?
+        // DiceBear API last param wins usually.
         params.push(`clothesColor=${teamJerseyColor}`);
 
         // Ensure top (hair/hat) always appears with 100% probability for determinism
@@ -161,18 +212,34 @@ class DiceBearManager {
             };
         }
 
+        // Map snake_case to camelCase for compatibility with Supabase data
+        const mappedConfig = {};
         Object.keys(config).forEach(key => {
+            let newKey = key;
+            if (key === 'skin_color') newKey = 'skinColor';
+            if (key === 'hair_color') newKey = 'hairColor';
+            if (key === 'hat_color') newKey = 'hatColor';
+            if (key === 'facial_hair_type') newKey = 'facialHairType';
+            if (key === 'facial_hair_color') newKey = 'facialHairColor';
+            if (key === 'accessories_type') newKey = 'accessoriesType';
+            if (key === 'accessories_color') newKey = 'accessoriesColor';
+            if (key === 'clothes_color') newKey = 'clothesColor';
+            if (key === 'clothing_graphic') newKey = 'clothingGraphic';
+            mappedConfig[newKey] = config[key];
+        });
+
+        Object.keys(mappedConfig).forEach(key => {
             if (this.selects[key]) {
-                this.selects[key].value = config[key];
+                this.selects[key].value = mappedConfig[key];
             }
         });
 
         if (this.checkFacialHair) {
-            this.checkFacialHair.checked = !!config.hasFacialHair;
+            this.checkFacialHair.checked = !!mappedConfig.hasFacialHair;
         }
 
         if (this.checkAccessories) {
-            this.checkAccessories.checked = !!config.hasAccessories;
+            this.checkAccessories.checked = !!mappedConfig.hasAccessories;
         }
     }
 

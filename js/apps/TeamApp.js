@@ -416,8 +416,8 @@ class TeamApp extends BaseApp {
             this.jugadoresArrayCache = players.map(p => ({
                 key: p.id,
                 nombre: p.name,
-                dorsal: p.dorsal,
-                avatarConfig: p.avatar_config || null,
+                dorsal: p.number || p.dorsal, // Map number (DB) to dorsal (App)
+                avatarConfig: p.avatarConfig || p.avatar_configs || p.avatar_config || {},
                 ...p
             }));
 
@@ -437,92 +437,56 @@ class TeamApp extends BaseApp {
     }
 
     async calcularMediasEquipoDiccionario(equipoID) {
-        // Stats aggregation via Supabase logic
-        // fetch match_events for all matches of this team?
-        // Or fetch matches -> then fetch events for those matches?
+        try {
+            // Using RPC function 'get_team_stats' for server-side aggregation
+            const { data: stats, error } = await this.teamService.supabase
+                .rpc('get_team_stats', { query_team_id: equipoID });
 
-        // 1. Get competitions (to get match IDs)
-        // Or simpler: get matches where team_id = currentTeamId
-        // But match events are tied to matches?
-        // Schema: matches has team_id.
-        // So fetch matches for team.
-        const { data: matches } = await this.teamService.supabase
-            .from('matches')
-            .select('id')
-            .eq('team_id', equipoID);
+            if (error) {
+                console.error("Error calculating team stats via RPC:", error);
+                return {};
+            }
 
-        if (!matches || matches.length === 0) return {};
+            if (!stats || stats.length === 0) {
+                console.log("TeamApp: No stats found via RPC.");
+                return {};
+            }
 
-        const matchIds = matches.map(m => m.id);
+            const result = {};
 
-        // 2. Fetch events
-        // Optimization: limit events to 'point_X', 'assist', etc.
-        const { data: events } = await this.teamService.supabase
-            .from('match_events')
-            .select('*')
-            .in('match_id', matchIds);
+            stats.forEach(s => {
+                const games = s.partidos_jugados || 0;
+                if (games === 0) return;
 
-        if (!events) return {};
+                // Calculated fields
+                // Valuation/Valoracion: (PTS + REB + AST + ROB + TAP) - (Missed Stats?) - FALTAS
+                // The SQL function returns basic counts. We can refine the SQL to return calc fields or do it here.
+                // The SQL I proposed returns: puntos, asistencias, rebotes, robos, tapones, faltas, partidos_jugados
+                // It does NOT (yet) return missed shots for strict valuation.
+                // If strict valuation is needed, we should update the SQL to return missed shots too.
+                // For now, let's use what we have.
 
-        const medias = {};
+                // Note: The SQL sum already handles the logic.
 
-        // Aggregate
-        // events: { player_id, event_type, ... }
-        // types: point_1, point_2, point_3, assist, rebound, steal, block, foul
-        // Also missed shots? 'miss_1', 'miss_2', 'miss_3'
-
-        events.forEach(e => {
-            const pid = e.player_id;
-            if (!medias[pid]) {
-                medias[pid] = {
-                    puntos: 0, asistencias: 0, rebotes: 0, robos: 0, tapones: 0, faltas: 0,
-                    t1_fallados: 0, t2_fallados: 0, t3_fallados: 0,
-                    partidosJugadosSet: new Set()
+                result[s.player_id] = {
+                    puntos: Number(s.puntos) / games,
+                    asistencias: Number(s.asistencias) / games,
+                    rebotes: Number(s.rebotes) / games,
+                    robos: Number(s.robos) / games,
+                    tapones: Number(s.tapones) / games,
+                    faltas: Number(s.faltas) / games,
+                    masMenos: 0, // Not calculated in SQL yet
+                    partidosJugados: games,
+                    valoracion: (Number(s.puntos) + Number(s.rebotes) + Number(s.asistencias) + Number(s.robos) + Number(s.tapones) - Number(s.faltas)) / games // Approximate if missed shots missing
                 };
-            }
+            });
 
-            medias[pid].partidosJugadosSet.add(e.match_id);
+            return result;
 
-            switch (e.event_type) {
-                case 'point_1': medias[pid].puntos += 1; break;
-                case 'point_2': medias[pid].puntos += 2; break;
-                case 'point_3': medias[pid].puntos += 3; break;
-                case 'assist': medias[pid].asistencias += 1; break;
-                case 'rebound': medias[pid].rebotes += 1; break;
-                case 'steal': medias[pid].robos += 1; break;
-                case 'block': medias[pid].tapones += 1; break;
-                case 'foul': medias[pid].faltas += 1; break;
-                case 'miss_1': medias[pid].t1_fallados += 1; break;
-                case 'miss_2': medias[pid].t2_fallados += 1; break;
-                case 'miss_3': medias[pid].t3_fallados += 1; break;
-            }
-        });
-
-        // Calculate averages
-        const result = {};
-        for (const [pid, stats] of Object.entries(medias)) {
-            const games = stats.partidosJugadosSet.size;
-            if (games === 0) continue;
-
-            const missedPoints = (stats.t1_fallados * 1) + (stats.t2_fallados * 2) + (stats.t3_fallados * 3);
-            const valTotal = stats.puntos - missedPoints + stats.rebotes + stats.asistencias + stats.robos + stats.tapones - stats.faltas;
-
-            const mm = 0; // +/- not easily calculated from simple events list without timestamp replay. Skipping for now.
-
-            result[pid] = {
-                puntos: stats.puntos / games,
-                asistencias: stats.asistencias / games,
-                rebotes: stats.rebotes / games,
-                robos: stats.robos / games,
-                tapones: stats.tapones / games,
-                faltas: stats.faltas / games,
-                masMenos: mm,
-                partidosJugados: games,
-                valoracion: valTotal / games
-            };
+        } catch (e) {
+            console.error("Exception in stats calculation:", e);
+            return {};
         }
-
-        return result;
     }
 
     sortPlayers() {
@@ -903,18 +867,135 @@ class TeamApp extends BaseApp {
 
     // --- Fantasy Tab ---
     async loadFantasyStats() {
-        // Implementation similar to calculating medias but for fantasy across all competitions
-        // With Supabase I can get all matches for team, and all events for players.
-        // It's basically the same data as calcularMediasEquipoDiccionario but grouped differently.
-        // For now, I'll put a placeholder or basic impl.
-        this.fantasyTableContainer.innerHTML = '<p class="text-center">Cargando...</p>';
+        this.fantasyTableContainer.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></div>';
+
         try {
-            // Reuse logic?
-            // Need to group by match to show match history in modal.
-            // ...
-            this.fantasyTableContainer.innerHTML = '<p class="text-center text-muted">Funcionalidad Fantasy en mantenimiento durante migración.</p>';
+            // Fetch stats using the RPC function
+            const { data: stats, error } = await this.teamService.supabase
+                .rpc('get_team_stats', { query_team_id: this.currentTeamId });
+
+            if (error) throw error;
+
+            if (!stats || stats.length === 0) {
+                this.fantasyTableContainer.innerHTML = '<p class="text-center text-muted">No hay datos suficientes para generar la clasificación Fantasy.</p>';
+                return;
+            }
+
+            // Calculate Fantasy Points (Valuation) for each player
+            // Formula: PTS + REB + AST + ROB + TAP - FAL - MISSED_SHOTS
+            const ranking = stats.map(s => {
+                const player = this.jugadoresArrayCache.find(p => p.key === s.player_id);
+                // Convert BigInt/Strings to numbers
+                const p = Number(s.puntos);
+                const reb = Number(s.rebotes);
+                const ast = Number(s.asistencias);
+                const rob = Number(s.robos);
+                const tap = Number(s.tapones);
+                const fal = Number(s.faltas);
+                const mis = Number(s.tiros_fallados || 0); // Ensure SQL returns this or default 0
+
+                const fantasyPoints = p + reb + ast + rob + tap - fal - mis;
+
+                return {
+                    id: s.player_id,
+                    name: player ? player.name : 'Desconocido',
+                    dorsal: player ? (player.number || player.dorsal) : '-',
+                    avatarConfig: player ? player.avatarConfig : {},
+                    points: fantasyPoints,
+                    matches: Number(s.partidos_jugados),
+                    avg: fantasyPoints / (Number(s.partidos_jugados) || 1)
+                };
+            });
+
+            // Sort by Total Fantasy Points DESC
+            ranking.sort((a, b) => b.points - a.points);
+
+            this.renderFantasyTable(ranking);
+
         } catch (e) {
-            console.error(e);
+            console.error("Error loading fantasy:", e);
+            this.fantasyTableContainer.innerHTML = '<p class="text-center text-danger">Error al cargar la clasificación Fantasy.</p>';
         }
+    }
+
+    renderFantasyTable(ranking) {
+        this.fantasyTableContainer.innerHTML = '';
+        const table = document.createElement('table');
+        table.className = 'table table-striped table-hover align-middle';
+
+        table.innerHTML = `
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Jugador</th>
+                    <th class="text-center">Puntos Fantasy</th>
+                    <th class="text-center">Promedio</th>
+                    <th class="text-center">Partidos</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        `;
+
+        const tbody = table.querySelector('tbody');
+
+        ranking.forEach((r, index) => {
+            const tr = document.createElement('tr');
+
+            // Rank
+            const tdRank = document.createElement('td');
+            if (index === 0) tdRank.innerHTML = '<i class="bi bi-trophy-fill text-warning"></i> 1';
+            else if (index === 1) tdRank.innerHTML = '<i class="bi bi-trophy-fill text-secondary"></i> 2';
+            else if (index === 2) tdRank.innerHTML = '<i class="bi bi-trophy-fill" style="color: #cd7f32;"></i> 3';
+            else tdRank.textContent = index + 1;
+            tr.appendChild(tdRank);
+
+            // Player (Avatar + Name)
+            const tdPlayer = document.createElement('td');
+            tdPlayer.className = 'd-flex align-items-center gap-2';
+
+            const img = document.createElement('img');
+            img.className = 'rounded-circle border';
+            img.style.width = '40px';
+            img.style.height = '40px';
+            img.src = this.diceBearManager.getImage(r.id, r.avatarConfig, this.currentJerseyColor);
+
+            const divInfo = document.createElement('div');
+            const divName = document.createElement('div');
+            divName.className = 'fw-bold';
+            divName.textContent = r.name;
+            const divDorsal = document.createElement('div');
+            divDorsal.className = 'small text-muted';
+            divDorsal.textContent = `#${r.dorsal}`;
+
+            divInfo.appendChild(divName);
+            divInfo.appendChild(divDorsal);
+
+            tdPlayer.appendChild(img);
+            tdPlayer.appendChild(divInfo);
+            tr.appendChild(tdPlayer);
+
+            // Points
+            const tdPoints = document.createElement('td');
+            tdPoints.className = 'text-center fw-bold fs-5';
+            tdPoints.textContent = r.points;
+            tr.appendChild(tdPoints);
+
+            // Avg
+            const tdAvg = document.createElement('td');
+            tdAvg.className = 'text-center';
+            tdAvg.textContent = r.avg.toFixed(1);
+            tr.appendChild(tdAvg);
+
+            // Matches
+            const tdMatches = document.createElement('td');
+            tdMatches.className = 'text-center';
+            tdMatches.textContent = r.matches;
+            tr.appendChild(tdMatches);
+
+            tbody.appendChild(tr);
+        });
+
+        this.fantasyTableContainer.appendChild(table);
     }
 }

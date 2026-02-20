@@ -5,64 +5,115 @@ class DataService {
     this.teamId = teamId;
     this.competitionId = competitionId;
     this.matchId = matchId;
+
+    // Offline Queue
+    this.queueKey = `offline_queue_${matchId}`;
+    this.eventQueue = this.loadQueue();
+
+    // Listen for online status to trigger sync
+    window.addEventListener('online', () => this.syncQueue());
+  }
+
+  loadQueue() {
+    try {
+      const q = localStorage.getItem(this.queueKey);
+      return q ? JSON.parse(q) : [];
+    } catch (e) {
+      console.error("Error loading queue:", e);
+      return [];
+    }
+  }
+
+  saveQueue() {
+    localStorage.setItem(this.queueKey, JSON.stringify(this.eventQueue));
   }
 
   /**
-   * Carga todos los datos del partido.
-   * Retorna un objeto partido con la estructura completa.
+   * Carga todos los datos del partido + Eventos.
    */
   async cargarPartido() {
+    const cacheKey = `match_data_${this.matchId}`;
+
+    // Helper to process data
+    const processData = (matchData, dbEvents) => {
+      let partido = {
+        id: matchData.id,
+        fechaHora: matchData.date,
+        pabellon: matchData.location,
+        equipoId: matchData.team_id,
+        rivalId: matchData.rival_id,
+        nombreRival: matchData.rival_name,
+        estado: matchData.state,
+        parteActual: matchData.current_period,
+        configuracion: matchData.match_config,
+        duracionParte: matchData.period_duration,
+        esLocal: matchData.is_local,
+
+        // Legacy fallbacks from metadata if not in events yet
+        convocados: matchData.live_state?.convocados || [],
+        jugadoresEnPista: matchData.live_state?.jugadoresEnPista || {},
+        cronica: matchData.chronicle || matchData.live_state?.cronica || '', // Ensure legacy/saved chronicles are loaded
+
+        // Events
+        dbEvents: dbEvents || [],
+        pendingEvents: this.eventQueue || [],
+
+        // Initialize Empty Stats (Will be rebuilt by PartidoApp using events)
+        puntosEquipo: 0,
+        puntosRival: 0,
+        faltasEquipo: 0,
+        faltasRival: 0,
+        estadisticasJugadores: {}
+      };
+      return partido;
+    };
+
     try {
-      const { data: match, error } = await this.supabase
+      // 1. Fetch Match Metadata
+      const { data: matchData, error: matchError } = await this.supabase
         .from('matches')
         .select('*')
         .eq('id', this.matchId)
         .single();
 
-      if (error) throw error;
-      if (!match) return null;
+      if (matchError) throw matchError;
 
-      // Si existe live_state, úsalo como fuente principal.
-      // Si no, inicializa desde columnas o valores por defecto.
-      let partido = match.live_state || {};
+      // 2. Fetch Match Events (Relational!)
+      const { data: events, error: eventsError } = await this.supabase
+        .from('match_events')
+        .select('*')
+        .eq('match_id', this.matchId)
+        .order('created_at', { ascending: true });
 
-      // Asegurar que campos críticos estén sincronizados con las columnas
-      partido.id = match.id;
-      partido.equipoId = match.team_id; // Mapping team_id column to internal teamId? 
-      // Actually PartidoApp uses equipoId, matchId etc.
-      partido.competicionId = match.competition_id;
-      // partido.rivalId = match.rival_id; // Sync if column changed?
+      if (eventsError) throw eventsError;
 
-      // Defaults
-      partido.convocados = partido.convocados || {};
-      partido.jugadoresEnPista = partido.jugadoresEnPista || {};
-      partido.estadisticasJugadores = partido.estadisticasJugadores || {};
+      const partido = processData(matchData, events);
 
-      partido.configuracion = partido.configuracion || match.match_config || '4x10';
-      partido.parteActual = partido.parteActual || match.current_period || 1;
-      partido.duracionParte = partido.duracionParte || (match.period_duration || (partido.configuracion === '6x8' ? 8 * 60 : 10 * 60));
-      partido.totalPartes = partido.totalPartes || (partido.configuracion === '6x8' ? 6 : 4);
+      // Save to Cache (safe to ignore error if quota exceeded)
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({ matchData, events, timestamp: Date.now() }));
+      } catch (e) { console.warn("Cache write failed", e); }
 
-      partido.estado = partido.estado || match.state || 'no empezado';
-
-      partido.puntosEquipo = partido.puntosEquipo || 0;
-      partido.puntosRival = partido.puntosRival || 0;
-      partido.faltasEquipo = partido.faltasEquipo || 0;
-      partido.faltasRival = partido.faltasRival || 0;
-
-      partido.eventos = partido.eventos || {};
-
-      // Sync basic info that might have been edited in 'edit details' independently of live_state
-      partido.fechaHora = match.date;
-      partido.pabellon = match.location;
-      partido.nombreRival = match.rival_name;
-      partido.esLocal = match.is_local;
-      partido.rivalId = match.rival_id;
-
+      console.log("Partido updated from network and cached.");
       return partido;
-    } catch (e) {
-      console.error("Error cargando partido:", e);
-      return null;
+
+    } catch (error) {
+      console.warn("Network error loading match, trying cache:", error);
+
+      const cachedRaw = localStorage.getItem(cacheKey);
+      if (cachedRaw) {
+        try {
+          const { matchData, events } = JSON.parse(cachedRaw);
+          console.log("Loaded match from local cache.");
+          return processData(matchData, events);
+        } catch (e) {
+          console.error("Error creating partido from cache", e);
+        }
+      }
+
+      // Propagate error if no cache
+      console.error("Error cargando partido and no cache:", error);
+      throw error;
     }
   }
 
@@ -70,11 +121,9 @@ class DataService {
    * Carga la plantilla de jugadores del equipo.
    */
   async cargarPlantilla() {
-    // Assuming players table has all info needed
-    // Plantilla array: [{ id, dorsal, nombre, ... }]
     const { data, error } = await this.supabase
       .from('players')
-      .select('*')
+      .select('*, avatar_configs(*)')
       .eq('team_id', this.teamId);
 
     if (error) {
@@ -86,7 +135,7 @@ class DataService {
       id: p.id,
       nombre: p.name,
       dorsal: p.number,
-      avatarConfig: p.avatar_config || null
+      avatarConfig: p.avatar_configs || null
     }));
   }
 
@@ -111,21 +160,28 @@ class DataService {
   }
 
   /**
-   * Guarda el objeto completo del partido (live_state) y actualiza columnas clave.
-   * @param {Object} partidoObj - Objeto completo del partido.
+   * Guarda metadatos del partido.
+   * YA NO DEBE GUARDAR live_state ENTERO PARA ESTADISTICAS.
+   * Pero sí guardamos 'convocados' y 'jugadoresEnPista' si no tenemos eventos para eso aún.
    */
   async guardarPartido(partidoObj) {
     try {
-      // Map properties back to columns for query-ability
       const updatePayload = {
-        live_state: partidoObj,
         current_period: partidoObj.parteActual,
         state: partidoObj.estado,
         match_config: partidoObj.configuracion,
-        period_duration: partidoObj.duracionParte
+        period_duration: partidoObj.duracionParte,
+        chronicle: partidoObj.cronica || null, // Map directly to column
+        // Optional: Keep updating live_state as backup/cache for 'convocados' etc.
+        live_state: {
+          convocados: partidoObj.convocados,
+          jugadoresEnPista: partidoObj.jugadoresEnPista,
+          cronica: partidoObj.cronica || '' // Save inside live_state for backward compatibility just in case
+          // We consciously OMIT stats from here to force relational usage? 
+          // Better to include them for now as a read-only cache for list views if needed.
+        }
       };
 
-      // Update basic fields if they are in partidoObj (from edit modal)
       if (partidoObj.fechaHora) updatePayload.date = partidoObj.fechaHora;
       if (partidoObj.pabellon) updatePayload.location = partidoObj.pabellon;
       if (partidoObj.nombreRival) updatePayload.rival_name = partidoObj.nombreRival;
@@ -140,100 +196,82 @@ class DataService {
       if (error) throw error;
     } catch (e) {
       console.error("Error guardando partido:", e);
-      throw e;
+      // Don't throw if offline, just log. 
+      // If metadata update fails due to offline, it's less critical than events.
     }
   }
 
-  /**
-   * Helpers mostly to maintain compatibility if logic used them. 
-   * But main logic uses guardarPartido(this.partido) so we are good.
-   */
-
   getNewEventKey() {
-    // Generate a UUID locally or just let Supabase handle it for the table.
-    // But PartidoApp expects a key immediateley sometimes?
-    // PartidoApp logic: pushEvento(evento) returns key.
     return crypto.randomUUID();
   }
 
+  /**
+   * Logs an event. Tries to send to DB. If offline/fails, adds to queue.
+   */
   async pushEvento(evento, key = null) {
     const eventoId = key || this.getNewEventKey();
-    evento.id = eventoId; // Store ID in event object too
+    evento.id = eventoId;
 
-    // 1. Log to match_events table
     const dbEvento = {
       id: eventoId,
       match_id: this.matchId,
-      player_id: (evento.jugadorId && evento.jugadorId !== 'rival') ? evento.jugadorId : null, // Handle 'rival' or null
+      player_id: (evento.jugadorId && evento.jugadorId !== 'rival') ? evento.jugadorId : null,
       type: evento.tipo,
       quarter: evento.cuarto,
       timestamp: evento.tiempoSegundos,
       value: evento.cantidad || (evento.valor || 0),
-      properties: evento // Store full object as JSONB for fidelity
+      properties: evento,
+      created_at: new Date().toISOString() // Important for order
     };
 
-    // We don't await this insert to block UI? Better to allow fire & forget or return promise.
-    // We'll return logic promise.
+    // 1. Try to Send immediately
+    if (navigator.onLine) {
+      this.supabase.from('match_events').insert([dbEvento])
+        .then(({ error }) => {
+          if (error) {
+            console.warn("Error sending event, queuing:", error);
+            this.queueEvent(dbEvento);
+          } else {
+            console.log("Event sent successfully:", eventoId);
+          }
+        });
+    } else {
+      console.log("Offline, queuing event:", eventoId);
+      this.queueEvent(dbEvento);
+    }
 
-    const insertPromise = this.supabase.from('match_events').insert([dbEvento]);
-
-    // 2. Process locally to update stats in live_state
-    // This function modifies 'estadisticasJugadores' in memory? 
-    // No, DataService is stateless regarding 'this.partido' here, it receives data via 'guardarPartido' usually.
-    // BUT PartidoApp calls pushEvento AND expects DataService to update the state?
-    // Wait, original DataService `pushEvento`:
-    // `return newRef.set(evento).then(() => this._procesarEvento(evento))`
-    // `_procesarEvento` reads `partidoRef`, modifies it, writes it back!
-
-    // PROBLEM: `DataService.js` in Supabase version doesn't hold `partido`.
-    // `PartidoApp.js` holds `this.partido`.
-    // `PartidoApp.js` calls `pushEvento`.
-    // If `DataService` is responsible for calculating stats (business logic), it needs access to the current state.
-    // Option A: `PartidoApp` passes current state to `pushEvento`.
-    // Option B: `DataService` fetches state, updates, saves. (Slow, race conditions).
-    // Option C: Move `_procesarEvento` logic to `PartidoApp` (or a helper class) and just use DataService for storage.
-    // Option C is best for refactoring. The Business Logic of "points -> stats update" belongs in the App or Domain layer, not purely in the Persistence layer if Persistence is dumb.
-    // However, `DataService` contained the logic previously.
-    // To minimize `PartidoApp.js` changes, I can keep the logic here IF I can access the state.
-
-    // But `DataService` methods `_procesarEvento` used `partidoRef.once('value')`... reading DB.
-    // In Supabase, reading DB every event is costly/slow.
-    // `PartidoApp` ALREADY has `this.partido` in memory!
-    // I should change `PartidoApp` to handle the state update locally, then call `DataService.guardarPartido`.
-    // AND call `DataService.logEvent`.
-
-    // This is a paradigm shift.
-
-    // OLD FLOW:
-    // UI -> pushEvento -> Firebase Write -> _procesarEvento (Firebase Read/Write) -> Firebase Write.
-
-    // NEW FLOW (Recommended):
-    // UI -> Update `this.partido` (State) locally -> DataService.saveState(this.partido) AND DataService.logEvent(event).
-
-    // This means I MUST refactor `PartidoApp.js` to contain the logic of `_procesarEvento`.
-    // `PartidoApp.js` currently relies on `pushEvento` doing the magic.
-
-    // I will put `procesarEvento` logic into `PartidoApp.js` (or `MatchLogic.js` helper).
-    // For now, I'll put it in `PartidoApp.js`.
-
-    // So DataService.pushEvento becomes:
-    // logEvent(event) -> insert to match_events table.
-
-    // I'll rename `pushEvento` to `logEvento` in DataService to be clear, 
-    // and update PartidoApp to call `logEvento` AND `guardarPartido`.
-
-    // Wait, `PartidoApp.js` is huge.
-    // I can add `procesarEvento` to `PartidoApp`.
-    // I will verify this plan.
-
-    return insertPromise.then(({ error }) => {
-      if (error) console.error("Error logging event:", error);
-      return eventoId;
-    });
+    return eventoId;
   }
 
-  async deleteEvento(eventoId, evento) {
-    // Delete from match_events
+  queueEvent(dbEvento) {
+    this.eventQueue.push(dbEvento);
+    this.saveQueue();
+  }
+
+  async syncQueue() {
+    if (this.eventQueue.length === 0) return;
+    if (!navigator.onLine) return;
+
+    console.log(`Syncing ${this.eventQueue.length} events...`);
+
+    // Send batch if possible, or one by one. 
+    // Insert allows array.
+    const batch = [...this.eventQueue]; // Copy
+
+    const { error } = await this.supabase.from('match_events').insert(batch);
+
+    if (!error) {
+      // Success! Clear queue.
+      console.log("Sync successful!");
+      this.eventQueue = [];
+      this.saveQueue();
+    } else {
+      console.error("Sync failed:", error);
+      // Retry later? Leave in queue.
+    }
+  }
+
+  async deleteEvento(eventoId) {
     const { error } = await this.supabase
       .from('match_events')
       .delete()
@@ -241,7 +279,12 @@ class DataService {
 
     if (error) console.error("Error deleting event:", error);
 
-    // The state reversion logic must happen in PartidoApp now.
+    // Also remove from queue if present
+    const idx = this.eventQueue.findIndex(e => e.id === eventoId);
+    if (idx !== -1) {
+      this.eventQueue.splice(idx, 1);
+      this.saveQueue();
+    }
   }
 }
 
@@ -251,8 +294,6 @@ class PartidosGlobalesDataService {
   }
 
   async getPartidoGlobal(partidoId) {
-    // In Supabase, we can just fetch the match from 'matches' table
-    // assuming RLS allows valid access (it does, 'viewable by everyone').
     const { data, error } = await this.supabase
       .from('matches')
       .select('*')
@@ -260,6 +301,9 @@ class PartidosGlobalesDataService {
       .single();
 
     if (error) throw error;
-    return data.live_state; // Return the app-readable state
+    // For global view, we might need stats. 
+    // Ideally we should have a view or aggregation.
+    // For now, return live_state or empty.
+    return data.live_state || {};
   }
 }

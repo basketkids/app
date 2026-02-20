@@ -1,10 +1,10 @@
-const CACHE_NAME = 'basketkids-v8';
+const CACHE_NAME = 'basketkids-v10';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
     './public/index.html',
     './css/styles.css',
-    './js/firebase-config.js',
+    './js/supabase-config.js',
     './js/load-header.js',
     './img/favicon.ico',
     './img/logo.png'
@@ -36,11 +36,41 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    event.respondWith(
-        caches.match(event.request)
-            .then((response) => {
-                // Return cached response if found, else fetch from network
-                return response || fetch(event.request);
-            })
-    );
+    // Config: Network First for HTML, JS, CSS, JSON (App Shell & Logic)
+    // Cache First for Images/Fonts (Optional, but let's keep it simple: Network First for critical)
+
+    const requestURL = new URL(event.request.url);
+
+    // Filter for our assets or navigation
+    if (event.request.mode === 'navigate' ||
+        requestURL.pathname.endsWith('.js') ||
+        requestURL.pathname.endsWith('.css') ||
+        requestURL.pathname.endsWith('.html')) {
+
+        event.respondWith(
+            fetch(event.request)
+                .then(networkResponse => {
+                    // Update cache with new version if successful
+                    if (networkResponse.ok) {
+                        const responseClone = networkResponse.clone();
+                        caches.open(CACHE_NAME).then(cache => {
+                            cache.put(event.request, responseClone);
+                        });
+                    }
+                    return networkResponse;
+                })
+                .catch(() => {
+                    // Fallback to cache if network fails
+                    return caches.match(event.request);
+                })
+        );
+    } else {
+        // Default Cache First for others (images, etc) or unknown
+        event.respondWith(
+            caches.match(event.request)
+                .then((response) => {
+                    return response || fetch(event.request);
+                })
+        );
+    }
 });
