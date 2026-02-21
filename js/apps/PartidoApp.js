@@ -266,6 +266,8 @@ class PartidoApp extends BaseApp {
     document.getElementById('btnGenerateCronica')?.addEventListener('click', () => this.generateCronica());
     document.getElementById('btnCopyPrompt')?.addEventListener('click', () => this.copyPromptToClipboard());
     document.getElementById('btnSaveManualCronica')?.addEventListener('click', () => this.guardarCronicaManual());
+    document.getElementById('btnEditCronica')?.addEventListener('click', () => this.toggleCronicaEditMode(true));
+    document.getElementById('btnCancelEditCronica')?.addEventListener('click', () => this.toggleCronicaEditMode(false));
 
     // Action Panel
     const actionPanel = document.getElementById('action-controls-footer');
@@ -1032,12 +1034,27 @@ class PartidoApp extends BaseApp {
     `;
   }
 
+  toggleCronicaEditMode(isEditing) {
+    const viewMode = document.getElementById('cronicaViewMode');
+    const editMode = document.getElementById('cronicaEditMode');
+
+    if (isEditing) {
+      viewMode?.classList.add('d-none');
+      editMode?.classList.remove('d-none');
+    } else {
+      viewMode?.classList.remove('d-none');
+      editMode?.classList.add('d-none');
+    }
+  }
+
   guardarCronicaManual() {
     const text = document.getElementById('manualCronicaText')?.value;
-    if (text) {
+    if (text !== undefined) {
       this.partido.cronica = text;
       // Also save to DB as metadata
       this.guardarDatosPartido();
+      this.renderCronica();
+      this.toggleCronicaEditMode(false);
       alert('Crónica guardada localmente.');
     }
   }
@@ -1240,9 +1257,17 @@ class PartidoApp extends BaseApp {
 
   // basic cronica
   renderCronica() {
+    const renderTarget = document.getElementById('cronicaRenderedText');
     const textArea = document.getElementById('manualCronicaText');
-    if (textArea && this.partido.cronica) {
-      textArea.value = this.partido.cronica;
+
+    if (this.partido && this.partido.cronica) {
+      if (renderTarget) {
+        renderTarget.innerHTML = typeof Sanitizer !== 'undefined' ? Sanitizer.sanitizeHtml(this.partido.cronica) : this.partido.cronica;
+      }
+      if (textArea) textArea.value = this.partido.cronica;
+    } else {
+      if (renderTarget) renderTarget.innerHTML = '<em class="text-muted">No hay crónica guardada. Genera una con la IA o pulsa Editar para escribirla.</em>';
+      if (textArea) textArea.value = '';
     }
   }
 }

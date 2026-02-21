@@ -271,208 +271,224 @@
             </button>
           </div>
 
-          <div class="mb-3">
-            <textarea id="manualCronicaText" class="form-control" rows="10"
-              placeholder="La crónica aparecerá aquí..."></textarea>
-          </div>
-
-          <div class="d-grid">
-            <button id="btnSaveManualCronica" class="btn btn-success">
-              <i class="bi bi-save"></i> Guardar Crónica
-            </button>
-          </div>
-        </div>
-      </div>
-      <!-- Tab: Fantasy -->
-      <div class="tab-pane fade" id="fantasy" role="tabpanel" aria-labelledby="tab-fantasy">
-        <div id="fantasyContainer" class="mt-3 text-center"></div>
-      </div>
-
-      <!-- Tab: Quintetos -->
-      <div class="tab-pane fade" id="quintetos" role="tabpanel" aria-labelledby="tab-quintetos">
-        <div class="d-flex justify-content-center gap-3 my-3">
-          <button class="btn btn-outline-danger active" id="btnQuintetoAtaque"
-            onclick="app.cambiarVistaQuinteto('ataque')">
-            <i class="bi bi-lightning-fill"></i> Ataque
-          </button>
-          <button class="btn btn-outline-primary" id="btnQuintetoDefensa" onclick="app.cambiarVistaQuinteto('defensa')">
-            <i class="bi bi-shield-fill-check"></i> Defensa
-          </button>
-        </div>
-        <div id="quintetosContainer" class="text-center"></div>
-      </div>
-    </div>
-  </div>
-  <div class="d-flex justify-content-center">
-    <a href="" id="shareBtn" class="btn btn-success btn-sm" target="_blank" rel="noopener">
-      <i class="bi bi-whatsapp"></i> Compartir
-    </a>
-    <a href="" id="publicMatchBtn" class="btn btn-primary btn-sm" target="_blank" rel="noopener">
-      <i class="bi bi-eye-fill"></i> Ver partido público
-    </a>
-    <button id="btnDownloadMatch" class="btn btn-secondary btn-sm ms-2" style="display: none;"
-      title="Descargar datos del partido">
-      <i class="bi bi-download"></i> Descargar Datos
-    </button>
-  </div>
-  <!-- Modal Convocar Jugadores -->
-  <div class="modal fade" id="modalConvocarJugadores" tabindex="-1" aria-labelledby="modalConvocarJugadoresLabel"
-    aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable">
-      <form id="formConvocarJugadores" class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="modalConvocarJugadoresLabel">Seleccionar jugadores convocados</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-        </div>
-        <div class="modal-body">
-          <div class="form-check mb-3 border-bottom pb-2">
-            <input class="form-check-input" type="checkbox" id="checkSeleccionarTodos">
-            <label class="form-check-label fw-bold" for="checkSeleccionarTodos">
-              Seleccionar todos
-            </label>
-          </div>
-          <ul id="listaJugadoresPlantilla" class="list-group"></ul>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar convocatoria</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal Elegir Jugadores en Pista -->
-  <div class="modal fade" id="modalElegirPista" tabindex="-1" aria-labelledby="modalElegirPistaLabel"
-    aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable">
-      <form id="formElegirPista" class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="modalElegirPistaLabel">Seleccionar jugadores en pista (máximo 5)</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-        </div>
-        <div class="modal-body">
-          <ul id="listaJugadoresConvocadosModal" class="list-group"></ul>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar alineación</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal Editar Partido -->
-  <div class="modal fade" id="modalEditarPartido" tabindex="-1" aria-labelledby="modalEditarPartidoLabel"
-    aria-hidden="true">
-    <div class="modal-dialog">
-      <form id="formEditarPartido" class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="modalEditarPartidoLabel">Editar Partido</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label for="editFechaHora" class="form-label">Fecha y Hora</label>
-            <input type="datetime-local" class="form-control" id="editFechaHora" required min="1891-12-21T00:00">
-          </div>
-          <div class="mb-3">
-            <label for="editPabellon" class="form-label">Pabellón / Lugar</label>
-            <input type="text" class="form-control" id="editPabellon" placeholder="Nombre del pabellón">
-          </div>
-          <div class="mb-3">
-            <label for="editNombreRival" class="form-label">Nombre Rival</label>
-            <select class="form-select" id="editNombreRival">
-              <option value="">Seleccionar rival...</option>
-            </select>
-          </div>
-          <div class="mb-3 form-check">
-            <input type="checkbox" class="form-check-input" id="editEsLocal">
-            <label class="form-check-label" for="editEsLocal">Jugamos como Local</label>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar cambios</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal Configurar API Key -->
-  <div class="modal fade" id="modalApiKey" tabindex="-1" aria-labelledby="modalApiKeyLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="modalApiKeyLabel">Configurar API Key de IA</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label for="selectAiProvider" class="form-label">Proveedor de IA</label>
-            <select class="form-select" id="selectAiProvider">
-              <option value="gemini" selected>Google Gemini (Recomendado - Gratis)</option>
-              <option value="huggingface">Hugging Face (Gratis)</option>
-              <option value="openai">OpenAI (GPT)</option>
-            </select>
-          </div>
-
-          <div class="mb-3" id="containerGeminiModel">
-            <label for="selectGeminiModel" class="form-label">Modelo Gemini</label>
-            <select class="form-select" id="selectGeminiModel">
-              <option value="gemini-2.0-flash">Gemini 2.0 Flash (Rápido - Gratis)</option>
-              <option value="gemini-1.5-pro">Gemini 1.5 Pro (Más potente)</option>
-            </select>
-          </div>
-
-          <div class="mb-3">
-            <label for="inputApiKey" class="form-label">API Key</label>
-            <input type="password" class="form-control" id="inputApiKey" placeholder="AIzaSy...">
-            <div id="apiKeyHelp" class="form-text mt-2">
-              <i class="bi bi-info-circle"></i> Para conseguir tu clave de Gemini, visita <a
-                href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.
+          <!-- View Mode -->
+          <div id="cronicaViewMode" class="mb-3">
+            <div id="cronicaRenderedText" class="p-3 bg-white border rounded mb-3" style="min-height: 100px;">
+              <em class="text-muted">No hay crónica guardada. Genera una con la IA o pulsa Editar para escribirla.</em>
+            </div>
+            <div class="d-grid">
+              <button id="btnEditCronica" class="btn btn-outline-secondary">
+                <i class="bi bi-pencil"></i> Editar Crónica
+              </button>
             </div>
           </div>
-          <p class="small text-muted">La clave se guardará localmente en tu navegador.</p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-primary" id="btnSaveApiKey">Guardar</button>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Modal Importar Stats FAB -->
-  <div class="modal fade" id="modalImportarStats" tabindex="-1" aria-labelledby="modalImportarStatsLabel"
-    aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="modalImportarStatsLabel">Importar Estadísticas desde CSV</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-        </div>
-        <div class="modal-body">
-          <p class="text-muted small">
-            Sube un archivo CSV con las estadísticas del partido.
-            <br><strong>Formato requerido (FAB):</strong> Debe incluir una fila de cabecera que empiece por
-            <code>Num.,Nombre</code>.
-            <br>Las columnas esperadas son: Min, PTS, TC 2P, TC 3P, TL, Rebotes, AS, REC, PÉR, TAP, FAL, V, +/-.
-          </p>
-          <input type="file" id="csvFileInput" accept=".csv" class="form-control mb-3">
-
-          <div id="importTeamSelection" class="d-none">
-            <h6 class="mb-2">Selecciona tu equipo:</h6>
-            <div id="importTeamButtons" class="d-flex flex-wrap gap-2 justify-content-center"></div>
+          <!-- Edit Mode -->
+          <div id="cronicaEditMode" class="mb-3 d-none">
+            <div class="alert alert-warning small mb-2 py-1"><i class="bi bi-code-slash"></i> <strong>Aviso de
+                Seguridad:</strong> Solo están permitidas las etiquetas HTML &lt;h2&gt;, &lt;p&gt; y &lt;strong&gt;.
+              Otras etiquetas serán eliminadas automáticamente.</div>
+            <textarea id="manualCronicaText" class="form-control mb-3" rows="10"
+              placeholder="La crónica aparecerá aquí..."></textarea>
+            <div class="d-flex gap-2">
+              <button id="btnCancelEditCronica" class="btn btn-secondary flex-grow-1">Cancelar</button>
+              <button id="btnSaveManualCronica" class="btn btn-success flex-grow-1">
+                <i class="bi bi-save"></i> Guardar Crónica
+              </button>
+            </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <!-- El botón de importar se generará dinámicamente o se activará tras seleccionar equipo -->
+        <!-- Tab: Fantasy -->
+        <div class="tab-pane fade" id="fantasy" role="tabpanel" aria-labelledby="tab-fantasy">
+          <div id="fantasyContainer" class="mt-3 text-center"></div>
         </div>
 
+        <!-- Tab: Quintetos -->
+        <div class="tab-pane fade" id="quintetos" role="tabpanel" aria-labelledby="tab-quintetos">
+          <div class="d-flex justify-content-center gap-3 my-3">
+            <button class="btn btn-outline-danger active" id="btnQuintetoAtaque"
+              onclick="app.cambiarVistaQuinteto('ataque')">
+              <i class="bi bi-lightning-fill"></i> Ataque
+            </button>
+            <button class="btn btn-outline-primary" id="btnQuintetoDefensa"
+              onclick="app.cambiarVistaQuinteto('defensa')">
+              <i class="bi bi-shield-fill-check"></i> Defensa
+            </button>
+          </div>
+          <div id="quintetosContainer" class="text-center"></div>
+        </div>
       </div>
     </div>
-  </div>
+    <div class="d-flex justify-content-center">
+      <a href="" id="shareBtn" class="btn btn-success btn-sm" target="_blank" rel="noopener">
+        <i class="bi bi-whatsapp"></i> Compartir
+      </a>
+      <a href="" id="publicMatchBtn" class="btn btn-primary btn-sm" target="_blank" rel="noopener">
+        <i class="bi bi-eye-fill"></i> Ver partido público
+      </a>
+      <button id="btnDownloadMatch" class="btn btn-secondary btn-sm ms-2" style="display: none;"
+        title="Descargar datos del partido">
+        <i class="bi bi-download"></i> Descargar Datos
+      </button>
+    </div>
+    <!-- Modal Convocar Jugadores -->
+    <div class="modal fade" id="modalConvocarJugadores" tabindex="-1" aria-labelledby="modalConvocarJugadoresLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable">
+        <form id="formConvocarJugadores" class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalConvocarJugadoresLabel">Seleccionar jugadores convocados</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <div class="form-check mb-3 border-bottom pb-2">
+              <input class="form-check-input" type="checkbox" id="checkSeleccionarTodos">
+              <label class="form-check-label fw-bold" for="checkSeleccionarTodos">
+                Seleccionar todos
+              </label>
+            </div>
+            <ul id="listaJugadoresPlantilla" class="list-group"></ul>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar convocatoria</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Elegir Jugadores en Pista -->
+    <div class="modal fade" id="modalElegirPista" tabindex="-1" aria-labelledby="modalElegirPistaLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable">
+        <form id="formElegirPista" class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalElegirPistaLabel">Seleccionar jugadores en pista (máximo 5)</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <ul id="listaJugadoresConvocadosModal" class="list-group"></ul>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar alineación</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Editar Partido -->
+    <div class="modal fade" id="modalEditarPartido" tabindex="-1" aria-labelledby="modalEditarPartidoLabel"
+      aria-hidden="true">
+      <div class="modal-dialog">
+        <form id="formEditarPartido" class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalEditarPartidoLabel">Editar Partido</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="editFechaHora" class="form-label">Fecha y Hora</label>
+              <input type="datetime-local" class="form-control" id="editFechaHora" required min="1891-12-21T00:00">
+            </div>
+            <div class="mb-3">
+              <label for="editPabellon" class="form-label">Pabellón / Lugar</label>
+              <input type="text" class="form-control" id="editPabellon" placeholder="Nombre del pabellón">
+            </div>
+            <div class="mb-3">
+              <label for="editNombreRival" class="form-label">Nombre Rival</label>
+              <select class="form-select" id="editNombreRival">
+                <option value="">Seleccionar rival...</option>
+              </select>
+            </div>
+            <div class="mb-3 form-check">
+              <input type="checkbox" class="form-check-input" id="editEsLocal">
+              <label class="form-check-label" for="editEsLocal">Jugamos como Local</label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar cambios</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Configurar API Key -->
+    <div class="modal fade" id="modalApiKey" tabindex="-1" aria-labelledby="modalApiKeyLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalApiKeyLabel">Configurar API Key de IA</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="selectAiProvider" class="form-label">Proveedor de IA</label>
+              <select class="form-select" id="selectAiProvider">
+                <option value="gemini" selected>Google Gemini (Recomendado - Gratis)</option>
+                <option value="huggingface">Hugging Face (Gratis)</option>
+                <option value="openai">OpenAI (GPT)</option>
+              </select>
+            </div>
+
+            <div class="mb-3" id="containerGeminiModel">
+              <label for="selectGeminiModel" class="form-label">Modelo Gemini</label>
+              <select class="form-select" id="selectGeminiModel">
+                <option value="gemini-2.0-flash">Gemini 2.0 Flash (Rápido - Gratis)</option>
+                <option value="gemini-1.5-pro">Gemini 1.5 Pro (Más potente)</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="inputApiKey" class="form-label">API Key</label>
+              <input type="password" class="form-control" id="inputApiKey" placeholder="AIzaSy...">
+              <div id="apiKeyHelp" class="form-text mt-2">
+                <i class="bi bi-info-circle"></i> Para conseguir tu clave de Gemini, visita <a
+                  href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.
+              </div>
+            </div>
+            <p class="small text-muted">La clave se guardará localmente en tu navegador.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btnSaveApiKey">Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Importar Stats FAB -->
+    <div class="modal fade" id="modalImportarStats" tabindex="-1" aria-labelledby="modalImportarStatsLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalImportarStatsLabel">Importar Estadísticas desde CSV</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted small">
+              Sube un archivo CSV con las estadísticas del partido.
+              <br><strong>Formato requerido (FAB):</strong> Debe incluir una fila de cabecera que empiece por
+              <code>Num.,Nombre</code>.
+              <br>Las columnas esperadas son: Min, PTS, TC 2P, TC 3P, TL, Rebotes, AS, REC, PÉR, TAP, FAL, V, +/-.
+            </p>
+            <input type="file" id="csvFileInput" accept=".csv" class="form-control mb-3">
+
+            <div id="importTeamSelection" class="d-none">
+              <h6 class="mb-2">Selecciona tu equipo:</h6>
+              <div id="importTeamButtons" class="d-flex flex-wrap gap-2 justify-content-center"></div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <!-- El botón de importar se generará dinámicamente o se activará tras seleccionar equipo -->
+          </div>
+
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Modal Registrar Fallo -->
