@@ -1,0 +1,10 @@
+/* Matches old/public calendar styles */
+.matches-container {
+    overflow-y: auto;
+    max-height: 420px;
+}
+
+/* Transition for matches container opacity on view change */
+.day-column {
+    transition: opacity 0.3s;
+}

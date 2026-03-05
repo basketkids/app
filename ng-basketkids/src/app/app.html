@@ -1,0 +1,40 @@
+<!-- Show navbar on all pages EXCEPT login -->
+<nav *ngIf="!isLoginPage" class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <div class="container-fluid">
+    <!-- Logo (matches .logo CSS class from styles.css) -->
+    <a class="navbar-brand logo" routerLink="/home" title="BasketKids"></a>
+
+    <div id="auth-container" class="d-flex align-items-center gap-3 ms-auto">
+      <!-- Theme Toggle -->
+      <button id="themeToggle" class="btn btn-sm text-white" (click)="toggleTheme()" title="Cambiar tema">
+        <i class="bi" [class.bi-moon-stars]="!isDarkMode" [class.bi-sun]="isDarkMode"></i>
+      </button>
+
+      <!-- Not logged in -->
+      <a *ngIf="!auth.isLoggedIn()" routerLink="/login" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-box-arrow-in-right"></i>
+      </a>
+
+      <!-- User Dropdown (when authenticated) -->
+      <div *ngIf="auth.isLoggedIn()" class="dropdown">
+        <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 text-white" href="#" role="button"
+          data-bs-toggle="dropdown" aria-expanded="false">
+          <img [src]="userAvatar" alt="Avatar" class="rounded-circle" style="width:40px;height:40px;">
+          <span id="userInfo" class="d-none d-md-inline">{{ userEmail }}</span>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" routerLink="/perfil"><i class="bi bi-person"></i> Perfil</a></li>
+          <li>
+            <hr class="dropdown-divider">
+          </li>
+          <li><a class="dropdown-item" href="#" (click)="signOut()">
+              <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+            </a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Router outlet -->
+<router-outlet></router-outlet>

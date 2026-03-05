@@ -1,0 +1,42 @@
+/* =============================================
+   Admin Match – replicates old partido.html
+   ============================================= */
+
+/* Sticky action panel at the bottom (mirrors .action-panel-footer in old CSS) */
+.action-panel-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
+    background: var(--bs-body-bg, #fff);
+    border-top: 2px solid var(--bs-border-color, #dee2e6);
+    padding: 0.75rem 0.5rem;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.action-btn {
+    min-width: 52px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.action-btn-score {
+    min-width: 40px;
+    font-weight: 700;
+}
+
+/* Player grid (placeholder until players-on-court logic is ported) */
+.player-grid-container {
+    min-height: 60px;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 0.5rem;
+    border: 1px dashed var(--bs-border-color, #dee2e6);
+}
+
+/* Tab-pane requires show+active to be visible with Bootstrap CSS only */
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active.show {
+    display: block;
+}

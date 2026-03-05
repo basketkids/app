@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Partidos Públicos por Fecha</title>
+  <!-- Cabecera actual: incluye Bootstrap y estilos generales -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+
+  <link href="../css/styles.css?v=dev-no-cache" rel="stylesheet" />
+  <link rel="icon" href="../img/favicon.ico" type="image/x-icon" />
+  <link rel="manifest" href="../../manifest.json" />
+  <meta name="theme-color" content="#2B2B2B" />
+
+  <!-- Google Analytics -->
+  <script src="../js/analytics.js"></script>
+</head>
+
+<body>
+  <div id="header-container"></div>
+
+
+  <div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2>Partidos Públicos</h2>
+    </div>
+
+    <div class="card mb-4 shadow-sm">
+      <div class="card-body p-2 p-md-3">
+        <div class="row align-items-center gy-2">
+
+          <!-- View & Date Pickers -->
+          <div
+            class="col-12 col-lg-auto d-flex justify-content-center justify-content-lg-start gap-2 order-2 order-lg-1">
+            <div class="btn-group" role="group">
+              <button type="button" class="btn btn-outline-primary active" id="viewWeekBtn">Semana</button>
+              <button type="button" class="btn btn-outline-primary" id="viewMonthBtn">Mes</button>
+            </div>
+            <button id="goToDateBtn" class="btn btn-outline-secondary" title="Ir a fecha">
+              <i class="bi bi-calendar-date"></i>
+            </button>
+          </div>
+
+          <!-- Date Range (Center) -->
+          <div class="col-12 col-lg text-center order-1 order-lg-2">
+            <h4 id="dateRange" class="mb-0 fw-bold"></h4>
+          </div>
+
+          <!-- Navigation Buttons (Right) -->
+          <div class="col-12 col-lg-auto text-center text-lg-end order-3 order-lg-3">
+            <div class="btn-group" role="group">
+              <button id="prevBtn" class="btn btn-outline-primary">
+                <i class="bi bi-chevron-left"></i>
+              </button>
+              <button id="todayBtn" class="btn btn-primary">
+                Hoy
+              </button>
+              <button id="nextBtn" class="btn btn-outline-primary">
+                <i class="bi bi-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div id="loadingSpinner" class="text-center my-5" style="display: none;">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+    </div>
+
+    <div id="calendarGrid" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-3"
+      style="transition: opacity 0.3s;">
+      <!-- Days will be rendered here -->
+      <div class="col day-column" id="mondayMatches">
+        <div class="card h-100 border-0 bg-transparent">
+          <div
+            class="card-header bg-primary text-white p-2 d-flex justify-content-between align-items-center rounded-top">
+            <span class="text-uppercase fw-bold small">Lunes</span>
+            <span class="fs-5 fw-bold day-number"></span>
+          </div>
+          <div class="card-body p-0 pt-2 matches-container"></div>
+        </div>
+      </div>
+      <div class="col day-column" id="tuesdayMatches">
+        <div class="card h-100 border-0 bg-transparent">
+          <div
+            class="card-header bg-primary text-white p-2 d-flex justify-content-between align-items-center rounded-top">
+            <span class="text-uppercase fw-bold small">Martes</span>
+            <span class="fs-5 fw-bold day-number"></span>
+          </div>
+          <div class="card-body p-0 pt-2 matches-container"></div>
+        </div>
+      </div>
+      <div class="col day-column" id="wednesdayMatches">
+        <div class="card h-100 border-0 bg-transparent">
+          <div
+            class="card-header bg-primary text-white p-2 d-flex justify-content-between align-items-center rounded-top">
+            <span class="text-uppercase fw-bold small">Miércoles</span>
+            <span class="fs-5 fw-bold day-number"></span>
+          </div>
+          <div class="card-body p-0 pt-2 matches-container"></div>
+        </div>
+      </div>
+      <div class="col day-column" id="thursdayMatches">
+        <div class="card h-100 border-0 bg-transparent">
+          <div
+            class="card-header bg-primary text-white p-2 d-flex justify-content-between align-items-center rounded-top">
+            <span class="text-uppercase fw-bold small">Jueves</span>
+            <span class="fs-5 fw-bold day-number"></span>
+          </div>
+          <div class="card-body p-0 pt-2 matches-container"></div>
+        </div>
+      </div>
+      <div class="col day-column" id="fridayMatches">
+        <div class="card h-100 border-0 bg-transparent">
+          <div
+            class="card-header bg-primary text-white p-2 d-flex justify-content-between align-items-center rounded-top">
+            <span class="text-uppercase fw-bold small">Viernes</span>
+            <span class="fs-5 fw-bold day-number"></span>
+          </div>
+          <div class="card-body p-0 pt-2 matches-container"></div>
+        </div>
+      </div>
+      <div class="col day-column" id="saturdayMatches">
+        <div class="card h-100 border-0 bg-transparent">
+          <div
+            class="card-header bg-primary text-white p-2 d-flex justify-content-between align-items-center rounded-top">
+            <span class="text-uppercase fw-bold small">Sábado</span>
+            <span class="fs-5 fw-bold day-number"></span>
+          </div>
+          <div class="card-body p-0 pt-2 matches-container"></div>
+        </div>
+      </div>
+      <div class="col day-column" id="sundayMatches">
+        <div class="card h-100 border-0 bg-transparent">
+          <div
+            class="card-header bg-primary text-white p-2 d-flex justify-content-between align-items-center rounded-top">
+            <span class="text-uppercase fw-bold small">Domingo</span>
+            <span class="fs-5 fw-bold day-number"></span>
+          </div>
+          <div class="card-body p-0 pt-2 matches-container"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="monthViewContainer" style="display: none;">
+      <!-- Month grid will be rendered here -->
+      <div class="month-grid"></div>
+      <div class="month-list d-md-none"></div> <!-- Mobile list view -->
+    </div>
+  </div>
+
+  <!-- Date Selection Modal -->
+  <div class="modal fade" id="dateModal" tabindex="-1" aria-labelledby="dateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="dateModalLabel">Ir a una fecha</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="dateInput" class="form-label">Selecciona la fecha:</label>
+            <input type="date" class="form-control" id="dateInput">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="confirmDateBtn">Ir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <!-- Firebase y JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/services/CalendarService.js"></script>
+  <script src="../js/utils/Sanitizer.js"></script>
+  <script src="../js/services/TeamService.js?v=1"></script>
+  <script src="../js/load-header.js"></script>
+  <script src="../js/utils/MatchRenderer.js"></script>
+  <script src="../js/public/index.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      // Unregister all service workers for testing
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        for (let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+  </script>
+</body>
+
+</html>

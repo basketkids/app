@@ -1,0 +1,61 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/media/disco/dades/src/basketKids/app/ng-basketkids[39m
+
+[90mstdout[2m | src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22m[2mData Layer E2E Flow
+[22m[39m[E2E Test] Authenticating using provided access token
+
+[90mstdout[2m | src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22m[2mData Layer E2E Flow[2m > [22m[2mshould execute full E2E data repository lifecycle (Create -> Read -> Update -> Delete)
+[22m[39m
+--- 1. CREATING TEAM ---
+
+[90mstdout[2m | src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22m[2mData Layer E2E Flow[2m > [22m[2mshould execute full E2E data repository lifecycle (Create -> Read -> Update -> Delete)
+[22m[39m
+--- 2. CREATING PLAYERS ---
+
+[90mstdout[2m | src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22m[2mData Layer E2E Flow[2m > [22m[2mshould execute full E2E data repository lifecycle (Create -> Read -> Update -> Delete)
+[22m[39m
+--- 3. CREATING COMPETITION & RIVALS ---
+
+[90mstdout[2m | src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22m[2mData Layer E2E Flow[2m > [22m[2mshould execute full E2E data repository lifecycle (Create -> Read -> Update -> Delete)
+[22m[39m
+--- 4. CREATING MATCH ---
+
+[90mstderr[2m | src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22m[2mData Layer E2E Flow[2m > [22m[2mshould execute full E2E data repository lifecycle (Create -> Read -> Update -> Delete)
+[22m[39m[MatchRepository] createMatch error: {
+  code: [32m'PGRST204'[39m,
+  details: [1mnull[22m,
+  hint: [1mnull[22m,
+  message: [32m"Could not find the 'current_quarter' column of 'matches' in the schema cache"[39m
+}
+
+[90mstdout[2m | src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22m[2mData Layer E2E Flow
+[22m[39m
+================ CLEANING UP TEST DATA ================
+
+[90mstdout[2m | src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22m[2mData Layer E2E Flow
+[22m[39m================ CLEANUP COMPLETE ====================
+
+
+ [31m❯[39m src/app/core/models/data/e2e.repository.integration.spec.ts [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 2079[2mms[22m[39m
+[31m     [31m×[31m should execute full E2E data repository lifecycle (Create -> Read -> Update -> Delete)[39m[33m 1284[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22mData Layer E2E Flow[2m > [22mshould execute full E2E data repository lifecycle (Create -> Read -> Update -> Delete)
+[31m[1mTypeError[22m: Cannot read properties of null (reading 'id')[39m
+[36m [2m❯[22m src/app/core/models/data/e2e.repository.integration.spec.ts:[2m135:30[22m[39m
+    [90m133| [39m        [35mconst[39m match [33m=[39m [35mawait[39m matchRepo[33m.[39m[34mcreateMatch[39m(matchPayload)[33m;[39m
+    [90m134| [39m        [34mexpect[39m(match)[33m.[39m[34mtoBeDefined[39m()[33m;[39m
+    [90m135| [39m        testMatchId [33m=[39m match[33m![39m[33m.[39mid[33m;[39m
+    [90m   | [39m                             [31m^[39m
+    [90m136| [39m
+    [90m137| [39m        console[33m.[39m[34mlog[39m([32m'\n--- 5. ADD CONVOCADOS & START MATCH ---'[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m   Start at [22m 21:58:47
+[2m   Duration [22m 2.79s[2m (transform 203ms, setup 0ms, import 442ms, tests 2.08s, environment 0ms)[22m
+

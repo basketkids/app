@@ -1,0 +1,17 @@
+<!-- Day of week headers -->
+<div class="month-header-row">
+    <div *ngFor="let h of headers" class="month-col-header">{{ h }}</div>
+</div>
+
+<!-- Day cells -->
+<div class="month-grid">
+    <div *ngFor="let day of days" class="month-cell" [class.today]="day.isToday"
+        [class.other-month]="!day.inCurrentMonth" [class.has-matches]="day.matches.length > 0">
+        <div class="cell-day-num" [class.today-num]="day.isToday">{{ day.dayNum }}</div>
+        <div *ngFor="let m of day.matches" class="month-match-pill" [class.pill-win]="isWin(m)"
+            [class.pill-loss]="isLoss(m)" (click)="matchClick.emit(m.id)" [title]="matchTitle(m)">
+            <span class="pill-name">vs {{ m.rival_name }}</span>
+            <span *ngIf="isFinished(m)" class="pill-score">{{ m.team_score }}-{{ m.rival_score }}</span>
+        </div>
+    </div>
+</div>

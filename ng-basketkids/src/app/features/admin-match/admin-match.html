@@ -1,0 +1,274 @@
+<div class="container my-3" *ngIf="match; else loading">
+
+    <!-- Title -->
+    <h2 class="mb-3">{{ match.localTeamName }} vs {{ match.visitorTeamName }}</h2>
+
+    <!-- Glass Scoreboard + Timer controls row -->
+    <div class="d-flex flex-wrap justify-content-center align-items-center gap-4 my-2">
+
+        <app-scoreboard [localScore]="match.scoreLocal" [visitorScore]="match.scoreVisitor"
+            [localName]="match.localTeamName" [visitorName]="match.visitorTeamName" [quarter]="match.currentQuarter"
+            [timerState]="match.timerState">
+        </app-scoreboard>
+
+        <!-- Timer control buttons -->
+        <div class="d-flex gap-2 align-items-center">
+            <button class="btn btn-success btn-sm" title="Pausar / Reanudar" (click)="toggleTimer()">
+                <i class="bi" [ngClass]="match.timerState.active ? 'bi-pause-fill' : 'bi-play-fill'"></i>
+            </button>
+            <button class="btn btn-warning btn-sm" title="Terminar cuarto" (click)="advanceQuarter()">
+                <i class="bi bi-arrow-right-square"></i> Cuarto
+            </button>
+            <button class="btn btn-danger btn-sm" title="Terminar partido" (click)="endMatch()">
+                <i class="bi bi-stop-fill"></i> Final
+            </button>
+        </div>
+    </div>
+
+    <!-- Nav Tabs -->
+    <ul class="nav nav-tabs mb-3" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" [class.active]="activeTab === 'convocados'"
+                (click)="activeTab = 'convocados'">Convocados</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" [class.active]="activeTab === 'pista'"
+                (click)="activeTab = 'pista'">Partido</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" [class.active]="activeTab === 'en-vivo'" (click)="activeTab = 'en-vivo'">En
+                Vivo</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" [class.active]="activeTab === 'cronica'"
+                (click)="activeTab = 'cronica'">Crónica</button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+
+        <!-- TAB: Convocados / Estadísticas -->
+        <div class="tab-pane" [class.show]="activeTab === 'convocados'" [class.active]="activeTab === 'convocados'">
+            <div class="d-flex gap-2 mb-3">
+                <button class="btn btn-info btn-sm" (click)="openConvocatoriaModal()">
+                    <i class="bi bi-people-fill"></i> Cambiar convocatoria
+                </button>
+                <button class="btn btn-warning btn-sm" (click)="activeTab = 'pista'">
+                    <i class="bi bi-arrow-left-right"></i> Ir a Partido
+                </button>
+            </div>
+            <div id="tablaEstadisticasContainer">
+                <app-statistics-grid [stats]="match.stats" [roster]="match.convocados">
+                </app-statistics-grid>
+            </div>
+        </div>
+
+        <!-- TAB: Partido (pista) -->
+        <div class="tab-pane" [class.show]="activeTab === 'pista'" [class.active]="activeTab === 'pista'">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <button class="btn btn-warning btn-sm" (click)="openSubsModal()">
+                    <i class="bi bi-people-fill"></i> Cambios
+                </button>
+                <div class="text-muted small">Selecciona un jugador para anotar</div>
+            </div>
+
+            <!-- Player grid (Active Players on Court) -->
+            <div class="player-grid-container mb-4" id="active-players-grid">
+                <ng-container
+                    *ngIf="match.playersOnCourt && Object.keys(match.playersOnCourt).length > 0; else noPlayers">
+                    <div *ngFor="let pid of Object.keys(match.playersOnCourt)" class="player-card"
+                        [class.selected]="selectedPlayerId === pid" (click)="selectPlayer(pid)">
+                        <div class="dorsal">{{ match.plantilla[pid]?.dorsal || match.roster[pid]?.dorsal || '-' }}</div>
+                        <div class="nombre">{{ match.plantilla[pid]?.name || match.roster[pid]?.name || '?' }}</div>
+                        <div class="stats-summary">
+                            <span class="stat-tag text-success">{{ match.stats[pid]?.points || 0 }} pts</span>
+                            <span class="stat-tag"
+                                [ngClass]="(match.stats[pid]?.fouls || 0) >= 5 ? 'text-danger' : 'text-warning'">{{
+                                match.stats[pid]?.fouls || 0 }} F</span>
+                        </div>
+                    </div>
+                </ng-container>
+                <ng-template #noPlayers>
+                    <div class="alert alert-warning p-2 w-100 text-center small">No hay jugadores en pista. Pulsa en
+                        "Cambios".</div>
+                </ng-template>
+            </div>
+
+            <!-- Sticky Action Panel -->
+            <div class="action-panel-footer">
+                <div class="d-flex flex-column gap-2">
+
+                    <!-- Row 1: Positive Stats -->
+                    <div class="d-flex gap-2 justify-content-between">
+                        <button class="btn btn-outline-success flex-grow-1 action-btn"
+                            (click)="addStat(EventTypes.ASSISTS, 1)">AST</button>
+                        <button class="btn btn-outline-success flex-grow-1 action-btn"
+                            (click)="addStat(EventTypes.REBOUNDS, 1)">REB</button>
+                        <button class="btn btn-outline-success flex-grow-1 action-btn"
+                            (click)="addStat(EventTypes.STEALS, 1)">ROB</button>
+                        <button class="btn btn-outline-success flex-grow-1 action-btn"
+                            (click)="addStat(EventTypes.BLOCKS, 1)">TAP</button>
+                    </div>
+
+                    <!-- Row 2: Scoring + Fouls -->
+                    <div class="d-flex gap-2 justify-content-between align-items-center">
+                        <div class="d-flex gap-2 flex-grow-1">
+                            <button class="btn btn-primary action-btn-score flex-grow-1"
+                                (click)="addTeamPoints(1)">+1</button>
+                            <button class="btn btn-primary action-btn-score flex-grow-1"
+                                (click)="addTeamPoints(2)">+2</button>
+                            <button class="btn btn-primary action-btn-score flex-grow-1"
+                                (click)="addTeamPoints(3)">+3</button>
+                        </div>
+                        <button class="btn btn-outline-danger action-btn"
+                            (click)="addStat(EventTypes.FOULS, 1)">FAL</button>
+                        <button class="btn btn-outline-secondary action-btn"
+                            (click)="addStat(EventTypes.MISS, 1)">MISS</button>
+                    </div>
+
+                    <!-- Row 3: Rival -->
+                    <div class="d-flex gap-2 justify-content-center border-top pt-2 mt-1">
+                        <span class="small text-muted align-self-center">Rival:</span>
+                        <button class="btn btn-sm btn-light border" (click)="addRivalPoints(1)">+1</button>
+                        <button class="btn btn-sm btn-light border" (click)="addRivalPoints(2)">+2</button>
+                        <button class="btn btn-sm btn-light border" (click)="addRivalPoints(3)">+3</button>
+                        <button class="btn btn-sm btn-light border text-danger" (click)="addRivalFoul()">F+</button>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+
+        <!-- TAB: En Vivo -->
+        <div class="tab-pane" [class.show]="activeTab === 'en-vivo'" [class.active]="activeTab === 'en-vivo'">
+            <div class="mt-3">
+                <app-live-events [events]="match.events" [roster]="match.roster"></app-live-events>
+            </div>
+        </div>
+
+        <!-- TAB: Crónica -->
+        <div class="tab-pane" [class.show]="activeTab === 'cronica'" [class.active]="activeTab === 'cronica'">
+            <div id="cronicaContent" class="card p-3 bg-light mt-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Crónica del Partido</h5>
+                </div>
+                <div class="alert alert-info small mb-3">
+                    <i class="bi bi-stars"></i> Genera una crónica automática o escribe la tuya propia.
+                </div>
+                <div class="d-flex gap-2 mb-3">
+                    <button class="btn btn-primary flex-grow-1">
+                        <i class="bi bi-cpu-fill"></i> Generar con IA
+                    </button>
+                    <button class="btn btn-outline-primary" title="Copiar Prompt">
+                        <i class="bi bi-clipboard"></i> Copiar Prompt
+                    </button>
+                </div>
+                <div class="p-3 bg-white border rounded mb-3" style="min-height: 100px;">
+                    <div *ngIf="match.chronicle" [innerHTML]="match.chronicle"></div>
+                    <em *ngIf="!match.chronicle" class="text-muted">No hay crónica guardada. Genera una con la IA o
+                        escríbela.</em>
+                </div>
+                <button class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-pencil"></i> Editar Crónica
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Substitutions Modal -->
+    <div class="modal fade show" style="display: block; background: rgba(0,0,0,0.5); z-index: 1050;"
+        *ngIf="showSubsModal">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Seleccionar 5 en Pista</h5>
+                    <button type="button" class="btn-close" (click)="closeSubsModal()"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex align-items-center gap-2"
+                            *ngFor="let pid of Object.keys(match.convocados || {})">
+                            <input class="form-check-input" type="checkbox" [checked]="tempSelectedCourtIds.has(pid)"
+                                (change)="togglePlayerSub(pid)" [id]="'sub_' + pid">
+                            <label class="form-check-label flex-grow-1" [for]="'sub_' + pid">
+                                #{{ match.convocados[pid].dorsal }} - {{ match.convocados[pid].name }}
+                            </label>
+                        </li>
+                    </ul>
+                    <div class="mt-3 text-end text-muted small">
+                        Seleccionados: {{ tempSelectedCourtIds.size }} / 5
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" (click)="closeSubsModal()">Cancelar</button>
+                    <button type="button" class="btn btn-primary" (click)="saveSubstitutions()">Guardar
+                        Cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Convocatoria Modal -->
+    <div class="modal fade show" style="display: block; background: rgba(0,0,0,0.5); z-index: 1050;"
+        *ngIf="showConvocatoriaModal">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Convocatoria del Partido</h5>
+                    <button type="button" class="btn-close" (click)="closeConvocatoriaModal()"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex align-items-center gap-2"
+                            *ngFor="let pid of Object.keys(match.plantilla || {})">
+                            <input class="form-check-input" type="checkbox" [checked]="tempSelectedCourtIds.has(pid)"
+                                (change)="toggleConvocatoriaSub(pid)" [id]="'conv_' + pid">
+                            <label class="form-check-label flex-grow-1" [for]="'conv_' + pid">
+                                #{{ match.plantilla[pid].dorsal }} - {{ match.plantilla[pid].name }}
+                            </label>
+                        </li>
+                    </ul>
+                    <div class="mt-3 text-end text-muted small">
+                        Seleccionados: {{ tempSelectedCourtIds.size }} / {{ Object.keys(match.plantilla ||
+                        {}).length }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" (click)="closeConvocatoriaModal()">Cancelar</button>
+                    <button type="button" class="btn btn-primary" (click)="saveConvocatoria()">Guardar
+                        Convocados</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom action strip -->
+    <div class="d-flex justify-content-center gap-2 mt-4">
+        <a class="btn btn-success btn-sm" target="_blank" rel="noopener">
+            <i class="bi bi-whatsapp"></i> Compartir
+        </a>
+        <a class="btn btn-primary btn-sm" target="_blank" rel="noopener">
+            <i class="bi bi-eye-fill"></i> Ver partido público
+        </a>
+    </div>
+
+</div>
+
+<!-- Loading State -->
+<ng-template #loading>
+    <div class="admin-loading d-flex flex-column justify-content-center align-items-center" style="min-height:70vh">
+        <!-- Animated basketball icon -->
+        <div class="loading-icon mb-4">
+            <i class="bi bi-dribbble" style="font-size: 4rem; color: var(--bs-primary, #0d6efd);"
+                [style.animation]="'spin 1.5s linear infinite'"></i>
+        </div>
+        <!-- Spinner -->
+        <div class="spinner-border text-primary mb-3" role="status" style="width:3rem;height:3rem;">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        <h4 class="fw-semibold mb-1">Cargando partido...</h4>
+        <p class="text-secondary small">Obteniendo datos desde Supabase</p>
+    </div>
+</ng-template>

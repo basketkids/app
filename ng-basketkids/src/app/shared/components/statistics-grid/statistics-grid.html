@@ -1,0 +1,63 @@
+<div class="table-responsive small">
+    <table class="table table-striped table-sm text-center align-middle mb-0" style="table-layout: fixed;">
+        <thead class="table-dark user-select-none" style="cursor: pointer;">
+            <tr>
+                <th scope="col" class="text-start" (click)="sortBy('name')" style="width: 35%;">
+                    Jugador <i class="bi"
+                        [ngClass]="{'bi-caret-down-fill': !sortAsc && sortColumn === 'name', 'bi-caret-up-fill': sortAsc && sortColumn === 'name'}"></i>
+                </th>
+                <th scope="col" (click)="sortBy('points')">
+                    PTS <i class="bi" *ngIf="sortColumn === 'points'"
+                        [ngClass]="{'bi-caret-down-fill': !sortAsc, 'bi-caret-up-fill': sortAsc}"></i>
+                </th>
+                <th scope="col" class="d-none d-sm-table-cell" (click)="sortBy('assists')">
+                    AST <i class="bi" *ngIf="sortColumn === 'assists'"
+                        [ngClass]="{'bi-caret-down-fill': !sortAsc, 'bi-caret-up-fill': sortAsc}"></i>
+                </th>
+                <th scope="col" class="d-none d-sm-table-cell" (click)="sortBy('rebounds')">
+                    REB <i class="bi" *ngIf="sortColumn === 'rebounds'"
+                        [ngClass]="{'bi-caret-down-fill': !sortAsc, 'bi-caret-up-fill': sortAsc}"></i>
+                </th>
+                <th scope="col" class="d-none d-sm-table-cell" (click)="sortBy('steals')">
+                    ROB <i class="bi" *ngIf="sortColumn === 'steals'"
+                        [ngClass]="{'bi-caret-down-fill': !sortAsc, 'bi-caret-up-fill': sortAsc}"></i>
+                </th>
+                <th scope="col" class="d-none d-sm-table-cell" (click)="sortBy('blocks')">
+                    TAP <i class="bi" *ngIf="sortColumn === 'blocks'"
+                        [ngClass]="{'bi-caret-down-fill': !sortAsc, 'bi-caret-up-fill': sortAsc}"></i>
+                </th>
+                <th scope="col" (click)="sortBy('fouls')">
+                    F <i class="bi" *ngIf="sortColumn === 'fouls'"
+                        [ngClass]="{'bi-caret-down-fill': !sortAsc, 'bi-caret-up-fill': sortAsc}"></i>
+                </th>
+                <th scope="col" class="d-none d-sm-table-cell" (click)="sortBy('plusMinus')">
+                    +/- <i class="bi" *ngIf="sortColumn === 'plusMinus'"
+                        [ngClass]="{'bi-caret-down-fill': !sortAsc, 'bi-caret-up-fill': sortAsc}"></i>
+                </th>
+                <th scope="col" (click)="sortBy('valoracion')">
+                    VAL <i class="bi" *ngIf="sortColumn === 'valoracion'"
+                        [ngClass]="{'bi-caret-down-fill': !sortAsc, 'bi-caret-up-fill': sortAsc}"></i>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr *ngFor="let row of rows">
+                <td class="text-start text-truncate" [title]="row.player.name">
+                    <strong>#{{ row.player.dorsal }}</strong> <span class="d-inline-block text-truncate"
+                        style="max-width: 100px; vertical-align: bottom;">{{ row.player.name }}</span>
+                </td>
+                <td><strong>{{ row.stats.points }}</strong></td>
+                <td class="d-none d-sm-table-cell">{{ row.stats.assists }}</td>
+                <td class="d-none d-sm-table-cell">{{ row.stats.rebounds }}</td>
+                <td class="d-none d-sm-table-cell">{{ row.stats.steals }}</td>
+                <td class="d-none d-sm-table-cell">{{ row.stats.blocks }}</td>
+                <td>{{ row.stats.fouls }}</td>
+                <td class="d-none d-sm-table-cell"
+                    [ngClass]="{'text-success': row.stats.plusMinus && row.stats.plusMinus! > 0, 'text-danger': row.stats.plusMinus && row.stats.plusMinus! < 0}">
+                    {{ row.stats.plusMinus! > 0 ? '+' : '' }}{{ row.stats.plusMinus }}
+                </td>
+                <td><strong>{{ row.stats.valoracion }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+</div>

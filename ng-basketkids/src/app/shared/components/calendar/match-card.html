@@ -1,0 +1,51 @@
+<!-- Matches MatchRenderer.js renderMatchCard() exactly: card mb-2 shadow-sm border -->
+<div class="match-card card mb-2 shadow-sm border" (click)="matchClick.emit(match.id)">
+    <div class="card-body p-2">
+
+        <!-- Time + optional badge -->
+        <div class="d-flex justify-content-between align-items-start mb-1">
+            <div class="text-secondary small">{{ formatTime(match.date || '') }}</div>
+        </div>
+
+        <!-- Teams stacked: local / vs / visitor -->
+        <div class="mb-2">
+            <div class="fw-bold text-truncate" [title]="localName">{{ localName }}</div>
+            <div class="text-secondary small">vs</div>
+            <div class="fw-bold text-truncate" [title]="visitorName">{{ visitorName }}</div>
+        </div>
+
+        <!-- Location -->
+        <div class="mb-2">
+            <a *ngIf="match.location" [href]="mapsUrl" target="_blank" (click)="$event.stopPropagation()"
+                class="text-decoration-none text-secondary location-link" style="font-size:0.85em">
+                <i class="bi bi-geo-alt"></i> {{ match.location }}
+            </a>
+            <span *ngIf="!match.location" class="text-secondary small" style="font-size:0.85em">Sin ubicación</span>
+        </div>
+
+        <!-- Footer: status icon + score + action button -->
+        <div class="d-flex align-items-center mt-2 border-top pt-2">
+            <div class="d-flex align-items-center">
+                <!-- Status icon (matches renderMatchCard switch) -->
+                <ng-container [ngSwitch]="normalizedState">
+                    <i *ngSwitchCase="'pendiente'" class="bi bi-clock text-secondary" title="Pendiente"></i>
+                    <i *ngSwitchCase="'en_curso'" class="bi bi-record-circle-fill text-danger live-blink"
+                        title="En curso"></i>
+                    <i *ngSwitchCase="'finalizado'" class="bi bi-check-circle-fill text-success" title="Finalizado"></i>
+                    <i *ngSwitchDefault class="bi bi-question-circle-fill text-muted"></i>
+                </ng-container>
+                <!-- Score -->
+                <span *ngIf="hasScore" class="fw-bold ms-2" [class.text-success]="localScore > visitorScore"
+                    [class.text-danger]="localScore < visitorScore">
+                    {{ localScore }} – {{ visitorScore }}
+                </span>
+            </div>
+            <!-- Action button -->
+            <a class="btn btn-sm btn-success ms-auto" title="Ver partido"
+                (click)="matchClick.emit(match.id); $event.stopPropagation()">
+                <i class="bi bi-eye-fill"></i>
+            </a>
+        </div>
+
+    </div>
+</div>

@@ -1,0 +1,106 @@
+.month-header-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-bottom: 4px;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid var(--border-color, #dee2e6);
+}
+
+.month-col-header {
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #888;
+    letter-spacing: 0.04em;
+}
+
+.month-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.month-cell {
+    min-height: 80px;
+    border: 1px solid var(--border-color, #dee2e6);
+    border-radius: 0.3rem;
+    padding: 0.2rem;
+    background: var(--bg-card, #fff);
+}
+
+.month-cell.today {
+    border-color: var(--bs-primary, #0d6efd);
+    box-shadow: 0 0 0 2px var(--bs-primary, #0d6efd);
+}
+
+.month-cell.other-month {
+    opacity: 0.35;
+    border-color: transparent;
+    background: transparent;
+}
+
+.month-cell.has-matches {
+    background: rgba(13, 110, 253, 0.04);
+}
+
+.cell-day-num {
+    font-size: 0.78rem;
+    margin-bottom: 2px;
+}
+
+.cell-day-num.today-num {
+    font-weight: 700;
+    color: var(--bs-primary, #0d6efd);
+}
+
+.month-match-pill {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2px;
+    font-size: 0.65rem;
+    background: var(--bs-primary, #0d6efd);
+    color: #fff;
+    border-radius: 3px;
+    padding: 1px 4px;
+    margin-bottom: 2px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: opacity 0.12s;
+}
+
+.month-match-pill:hover {
+    opacity: 0.82;
+}
+
+.month-match-pill.pill-win {
+    background: var(--bs-success, #198754);
+}
+
+.month-match-pill.pill-loss {
+    background: var(--bs-danger, #dc3545);
+}
+
+.pill-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+.pill-score {
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+@media (max-width: 576px) {
+    .month-cell {
+        min-height: 55px;
+    }
+
+    .month-match-pill {
+        font-size: 0.55rem;
+    }
+}

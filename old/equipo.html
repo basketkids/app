@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BasketKids - Gestión Equipo</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/styles.css?v=dev-no-cache" />
+  <link rel="icon" href="../img/favicon.ico" type="image/x-icon" />
+  <link rel="manifest" href="../manifest.json" />
+  <meta name="theme-color" content="#2B2B2B" />
+
+  <!-- Google Analytics -->
+  <script src="../js/analytics.js"></script>
+</head>
+
+<body class="bg-light">
+
+  <div id="header-container"></div>
+
+  <div class="container">
+
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <h2 id="teamName" class="mb-0 text-break"></h2>
+        <button id="editTeamBtn" class="btn btn-sm btn-outline-secondary" title="Editar equipo">
+          <i class="bi bi-pencil"></i>
+        </button>
+        <a id="teamCalendarLink" href="#" class="btn btn-sm btn-outline-primary text-nowrap"
+          title="Ver partidos globales del equipo">
+          <i class="bi bi-calendar3"></i> <span class="d-none d-sm-inline">Partidos Globales</span>
+        </a>
+      </div>
+    </div>
+
+    <nav class="mb-4">
+      <ul class="nav nav-tabs" id="menuEquipo">
+        <li class="nav-item"><a class="nav-link active" href="#" data-seccion="plantilla">Plantilla</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-seccion="competiciones">Competiciones</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-seccion="miembros" id="navMiembros"
+            style="display:none">Miembros</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-seccion="fantasy">Fantasy</a></li>
+      </ul>
+    </nav>
+
+    <section id="seccion-plantilla" class="seccion-activa">
+      <h3 id="coachNameDisplay" class="mb-3" style="display: none;"></h3>
+      <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addPlayerModal">
+        Añadir Jugador/a
+      </button>
+      <ul id="playersList" class="modern-list"></ul>
+    </section>
+
+    <section id="seccion-competiciones" style="display:none">
+      <button type="button" class="btn btn-primary mb-3" id="nuevoCompeticionBtn">
+        Nueva Competición
+      </button>
+      <ul id="competicionesList" class="modern-list"></ul>
+    </section>
+
+    <section id="seccion-miembros" style="display:none">
+      <div class="alert alert-info">
+        Gestiona los permisos de tu equipo. Puedes asignar roles a tus seguidores.
+      </div>
+      <div class="row">
+        <div class="col-md-6">
+          <h5 class="mb-3">Miembros con Permisos</h5>
+          <ul id="membersList" class="modern-list mb-4">
+            <li class="modern-list-item justify-content-center text-muted">Cargando miembros...</li>
+          </ul>
+        </div>
+        <div class="col-md-6">
+          <h5 class="mb-3">Seguidores (Candidatos)</h5>
+          <p class="small text-muted">Usuarios que siguen a tu equipo y pueden ser promovidos.</p>
+          <ul id="followersList" class="modern-list">
+            <li class="modern-list-item justify-content-center text-muted">Cargando seguidores...</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="seccion-fantasy" style="display:none">
+      <div class="alert alert-light border" style="cursor: pointer;" data-bs-toggle="modal"
+        data-bs-target="#modalFantasyInfo">
+        <i class="bi bi-info-circle me-2"></i>Aquí puedes ver el rendimiento Fantasy acumulado de tus jugadores en todos
+        los partidos. <strong>(Haz clic para ver cómo se calcula)</strong>
+      </div>
+      <div id="fantasyTableContainer" class="table-responsive"></div>
+    </section>
+
+  </div>
+
+  <!-- Añadir jugador Modal (igual que antes) -->
+  <div class="modal fade" id="addPlayerModal" tabindex="-1" aria-labelledby="addPlayerLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <form id="addPlayerForm" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addPlayerLabel">Añadir Jugador/a</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="text" id="inputJugadorNombre" class="form-control mb-3" placeholder="Nombre jugador" required />
+          <input type="text" id="inputJugadorDorsal" class="form-control" placeholder="Dorsal (0, 00, 1-99)" required
+            maxlength="2" />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar jugador/a</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal nuevo competición -->
+  <div class="modal fade" id="addCompeticionModal" tabindex="-1" aria-labelledby="addCompeticionLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+      <form id="addCompeticionForm" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addCompeticionLabel">Nueva Competición</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="text" id="inputNombreCompeticion" class="form-control" placeholder="Nombre competición"
+            required />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Crear competición</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- Modal Editar Competición -->
+  <div class="modal fade" id="editCompeticionModal" tabindex="-1" aria-labelledby="editCompeticionLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+      <form id="editCompeticionForm" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editCompeticionLabel">Editar Competición</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="text" id="editNombreCompeticion" class="form-control" placeholder="Nombre competición"
+            required />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmDeleteLabel">Confirmar borrado</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          ¿Estás seguro que quieres borrar al jugador <strong id="nombreJugadorConfirm"></strong>?
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="btnConfirmDelete">Borrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Editar Equipo -->
+  <div class="modal fade" id="editTeamModal" tabindex="-1" aria-labelledby="editTeamModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editTeamModalLabel">Editar Equipo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Team Name -->
+          <div class="mb-3">
+            <label for="editTeamNameInput" class="form-label fw-semibold">Nombre del Equipo</label>
+            <input type="text" id="editTeamNameInput" class="form-control" placeholder="Nombre del equipo">
+          </div>
+
+          <!-- Coach Name -->
+          <div class="mb-3">
+            <label for="editCoachNameInput" class="form-label fw-semibold">Nombre del Entrenador/a</label>
+            <input type="text" id="editCoachNameInput" class="form-control" placeholder="Nombre del entrenador">
+          </div>
+
+          <!-- Jersey Color Palette -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold mb-2">Color de Camiseta</label>
+            <div id="modalColorPalette" class="d-flex flex-wrap gap-2">
+              <!-- Color swatches will be generated here -->
+            </div>
+          </div>
+
+          <!-- Fix Matches Link -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Utilidades</label>
+            <div>
+              <a id="fixMatchesLink" href="#" class="btn btn-sm btn-warning" target="_blank">
+                <i class="bi bi-tools"></i> Corregir Partidos Globales
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="saveTeamBtn" class="btn btn-primary">Guardar Cambios</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detalle Fantasy -->
+  <div class="modal fade" id="modalFantasyPlayer" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Detalle Fantasy - <span id="fantasyPlayerName"></span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Competición</th>
+                  <th>Rival</th>
+                  <th class="text-center">Puntos Fantasy</th>
+                  <th class="text-end">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="fantasyMatchList"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Info Fantasy -->
+  <div class="modal fade" id="modalFantasyInfo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Cálculo Puntuación Fantasy</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p>La puntuación Fantasy se calcula sumando las siguientes acciones:</p>
+          <table class="table table-bordered">
+            <thead class="table-light">
+              <tr>
+                <th>Acción</th>
+                <th class="text-center">Puntos</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Puntos anotados</td>
+                <td class="text-center text-success fw-bold">+1</td>
+              </tr>
+              <tr>
+                <td>Rebotes</td>
+                <td class="text-center text-success fw-bold">+1</td>
+              </tr>
+              <tr>
+                <td>Asistencias</td>
+                <td class="text-center text-success fw-bold">+2</td>
+              </tr>
+              <tr>
+                <td>Robos</td>
+                <td class="text-center text-success fw-bold">+3</td>
+              </tr>
+              <tr>
+                <td>Tapones</td>
+                <td class="text-center text-success fw-bold">+3</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Entendido</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <!-- Bootstrap JS, Firebase y scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/load-header.js"></script>
+  <script src="../js/utils/DiceBearManager.js"></script>
+  <script src="../js/utils/Sanitizer.js"></script>
+  <script src="../js/services/TeamService.js"></script>
+  <script src="../js/services/TeamMembersService.js"></script>
+  <script src="../js/services/PlayerService.js"></script>
+  <script src="../js/services/CompetitionService.js"></script>
+  <script src="../js/apps/BaseApp.js"></script>
+  <script src="../js/apps/TeamApp.js?v=3"></script>
+  <script src="../js/equipo.js?v=3"></script>
+
+</body>
+
+</html>

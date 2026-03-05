@@ -1,0 +1,19 @@
+<div class="list-group list-group-flush small" style="max-height: 400px; overflow-y: auto;">
+    <div *ngIf="displayEvents.length === 0" class="p-3 text-muted fst-italic text-center">
+        No hay eventos todavía.
+    </div>
+
+    <div *ngFor="let item of displayEvents"
+        class="list-group-item py-2 d-flex align-items-center justify-content-between">
+        <div>
+            <span class="badge {{ item.badgeClass }} me-2 text-uppercase">{{ item.event.type }}</span>
+            <span class="fw-bold">{{ item.playerName }}</span>
+            <small class="text-muted ms-1" *ngIf="item.event.quantity">
+                (+{{ item.event.quantity }})
+            </small>
+        </div>
+        <div class="text-muted" style="font-size: 0.85em;">
+            Q{{ item.event.quarter }}
+        </div>
+    </div>
+</div>

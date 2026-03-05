@@ -1,0 +1,51 @@
+<div class="container py-4" *ngIf="match; else loading">
+
+    <div class="row">
+        <!-- Center Scoreboard Area -->
+        <div class="col-12 mb-4">
+            <app-scoreboard [localScore]="match.scoreLocal" [visitorScore]="match.scoreVisitor"
+                [localName]="match.localTeamName" [visitorName]="match.visitorTeamName" [quarter]="match.currentQuarter"
+                [timerState]="match.timerState">
+            </app-scoreboard>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Live Events Column -->
+        <div class="col-md-5 col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-broadcast"></i> En Vivo</h5>
+                    <span class="badge bg-light text-danger blink">LIVE</span>
+                </div>
+                <div class="card-body p-0">
+                    <app-live-events [events]="match.events" [roster]="match.roster">
+                    </app-live-events>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Grid Column -->
+        <div class="col-md-7 col-lg-8">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart-fill"></i> Estadísticas</h5>
+                </div>
+                <div class="card-body p-0">
+                    <app-statistics-grid [stats]="match.stats" [roster]="match.roster">
+                    </app-statistics-grid>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Loading State -->
+<ng-template #loading>
+    <div class="d-flex justify-content-center align-items-center vh-100">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Cargando partido...</span>
+        </div>
+    </div>
+</ng-template>

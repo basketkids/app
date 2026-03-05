@@ -1,0 +1,99 @@
+<div class="container py-3">
+    <h2>Mis Equipos</h2>
+
+    <div class="mb-3 d-flex gap-2 flex-wrap">
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addTeamModal">
+            Añadir Equipo
+        </button>
+        <a routerLink="/calendario" class="btn btn-primary">
+            <i class="bi bi-calendar-week"></i> Ver Calendario Semanal
+        </a>
+        <a routerLink="/partidos-publicos" class="btn btn-primary text-white">
+            Ver partidos públicos
+        </a>
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="errorMsg" class="alert alert-danger">{{ errorMsg }}</div>
+
+    <!-- My Teams -->
+    <div *ngIf="loadingTeams" class="text-center py-4 text-muted">
+        <div class="spinner-border spinner-border-sm me-2"></div>Cargando equipos...
+    </div>
+
+    <ul *ngIf="!loadingTeams" class="modern-list mb-4">
+        <li *ngIf="myTeams.length === 0" class="modern-list-item justify-content-center text-muted">
+            No tienes equipos creados
+        </li>
+        <li *ngFor="let team of myTeams" class="modern-list-item" [routerLink]="['/equipo', team.id]"
+            style="cursor:pointer;">
+            <span class="item-title">{{ team.name }}</span>
+            <div class="d-flex gap-2" (click)="$event.stopPropagation()">
+                <a [routerLink]="['/equipo', team.id]" class="btn btn-sm btn-warning" title="Gestionar">
+                    <i class="bi bi-pencil-fill"></i>
+                </a>
+                <button class="btn btn-sm btn-danger" title="Borrar" data-bs-toggle="modal"
+                    data-bs-target="#confirmDeleteModal" (click)="confirmDelete(team.id)">
+                    <i class="bi bi-trash-fill"></i>
+                </button>
+            </div>
+        </li>
+    </ul>
+
+    <!-- Followed Teams -->
+    <h3 class="mt-4">Equipos que sigo</h3>
+    <ul class="modern-list mb-4">
+        <li *ngIf="followedTeams.length === 0" class="modern-list-item justify-content-center text-muted">
+            No sigues a ningún equipo
+        </li>
+        <li *ngFor="let f of followedTeams" class="modern-list-item" [routerLink]="['/equipo', f.teams.id]"
+            style="cursor:pointer;">
+            <span>{{ f.teams.name }}</span>
+            <a [routerLink]="['/equipo', f.teams.id]" class="btn btn-sm btn-info" (click)="$event.stopPropagation()">
+                <i class="bi bi-eye-fill"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+<!-- Modal Añadir Equipo -->
+<div class="modal fade" id="addTeamModal" tabindex="-1" aria-labelledby="addTeamModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form (ngSubmit)="addTeam()">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addTeamModalLabel">Añadir nuevo equipo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control" placeholder="Nombre de equipo" [(ngModel)]="newTeamName"
+                        name="newTeamName" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" [disabled]="!newTeamName.trim()">Guardar
+                        equipo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmar Borrar -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmDeleteLabel">Confirmar borrado</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                ¿Estás seguro de que quieres borrar este equipo? Esta acción no se puede deshacer.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" (click)="deleteTeam()">Borrar equipo</button>
+            </div>
+        </div>
+    </div>
+</div>

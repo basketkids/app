@@ -1,0 +1,118 @@
+<div class="bg-light d-flex align-items-center justify-content-center" style="min-height: 100vh;">
+    <div class="card shadow-lg" style="width: 100%; max-width: 400px;">
+        <div class="card-body p-4">
+            <div class="text-center mb-4">
+                <h3 class="fw-bold text-primary">BasketKids</h3>
+                <p class="text-muted">Bienvenido de nuevo</p>
+            </div>
+
+            <!-- Tabs -->
+            <ul class="nav nav-pills nav-fill mb-3" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link" [class.active]="activeTab === 'login'" (click)="activeTab = 'login'"
+                        type="button">Iniciar Sesión</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" [class.active]="activeTab === 'register'" (click)="activeTab = 'register'"
+                        type="button">Registrarse</button>
+                </li>
+            </ul>
+
+            <!-- Login Pane -->
+            <div *ngIf="activeTab === 'login'">
+                <form (ngSubmit)="onLogin()" #loginForm="ngForm">
+                    <div class="mb-3">
+                        <label for="loginEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="loginEmail" [(ngModel)]="loginEmail"
+                            name="loginEmail" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="loginPassword" class="form-label">Contraseña</label>
+                        <input type="password" class="form-control" id="loginPassword" [(ngModel)]="loginPassword"
+                            name="loginPassword" required>
+                    </div>
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-primary" [disabled]="loading || !loginForm.valid">
+                            <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+                            Entrar
+                        </button>
+                    </div>
+                    <div class="text-center">
+                        <a href="#" class="text-decoration-none" data-bs-toggle="modal"
+                            data-bs-target="#forgotPasswordModal">¿Olvidaste tu contraseña?</a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Register Pane -->
+            <div *ngIf="activeTab === 'register'">
+                <form (ngSubmit)="onRegister()" #registerForm="ngForm">
+                    <div class="mb-3">
+                        <label for="registerEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="registerEmail" [(ngModel)]="registerEmail"
+                            name="registerEmail" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="registerPassword" class="form-label">Contraseña</label>
+                        <input type="password" class="form-control" id="registerPassword" [(ngModel)]="registerPassword"
+                            name="registerPassword" required minlength="6">
+                    </div>
+                    <div class="mb-3">
+                        <label for="registerConfirm" class="form-label">Confirmar Contraseña</label>
+                        <input type="password" class="form-control" id="registerConfirm"
+                            [(ngModel)]="registerConfirmPassword" name="registerConfirm" required minlength="6">
+                    </div>
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-success" [disabled]="loading || !registerForm.valid">
+                            <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+                            Registrarse
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Error / Info Message -->
+            <div *ngIf="errorMsg" class="alert alert-danger mt-2 py-2 small">{{ errorMsg }}</div>
+
+            <!-- Google Login -->
+            <div class="text-center my-3">
+                <span class="text-muted">o continúa con</span>
+            </div>
+            <div class="d-grid">
+                <button id="googleLoginBtn" class="btn btn-outline-danger" (click)="onGoogleLogin()" type="button">
+                    <i class="bi bi-google me-2"></i>Google
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Forgot Password Modal -->
+<div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-labelledby="forgotPasswordModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="forgotPasswordModalLabel">Restablecer Contraseña</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p>Introduce tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.</p>
+                <form (ngSubmit)="onResetPassword()" #resetForm="ngForm">
+                    <div class="mb-3">
+                        <label for="resetEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="resetEmail" [(ngModel)]="resetEmail"
+                            name="resetEmail" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary" [disabled]="!resetForm.valid">Enviar
+                            enlace</button>
+                    </div>
+                </form>
+                <div *ngIf="resetMessage" class="alert mt-3 py-2 small" [class]="'alert-' + resetMessageType">
+                    {{ resetMessage }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

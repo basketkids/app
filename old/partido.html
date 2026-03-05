@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BasketKids - Gestión Partido</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+  <link href="../css/styles.css?v=dev-no-cache" rel="stylesheet" />
+  <link rel="icon" href="../img/favicon.ico" type="image/x-icon" />
+  <link rel="manifest" href="../manifest.json" />
+  <meta name="theme-color" content="#2B2B2B" />
+
+
+  <!-- Google Analytics -->
+  <script src="../js/analytics.js"></script>
+</head>
+
+<body>
+  <div id="header-container"></div>
+
+  <div id="loadingOverlay" style="display: none;">
+    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+  </div>
+
+  <div class="container my-3">
+
+    <h2 id="nombrePartido" class="mb-4">Gestión de Partido</h2>
+    <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
+
+
+    </div>
+
+
+
+    <!-- Marcadores + contador + control -->
+    <div class="d-flex justify-content-center align-items-center gap-4 flex-wrap my-1">
+
+
+
+      <!-- Scoreboard Container -->
+      <div id="scoreboard-container"
+        class="glass-scoreboard d-flex justify-content-between align-items-center gap-2 mb-4 p-3">
+
+        <!-- Local Team -->
+        <div id="scoreboardTeamContainer" class="scoreboard-team-box">
+          <div class="team-name" id="nombreEquipoMarcador">LOCAL</div>
+          <div class="team-score" id="marcadorEquipo">0</div>
+          <div class="foul-lights-container" id="foulLightsEquipo">
+            <span class="foul-dot"></span>
+            <span class="foul-dot"></span>
+            <span class="foul-dot"></span>
+            <span class="foul-dot"></span>
+            <span class="foul-dot bonus"></span>
+          </div>
+        </div>
+
+        <!-- Timer & Period (Center) -->
+        <div id="scoreboardTimerContainer"
+          class="d-flex flex-column justify-content-center align-items-center mx-2 timer-box">
+          <div id="contador" class="digital-clock mb-2">10:00</div>
+          <div class="period-display">Cuarto <span id="periodoActual">1</span></div>
+          <div id="parcialesCuartos" class="small text-white-50 mt-1" style="font-size: 0.7rem; white-space: nowrap;">
+          </div>
+        </div>
+
+        <!-- Visitor Team -->
+        <div id="scoreboardRivalContainer" class="scoreboard-team-box">
+          <div class="team-name" id="nombreEquipoRival">RIVAL</div>
+          <div class="team-score" id="marcadorRival">0</div>
+          <div class="foul-lights-container" id="foulLightsRival">
+            <span class="foul-dot"></span>
+            <span class="foul-dot"></span>
+            <span class="foul-dot"></span>
+            <span class="foul-dot"></span>
+            <span class="foul-dot bonus"></span>
+          </div>
+        </div>
+
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+
+        <button id="btnStartPause" class="btn btn-success btn-sm" title="Pausar / Reanudar">
+          <i class="bi bi-play-fill"></i>
+        </button>
+        <button id="btnTerminarCuarto" class="btn btn-warning btn-sm" title="Terminar cuarto" disabled>
+          <i class="bi bi-arrow-right-square"></i> Cuarto</button>
+        <button id="btnTerminar" class="btn btn-danger btn-sm" title="Terminar partido" disabled>
+          <i class="bi bi-stop-fill"></i> Final
+        </button>
+      </div>
+
+    </div>
+
+
+
+
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-3" id="tabsPartido" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="tab-convocados" data-bs-toggle="tab" data-bs-target="#convocados"
+          type="button" role="tab" aria-controls="convocados" aria-selected="true">Convocados</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-pista" data-bs-toggle="tab" data-bs-target="#pista" type="button" role="tab"
+          aria-controls="pista" aria-selected="false">Partido</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-en-vivo" data-bs-toggle="tab" data-bs-target="#en-vivo" type="button"
+          role="tab" aria-controls="en-vivo" aria-selected="false">En Vivo</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-solicitudes" data-bs-toggle="tab" data-bs-target="#solicitudes" type="button"
+          role="tab" aria-controls="solicitudes" aria-selected="false">Solicitudes <span id="badgeSolicitudes"
+            class="badge bg-danger" style="display:none;">0</span></button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-cronica" data-bs-toggle="tab" data-bs-target="#cronica" type="button"
+          role="tab" aria-controls="cronica" aria-selected="false">Crónica</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-fantasy" data-bs-toggle="tab" data-bs-target="#fantasy" type="button"
+          role="tab" aria-controls="fantasy" aria-selected="false">Fantasy</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-quintetos" data-bs-toggle="tab" data-bs-target="#quintetos" type="button"
+          role="tab" aria-controls="quintetos" aria-selected="false">Quintetos</button>
+      </li>
+    </ul>
+
+    <div class="tab-content" id="tabsContent">
+      <!-- Tab: Convocados -->
+      <div class="tab-pane fade show active" id="convocados" role="tabpanel" aria-labelledby="tab-convocados">
+
+        <!-- Match Info inside Convocatoria -->
+        <div id="infoPartidoConvocatoria" class="text-center mb-3 p-2 bg-white rounded border"></div>
+
+        <!-- Match Configuration -->
+        <div class="mb-3 d-flex justify-content-center align-items-center gap-3 bg-light p-2 rounded">
+          <label for="selectConfiguracion" class="form-label fw-semibold mb-0">Configuración:</label>
+          <select id="selectConfiguracion" class="form-select form-select-sm" style="max-width: 250px;">
+            <option value="6x8" selected>6 cuartos - 8 minutos</option>
+            <option value="4x10">4 cuartos - 10 minutos</option>
+          </select>
+        </div>
+
+        <h4 id="nombreEntrenadorConvocados" class="mb-3" style="display: none;"></h4>
+        <button type="button" class="btn btn-info mb-3" data-bs-toggle="modal"
+          data-bs-target="#modalConvocarJugadores">Cambiar convocatoria</button>
+        <button type="button" class="btn btn-secondary mb-3 ms-2" data-bs-toggle="modal"
+          data-bs-target="#modalImportarStats">Importar CSV</button>
+        <button type="button" class="btn btn-warning mb-3 ms-2" id="btnOpenSwapStats">
+          <i class="bi bi-arrow-left-right"></i> Intercambiar Stats
+        </button>
+        <div id="tablaEstadisticasContainer"></div>
+      </div>
+      <!-- Tab: Partido -->
+      <div class="tab-pane fade" id="pista" role="tabpanel" aria-labelledby="tab-pista">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal"
+            data-bs-target="#modalElegirPista">
+            <i class="bi bi-people-fill"></i> Cambios
+          </button>
+          <div class="text-muted small">Selecciona un jugador para anotar</div>
+        </div>
+
+        <!-- New Player Grid Container -->
+        <div id="active-players-grid" class="player-grid-container mb-4">
+          <!-- Players will be injected here by JS -->
+        </div>
+
+        <!-- Legacy list for fallback or hidden? removing it as we replace functionality -->
+        <!-- <ul id="listaJugadoresPista" class="list-group"></ul> -->
+
+        <!-- Sticky Action Panel -->
+        <div id="action-controls-footer" class="action-panel-footer">
+          <div class="d-flex flex-column gap-2">
+
+            <!-- Row 1: Positive Stats -->
+            <div class="d-flex gap-2 justify-content-between">
+              <button class="btn btn-outline-success flex-grow-1 action-btn" data-action="asistencias">AST</button>
+              <button class="btn btn-outline-success flex-grow-1 action-btn" data-action="rebotes">REB</button>
+              <button class="btn btn-outline-success flex-grow-1 action-btn" data-action="robos">ROB</button>
+              <button class="btn btn-outline-success flex-grow-1 action-btn" data-action="tapones">TAP</button>
+            </div>
+
+            <!-- Row 2: Scoring & Fouls -->
+            <div class="d-flex gap-2 justify-content-between align-items-center">
+              <div class="d-flex gap-2 flex-grow-1">
+                <button class="btn btn-primary action-btn-score flex-grow-1" data-action="puntos"
+                  data-val="1">+1</button>
+                <button class="btn btn-primary action-btn-score flex-grow-1" data-action="puntos"
+                  data-val="2">+2</button>
+                <button class="btn btn-primary action-btn-score flex-grow-1" data-action="puntos"
+                  data-val="3">+3</button>
+              </div>
+
+              <button class="btn btn-outline-danger action-btn" data-action="faltas" title="Falta Personal">FAL</button>
+              <button class="btn btn-outline-secondary action-btn" data-action="fallo"
+                title="Tiro Fallado">MISS</button>
+            </div>
+
+            <!-- Row 3: Opponent Quick Stats (Optional here or kept above) -->
+            <!-- Creating a small strip for Rival -->
+            <div class="d-flex gap-2 justify-content-center border-top pt-2 mt-1">
+              <span class="small text-muted align-self-center">Rival:</span>
+              <button class="btn btn-sm btn-light border" id="btnRivalP1">+1</button>
+              <button class="btn btn-sm btn-light border" id="btnRivalP2">+2</button>
+              <button class="btn btn-sm btn-light border" id="btnRivalP3">+3</button>
+              <button class="btn btn-sm btn-light border text-danger" id="btnRivalF">F+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Tab: En Vivo -->
+      <div class="tab-pane fade" id="en-vivo" role="tabpanel" aria-labelledby="tab-en-vivo">
+        <div id="listaEventosEnVivo" class="list-group mt-3"></div>
+      </div>
+      <!-- Tab: Solicitudes -->
+      <div class="tab-pane fade" id="solicitudes" role="tabpanel" aria-labelledby="tab-solicitudes">
+        <div class="alert alert-info mt-3">
+          Aquí aparecerán las solicitudes de usuarios que quieren colaborar como anotadores en este partido.
+        </div>
+        <ul id="listaSolicitudes" class="list-group mt-3"></ul>
+      </div>
+      <!-- Tab: Crónica -->
+      <div class="tab-pane fade" id="cronica" role="tabpanel" aria-labelledby="tab-cronica">
+        <style>
+          #cronicaContent h1,
+          #cronicaContent h2,
+          #cronicaContent h3 {
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+          }
+
+          #cronicaContent p {
+            margin-bottom: 1rem;
+          }
+
+          #cronicaContent {
+            line-height: 1.4;
+            text-align: justify;
+          }
+        </style>
+        <div id="cronicaContent" class="card p-3 bg-light">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Crónica del Partido</h5>
+            <div>
+              <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal"
+                data-bs-target="#modalApiKey">
+                <i class="bi bi-gear-fill"></i> Config. API
+              </button>
+            </div>
+          </div>
+
+          <div class="alert alert-info small mb-3" role="alert">
+            <i class="bi bi-stars"></i> Genera una crónica automática usando Inteligencia Artificial o escribe la tuya
+            propia.
+          </div>
+
+          <div class="d-flex gap-2 mb-3">
+            <button id="btnGenerateCronica" class="btn btn-primary flex-grow-1">
+              <i class="bi bi-cpu-fill"></i> Generar con IA
+            </button>
+            <button id="btnCopyPrompt" class="btn btn-outline-primary" title="Copiar Prompt para ChatGPT/Claude">
+              <i class="bi bi-clipboard"></i> Copiar Prompt
+            </button>
+          </div>
+
+          <!-- View Mode -->
+          <div id="cronicaViewMode" class="mb-3">
+            <div id="cronicaRenderedText" class="p-3 bg-white border rounded mb-3" style="min-height: 100px;">
+              <em class="text-muted">No hay crónica guardada. Genera una con la IA o pulsa Editar para escribirla.</em>
+            </div>
+            <div class="d-grid">
+              <button id="btnEditCronica" class="btn btn-outline-secondary">
+                <i class="bi bi-pencil"></i> Editar Crónica
+              </button>
+            </div>
+          </div>
+
+          <!-- Edit Mode -->
+          <div id="cronicaEditMode" class="mb-3 d-none">
+            <div class="alert alert-warning small mb-2 py-1"><i class="bi bi-code-slash"></i> <strong>Aviso de
+                Seguridad:</strong> Solo están permitidas las etiquetas HTML &lt;h2&gt;, &lt;p&gt; y &lt;strong&gt;.
+              Otras etiquetas serán eliminadas automáticamente.</div>
+            <textarea id="manualCronicaText" class="form-control mb-3" rows="10"
+              placeholder="La crónica aparecerá aquí..."></textarea>
+            <div class="d-flex gap-2">
+              <button id="btnCancelEditCronica" class="btn btn-secondary flex-grow-1">Cancelar</button>
+              <button id="btnSaveManualCronica" class="btn btn-success flex-grow-1">
+                <i class="bi bi-save"></i> Guardar Crónica
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- Tab: Fantasy -->
+        <div class="tab-pane fade" id="fantasy" role="tabpanel" aria-labelledby="tab-fantasy">
+          <div id="fantasyContainer" class="mt-3 text-center"></div>
+        </div>
+
+        <!-- Tab: Quintetos -->
+        <div class="tab-pane fade" id="quintetos" role="tabpanel" aria-labelledby="tab-quintetos">
+          <div class="d-flex justify-content-center gap-3 my-3">
+            <button class="btn btn-outline-danger active" id="btnQuintetoAtaque"
+              onclick="app.cambiarVistaQuinteto('ataque')">
+              <i class="bi bi-lightning-fill"></i> Ataque
+            </button>
+            <button class="btn btn-outline-primary" id="btnQuintetoDefensa"
+              onclick="app.cambiarVistaQuinteto('defensa')">
+              <i class="bi bi-shield-fill-check"></i> Defensa
+            </button>
+          </div>
+          <div id="quintetosContainer" class="text-center"></div>
+        </div>
+      </div>
+    </div>
+    <div class="d-flex justify-content-center">
+      <a href="" id="shareBtn" class="btn btn-success btn-sm" target="_blank" rel="noopener">
+        <i class="bi bi-whatsapp"></i> Compartir
+      </a>
+      <a href="" id="publicMatchBtn" class="btn btn-primary btn-sm" target="_blank" rel="noopener">
+        <i class="bi bi-eye-fill"></i> Ver partido público
+      </a>
+      <button id="btnDownloadMatch" class="btn btn-secondary btn-sm ms-2" style="display: none;"
+        title="Descargar datos del partido">
+        <i class="bi bi-download"></i> Descargar Datos
+      </button>
+    </div>
+    <!-- Modal Convocar Jugadores -->
+    <div class="modal fade" id="modalConvocarJugadores" tabindex="-1" aria-labelledby="modalConvocarJugadoresLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable">
+        <form id="formConvocarJugadores" class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalConvocarJugadoresLabel">Seleccionar jugadores convocados</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <div class="form-check mb-3 border-bottom pb-2">
+              <input class="form-check-input" type="checkbox" id="checkSeleccionarTodos">
+              <label class="form-check-label fw-bold" for="checkSeleccionarTodos">
+                Seleccionar todos
+              </label>
+            </div>
+            <ul id="listaJugadoresPlantilla" class="list-group"></ul>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar convocatoria</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Elegir Jugadores en Pista -->
+    <div class="modal fade" id="modalElegirPista" tabindex="-1" aria-labelledby="modalElegirPistaLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable">
+        <form id="formElegirPista" class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalElegirPistaLabel">Seleccionar jugadores en pista (máximo 5)</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <ul id="listaJugadoresConvocadosModal" class="list-group"></ul>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar alineación</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Editar Partido -->
+    <div class="modal fade" id="modalEditarPartido" tabindex="-1" aria-labelledby="modalEditarPartidoLabel"
+      aria-hidden="true">
+      <div class="modal-dialog">
+        <form id="formEditarPartido" class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalEditarPartidoLabel">Editar Partido</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="editFechaHora" class="form-label">Fecha y Hora</label>
+              <input type="datetime-local" class="form-control" id="editFechaHora" required min="1891-12-21T00:00">
+            </div>
+            <div class="mb-3">
+              <label for="editPabellon" class="form-label">Pabellón / Lugar</label>
+              <input type="text" class="form-control" id="editPabellon" placeholder="Nombre del pabellón">
+            </div>
+            <div class="mb-3">
+              <label for="editNombreRival" class="form-label">Nombre Rival</label>
+              <select class="form-select" id="editNombreRival">
+                <option value="">Seleccionar rival...</option>
+              </select>
+            </div>
+            <div class="mb-3 form-check">
+              <input type="checkbox" class="form-check-input" id="editEsLocal">
+              <label class="form-check-label" for="editEsLocal">Jugamos como Local</label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar cambios</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Configurar API Key -->
+    <div class="modal fade" id="modalApiKey" tabindex="-1" aria-labelledby="modalApiKeyLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalApiKeyLabel">Configurar API Key de IA</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="selectAiProvider" class="form-label">Proveedor de IA</label>
+              <select class="form-select" id="selectAiProvider">
+                <option value="gemini" selected>Google Gemini (Recomendado - Gratis)</option>
+                <option value="huggingface">Hugging Face (Gratis)</option>
+                <option value="openai">OpenAI (GPT)</option>
+              </select>
+            </div>
+
+            <div class="mb-3" id="containerGeminiModel">
+              <label for="selectGeminiModel" class="form-label">Modelo Gemini</label>
+              <select class="form-select" id="selectGeminiModel">
+                <option value="gemini-2.0-flash">Gemini 2.0 Flash (Rápido - Gratis)</option>
+                <option value="gemini-1.5-pro">Gemini 1.5 Pro (Más potente)</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="inputApiKey" class="form-label">API Key</label>
+              <input type="password" class="form-control" id="inputApiKey" placeholder="AIzaSy...">
+              <div id="apiKeyHelp" class="form-text mt-2">
+                <i class="bi bi-info-circle"></i> Para conseguir tu clave de Gemini, visita <a
+                  href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.
+              </div>
+            </div>
+            <p class="small text-muted">La clave se guardará localmente en tu navegador.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btnSaveApiKey">Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Importar Stats FAB -->
+    <div class="modal fade" id="modalImportarStats" tabindex="-1" aria-labelledby="modalImportarStatsLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalImportarStatsLabel">Importar Estadísticas desde CSV</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted small">
+              Sube un archivo CSV con las estadísticas del partido.
+              <br><strong>Formato requerido (FAB):</strong> Debe incluir una fila de cabecera que empiece por
+              <code>Num.,Nombre</code>.
+              <br>Las columnas esperadas son: Min, PTS, TC 2P, TC 3P, TL, Rebotes, AS, REC, PÉR, TAP, FAL, V, +/-.
+            </p>
+            <input type="file" id="csvFileInput" accept=".csv" class="form-control mb-3">
+
+            <div id="importTeamSelection" class="d-none">
+              <h6 class="mb-2">Selecciona tu equipo:</h6>
+              <div id="importTeamButtons" class="d-flex flex-wrap gap-2 justify-content-center"></div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <!-- El botón de importar se generará dinámicamente o se activará tras seleccionar equipo -->
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Registrar Fallo -->
+  <div class="modal fade" id="modalFallo" tabindex="-1" aria-labelledby="modalFalloLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="modalFalloLabel">Registrar Fallo</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body text-center">
+          <p class="mb-3">¿Qué tipo de tiro falló <span id="nombreJugadorFallo" class="fw-bold"></span>?</p>
+          <div class="d-grid gap-2">
+            <button type="button" class="btn btn-outline-danger btn-lg action-miss-val" data-val="1">Tiro Libre
+              (1p)</button>
+            <button type="button" class="btn btn-outline-danger btn-lg action-miss-val" data-val="2">Tiro de 2</button>
+            <button type="button" class="btn btn-outline-danger btn-lg action-miss-val" data-val="3">Triple
+              (3p)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Intercambiar Stats -->
+  <div class="modal fade" id="modalSwapStats" tabindex="-1" aria-labelledby="modalSwapStatsLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-warning">
+          <h5 class="modal-title text-dark" id="modalSwapStatsLabel">Intercambiar Estadísticas</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small">
+            Utiliza esta función si te has equivocado al anotar y has asignado estadísticas al jugador incorrecto.
+            Esta acción <strong>intercambiará TODOS los datos</strong> (puntos, faltas, eventos, etc.) entre los
+            dos
+            jugadores seleccionados para este partido.
+          </p>
+          <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle-fill"></i> Acción irreversible.
+          </div>
+
+          <div class="mb-3">
+            <label for="selectSwapPlayerA" class="form-label fw-bold">Jugador A (Tiene los datos)</label>
+            <select class="form-select" id="selectSwapPlayerA"></select>
+          </div>
+
+          <div class="mb-3 text-center">
+            <i class="bi bi-arrow-down-up fs-3 text-muted"></i>
+          </div>
+
+          <div class="mb-3">
+            <label for="selectSwapPlayerB" class="form-label fw-bold">Jugador B (Debería tener los datos)</label>
+            <select class="form-select" id="selectSwapPlayerB"></select>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-warning fw-bold" id="btnConfirmSwap">Intercambiar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/load-header.js"></script>
+
+
+
+  <script src="../js/services/TeamMembersService.js"></script>
+  <script src="../js/services/DataService.js"></script>
+  <script src="../js/apps/BaseApp.js"></script>
+  <script src="../js/utils/DiceBearManager.js"></script>
+  <script src="../js/utils/Sanitizer.js"></script>
+  <script src="../js/utils/MatchRenderer.js"></script>
+  <script src="../js/services/MatchLogic.js"></script>
+  <script src="../js/apps/PartidoApp.js?v=4"></script>
+  <script src="../js/partido.js?v=3"></script>
+</body>
+
+</html>

@@ -1,0 +1,27 @@
+<div class="list-group">
+    <div *ngIf="matches.length === 0" class="list-group-item text-muted text-center py-4">
+        No hay partidos programados.
+    </div>
+
+    <a *ngFor="let m of matches" href="/partido.html?id={{ m.id }}"
+        class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+
+        <div class="d-flex flex-column">
+            <span class="fw-bold">{{ m.localTeamName }} vs {{ m.visitorTeamName }}</span>
+            <small class="text-muted">
+                <i class="bi bi-calendar"></i> {{ m.date ? (m.date | date:'short') : 'Fecha por definir' }}
+                &nbsp;&bull;&nbsp;
+                <i class="bi bi-geo-alt"></i> {{ m.venue || 'Lugar por definir' }}
+            </small>
+        </div>
+
+        <!-- Status Badge -->
+        <span class="badge rounded-pill" [ngClass]="{
+        'bg-secondary': m.state === 'programado',
+        'bg-danger': m.state === 'en curso',
+        'bg-success': m.state === 'finalizado'
+      }">
+            {{ m.state }}
+        </span>
+    </a>
+</div>

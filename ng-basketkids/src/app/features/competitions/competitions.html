@@ -1,0 +1,132 @@
+<div class="container py-3">
+
+    <div *ngIf="loading" class="text-center py-5 text-muted">
+        <div class="spinner-border me-2"></div>Cargando competición...
+    </div>
+
+    <ng-container *ngIf="!loading">
+        <h2 id="competitionName">{{ competition?.name }}</h2>
+
+        <div *ngIf="errorMsg" class="alert alert-danger">{{ errorMsg }}</div>
+
+        <!-- Tabs -->
+        <nav class="mb-4">
+            <ul class="nav nav-tabs">
+                <li class="nav-item">
+                    <a class="nav-link" [class.active]="activeTab === 'partidos'" href="#"
+                        (click)="$event.preventDefault(); activeTab = 'partidos'">Partidos</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" [class.active]="activeTab === 'rivales'" href="#"
+                        (click)="$event.preventDefault(); activeTab = 'rivales'">Rivales</a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Partidos Section -->
+        <section *ngIf="activeTab === 'partidos'">
+            <div class="d-flex gap-2 mb-3 flex-wrap">
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPartidoModal">
+                    Añadir Partido
+                </button>
+            </div>
+
+            <ul class="modern-list">
+                <li *ngIf="matches.length === 0" class="modern-list-item justify-content-center text-muted">
+                    No hay partidos en esta competición
+                </li>
+                <li *ngFor="let m of matches" class="modern-list-item" (click)="goToMatch(m.id)" style="cursor:pointer">
+                    <div>
+                        <div class="item-title">
+                            <i class="bi" [class.bi-house-fill]="m.isLocal" [class.bi-bus-front]="!m.isLocal"></i>
+                            vs {{ m.isLocal ? m.visitorTeamName : m.localTeamName }}
+                            <span class="badge ms-2"
+                                [class.bg-success]="m.state === 'finalizado' && m.scoreLocal > m.scoreVisitor"
+                                [class.bg-danger]="m.state === 'finalizado' && m.scoreLocal < m.scoreVisitor"
+                                [class.bg-secondary]="m.state !== 'finalizado'">
+                                {{ m.state === 'finalizado' ? (m.scoreLocal + '-' + m.scoreVisitor) : 'Pendiente' }}
+                            </span>
+                        </div>
+                        <div class="item-subtitle">
+                            <i class="bi bi-calendar3 me-1"></i>{{ formatDate(m.date || '') }}
+                            <span *ngIf="m.venue" class="ms-2"><i class="bi bi-geo-alt me-1"></i>{{ m.venue
+                                }}</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-danger" (click)="$event.stopPropagation(); deleteMatch(m.id)"
+                        title="Borrar">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
+                </li>
+            </ul>
+        </section>
+
+        <!-- Rivales Section -->
+        <section *ngIf="activeTab === 'rivales'">
+            <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addRivalModal">
+                Añadir Rival
+            </button>
+            <ul class="modern-list">
+                <li *ngIf="rivals.length === 0" class="modern-list-item justify-content-center text-muted">
+                    No hay rivales añadidos
+                </li>
+                <li *ngFor="let r of rivals" class="modern-list-item">
+                    <span>{{ r.name }}</span>
+                    <button class="btn btn-sm btn-danger" (click)="deleteRival(r.id)">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
+                </li>
+            </ul>
+        </section>
+    </ng-container>
+</div>
+
+<!-- Modal Añadir Rival -->
+<div class="modal fade" id="addRivalModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form class="modal-content" (ngSubmit)="addRival()">
+            <div class="modal-header">
+                <h5 class="modal-title">Añadir Rival</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input class="form-control" placeholder="Nombre rival" [(ngModel)]="newRivalName" name="rivalName"
+                    required>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Guardar rival</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Añadir Partido -->
+<div class="modal fade" id="addPartidoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form class="modal-content" (ngSubmit)="addMatch()">
+            <div class="modal-header">
+                <h5 class="modal-title">Añadir Partido</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="datetime-local" class="form-control mb-3" [(ngModel)]="newMatch.date" name="matchDate"
+                    required>
+                <select class="form-select mb-3" [(ngModel)]="newMatch.rival_name" name="matchRival" required>
+                    <option value="">Selecciona rival</option>
+                    <option *ngFor="let r of rivals" [value]="r.name">{{ r.name }}</option>
+                </select>
+                <select class="form-select mb-3" [(ngModel)]="newMatch.is_local" name="matchLocal">
+                    <option [ngValue]="true">Local</option>
+                    <option [ngValue]="false">Visitante</option>
+                </select>
+                <input type="text" class="form-control" placeholder="Dirección del pabellón"
+                    [(ngModel)]="newMatch.venue" name="matchLocation" required>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Guardar partido</button>
+            </div>
+        </form>
+    </div>
+</div>

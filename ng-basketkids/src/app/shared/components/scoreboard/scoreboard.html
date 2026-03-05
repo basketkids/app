@@ -1,0 +1,25 @@
+<div class="card bg-dark text-white border-primary shadow text-center user-select-none mb-3">
+    <div class="card-header bg-primary fw-bold py-1">
+        <div class="d-flex justify-content-between align-items-center px-4">
+            <span class="fs-4">{{ localName }}</span>
+            <span class="fs-5 bg-warning text-dark px-3 rounded-pill">Periodo {{ quarter }}</span>
+            <span class="fs-4 text-warning">{{ visitorName }}</span>
+        </div>
+    </div>
+    <div class="card-body py-1 h-100 d-flex flex-column align-items-center pb-2">
+        <div class="w-100 d-flex justify-content-between align-items-center mb-0 mt-3 h-100" style="min-height: 140px;">
+            <!-- Local Score -->
+            <div class="flex-grow-1 text-center h-100 pb-2">
+                <h1 class="display-3 fw-bold mb-0 lh-1 score-text text-white">{{ localScore }}</h1>
+            </div>
+            <!-- Timer -->
+            <div class="px-2 pb-0 mb-3 text-center">
+                <div class="font-monospace fw-bold display-6 timer-text text-warning">{{ formattedTime }}</div>
+            </div>
+            <!-- Visitor Score -->
+            <div class="flex-grow-1 text-center h-100 pb-2">
+                <h1 class="display-3 fw-bold mb-0 lh-1 score-text text-warning">{{ visitorScore }}</h1>
+            </div>
+        </div>
+    </div>
+</div>

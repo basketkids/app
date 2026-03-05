@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BasketKids - Partido</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+  <link href="../css/styles.css?v=dev-no-cache" rel="stylesheet" />
+  <link rel="icon" href="../img/favicon.ico" type="image/x-icon" />
+  <link rel="manifest" href="../../manifest.json" />
+  <meta name="theme-color" content="#2B2B2B" />
+  <!-- Google Analytics -->
+  <script src="../js/analytics.js"></script>
+</head>
+
+<body>
+  <div id="header-container"></div>
+
+  <div class="container my-3">
+
+    <h2 id="nombrePartido" class="mb-4">Partido</h2>
+    <div id="infoPartido" class="text-center mb-3"></div>
+
+
+
+
+
+
+
+    <!-- Scoreboard Container -->
+    <div id="scoreboard-container"
+      class="glass-scoreboard d-flex justify-content-between align-items-center gap-2 mb-4 p-3">
+
+      <!-- Local Team -->
+      <div id="scoreboardTeamContainer" class="scoreboard-team-box">
+        <div class="team-name" id="nombreEquipoMarcador">LOCAL</div>
+        <div class="team-score" id="marcadorEquipo">0</div>
+        <div class="foul-lights-container" id="foulLightsEquipo">
+          <span class="foul-dot"></span>
+          <span class="foul-dot"></span>
+          <span class="foul-dot"></span>
+          <span class="foul-dot"></span>
+          <span class="foul-dot bonus"></span>
+        </div>
+      </div>
+
+      <!-- Timer & Period (Center) -->
+      <div id="scoreboardTimerContainer"
+        class="d-flex flex-column justify-content-center align-items-center mx-2 timer-box">
+        <div id="contador" class="digital-clock mb-2">10:00</div>
+        <div class="period-display">Cuarto <span id="periodoActual">1</span></div>
+        <div id="parcialesCuartos" class="small text-white-50 mt-1" style="font-size: 0.7rem; white-space: nowrap;">
+        </div>
+      </div>
+
+      <!-- Visitor Team -->
+      <div id="scoreboardRivalContainer" class="scoreboard-team-box">
+        <div class="team-name" id="nombreEquipoRival">RIVAL</div>
+        <div class="team-score" id="marcadorRival">0</div>
+        <div class="foul-lights-container" id="foulLightsRival">
+          <span class="foul-dot"></span>
+          <span class="foul-dot"></span>
+          <span class="foul-dot"></span>
+          <span class="foul-dot"></span>
+          <span class="foul-dot bonus"></span>
+        </div>
+      </div>
+
+    </div>
+
+    <ul class="nav nav-tabs mb-3" id="tabsPartido" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="tab-convocados" data-bs-toggle="tab" data-bs-target="#convocados"
+          type="button" role="tab" aria-controls="convocados" aria-selected="true">Convocados</button>
+      </li>
+
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-en-vivo" data-bs-toggle="tab" data-bs-target="#en-vivo" type="button"
+          role="tab" aria-controls="en-vivo" aria-selected="false">En Vivo</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-quintetos" data-bs-toggle="tab" data-bs-target="#quintetos" type="button"
+          role="tab" aria-controls="quintetos" aria-selected="false">Quintetos</button>
+      </li>
+    </ul>
+    <div class="tab-content" id="tabsContent">
+      <!-- Tab: Convocados -->
+      <div class="tab-pane fade show active" id="convocados" role="tabpanel" aria-labelledby="tab-convocados">
+
+        <div id="tablaEstadisticasContainer"></div>
+      </div>
+
+      <!-- Tab: En Vivo -->
+      <div class="tab-pane fade" id="en-vivo" role="tabpanel" aria-labelledby="tab-en-vivo">
+        <div id="listaEventosEnVivo" class="list-group mt-3"></div>
+      </div>
+
+      <!-- Tab: Quintetos -->
+      <div class="tab-pane fade" id="quintetos" role="tabpanel" aria-labelledby="tab-quintetos">
+        <div class="d-flex justify-content-center gap-3 my-3">
+          <button class="btn btn-outline-danger active" id="btnQuintetoAtaque"
+            onclick="app.cambiarVistaQuinteto('ataque')">
+            <i class="bi bi-lightning-fill"></i> Ataque
+          </button>
+          <button class="btn btn-outline-primary" id="btnQuintetoDefensa" onclick="app.cambiarVistaQuinteto('defensa')">
+            <i class="bi bi-shield-fill-check"></i> Defensa
+          </button>
+        </div>
+        <div id="quintetosContainer" class="text-center"></div>
+      </div>
+    </div>
+  </div>
+
+
+
+
+
+  </div>
+  <div class="d-flex justify-content-center gap-2 flex-wrap">
+    <a href="" id="shareBtn" class="btn btn-success btn-sm" target="_blank" rel="noopener">
+      <i class="bi bi-whatsapp"></i> Compartir
+    </a>
+    <button id="followBtn" class="btn btn-outline-primary btn-sm" style="display: none;">
+      <i class="bi bi-heart"></i> Seguir Equipo
+    </button>
+    <button id="requestAccessBtn" class="btn btn-outline-warning btn-sm" style="display: none;">
+      <i class="bi bi-pencil-square"></i> Solicitar ser anotador
+    </button>
+    <a href="#" id="otherMatchesBtn" class="btn btn-primary btn-sm" style="display: none;">
+      <i class="bi bi-calendar3"></i> Ver otros partidos
+    </a>
+  </div>
+
+
+  <div id="footer-container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/load-header.js"></script>
+
+  <script src="../js/services/DataService.js"></script>
+  <script src="../js/services/TeamService.js?v=2"></script>
+  <script src="../js/utils/Sanitizer.js"></script>
+  <script src="../js/utils/MatchRenderer.js"></script>
+  <script src="../js/apps/PartidoGlobalApp.js"></script>
+  <script src="../js/public/partido.js"></script>
+
+  <script>
+    document.getElementById('shareBtn').href = `https://wa.me/?text=` + encodeURIComponent(window.location.href);
+  </script>
+</body>
+
+</html>

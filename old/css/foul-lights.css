@@ -1,0 +1,23 @@
+
+/* Foul Lights Indicator */
+.foul-lights {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    margin-top: 5px;
+}
+
+.foul-dot {
+    width: 10px;
+    height: 10px;
+    background-color: #444; /* Dark gray for inactive */
+    border-radius: 50%;
+    display: inline-block;
+    border: 1px solid #666;
+}
+
+.foul-dot.active {
+    background-color: #ff0000; /* Red for active */
+    box-shadow: 0 0 5px #ff0000;
+    border-color: #ff0000;
+}

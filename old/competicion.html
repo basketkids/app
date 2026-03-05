@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BasketKids - Gestión Competición</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/styles.css?v=dev-no-cache" />
+  <link rel="icon" href="../img/favicon.ico" type="image/x-icon" />
+  <link rel="manifest" href="../manifest.json" />
+  <meta name="theme-color" content="#2B2B2B" />
+
+  <!-- Google Analytics -->
+  <script src="../js/analytics.js"></script>
+</head>
+
+<body class="bg-light">
+
+  <div id="header-container"></div>
+
+  <div class="container">
+
+    <h2 id="competitionName"></h2>
+
+    <nav class="mb-4">
+      <ul class="nav nav-tabs" id="menuCompeticion">
+        <li class="nav-item"><a class="nav-link active" href="#" data-seccion="partidos">Partidos</a></li>
+        <li class="nav-item"><a class="nav-link " href="#" data-seccion="rivales">Rivales</a></li>
+      </ul>
+    </nav>
+
+    <section id="seccion-rivales" style="display:none">
+      <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addRivalModal">
+        Añadir Rival
+      </button>
+      <ul id="rivalesList" class="modern-list"></ul>
+    </section>
+
+    <section id="seccion-partidos" class="seccion-activa">
+      <div class="d-flex gap-2 mb-3">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPartidoModal">
+          Añadir Partido
+        </button>
+        <button type="button" class="btn btn-success" id="importCSVBtn">
+          <i class="bi bi-file-earmark-arrow-up"></i> Importar Calendario CSV
+        </button>
+        <button type="button" class="btn btn-info" id="exportAllCalendarBtn">
+          <i class="bi bi-calendar-check"></i> Exportar Todos a Calendar
+        </button>
+        <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+      </div>
+      <ul id="partidosList" class="modern-list"></ul>
+    </section>
+
+  </div>
+
+  <!-- Modal añadir rival -->
+  <div class="modal fade" id="addRivalModal" tabindex="-1" aria-labelledby="addRivalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <form id="addRivalForm" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addRivalLabel">Añadir Rival</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <input id="inputNombreRival" class="form-control" placeholder="Nombre rival" required />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar rival</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Editar Rival -->
+  <div class="modal fade" id="editRivalModal" tabindex="-1" aria-labelledby="editRivalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <form id="editRivalForm" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editRivalLabel">Editar Rival</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <input id="editInputNombreRival" class="form-control" placeholder="Nombre rival" required />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal añadir partido -->
+  <div class="modal fade" id="addPartidoModal" tabindex="-1" aria-labelledby="addPartidoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <form id="addPartidoForm" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addPartidoLabel">Añadir Partido</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="datetime-local" id="inputFechaHora" class="form-control mb-3" required min="1891-12-21T00:00" />
+          <select id="inputRivalSelect" class="form-select mb-3" required>
+            <option value="">Selecciona rival</option>
+          </select>
+          <div class="mb-3">
+            <label class="form-label">¿Juegas en casa?</label>
+            <select id="inputLocalVisitante" class="form-select" required>
+              <option value="local">Local</option>
+              <option value="visitante">Visitante</option>
+            </select>
+          </div>
+          <input type="text" id="inputPabellon" class="form-control" placeholder="Dirección del pabellón" required />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar partido</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Confirmar borrado -->
+  <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmDeleteLabel">Confirmar borrado</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          ¿Estás seguro de que quieres borrar este elemento? Esta acción no se puede deshacer.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="confirmDeleteBtn" class="btn btn-danger">Borrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Importar CSV -->
+  <div class="modal fade" id="importCSVModal" tabindex="-1" aria-labelledby="importCSVLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="importCSVLabel">Importar Calendario CSV</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p>El archivo CSV debe tener el siguiente formato (separado por punto y coma <code>;</code>):</p>
+          <div class="alert alert-secondary font-monospace p-2 mb-3" style="font-size: 0.85rem;">
+            equipo_rival;fecha;hora;ubicacion;resultado;JuegoDeLocal
+          </div>
+          <ul>
+            <li><strong>equipo_rival:</strong> Nombre del equipo contrario.</li>
+            <li><strong>fecha:</strong> DD/MM/YYYY (Ej: 25/10/2025).</li>
+            <li><strong>hora:</strong> HH:MM (Ej: 16:00).</li>
+            <li><strong>ubicacion:</strong> Dirección o nombre del pabellón.</li>
+            <li><strong>resultado:</strong> "PuntosLocal-PuntosVisitante" (Ej: 45-59) o "PENDIENTE".</li>
+            <li><strong>JuegoDeLocal:</strong> "SI" (juegas en casa) o "NO" (visitante).</li>
+          </ul>
+          <div class="alert alert-info">
+            <small><i class="bi bi-info-circle"></i> La primera fila debe contener las cabeceras exactas mostradas
+              arriba.</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btnSelectCSV">
+            <i class="bi bi-folder2-open"></i> Seleccionar archivo
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/load-header.js"></script>
+  <script src="../js/utils/CalendarHelper.js"></script>
+  <script src="../js/utils/CSVParser.js"></script>
+  <script src="../js/services/CompetitionService.js"></script>
+  <script src="../js/services/TeamService.js"></script>
+  <script src="../js/services/TeamMembersService.js"></script>
+  <script src="../js/services/MatchService.js"></script>
+  <script src="../js/apps/BaseApp.js"></script>
+  <script src="../js/apps/CompetitionApp.js?v=3"></script>
+  <script src="../js/competicion.js?v=3"></script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,33 @@
+.match-card {
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.match-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15) !important;
+}
+
+.location-link {
+    font-size: 0.82em;
+}
+
+.icon-sm {
+    font-size: 0.7rem;
+}
+
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.25;
+    }
+}
+
+.live-blink {
+    animation: blink 1s ease-in-out infinite;
+}

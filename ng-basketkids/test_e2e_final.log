@@ -1,0 +1,156 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/media/disco/dades/src/basketKids/app/ng-basketkids[39m
+
+[90mstdout[2m | src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22m[2mData Layer E2E Flow
+[22m[39m[E2E Test] Authenticating using provided access token
+
+[90mstdout[2m | src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22m[2mData Layer E2E Flow[2m > [22m[2mshould execute full E2E data repository lifecycle (Create -> Read -> Update -> Delete)
+[22m[39m
+--- 1. CREATING TEAM ---
+
+[90mstdout[2m | src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22m[2mData Layer E2E Flow[2m > [22m[2mshould execute full E2E data repository lifecycle (Create -> Read -> Update -> Delete)
+[22m[39m
+--- 2. CREATING PLAYERS ---
+
+[90mstdout[2m | src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22m[2mData Layer E2E Flow[2m > [22m[2mshould execute full E2E data repository lifecycle (Create -> Read -> Update -> Delete)
+[22m[39m
+--- 3. CREATING COMPETITION & RIVALS ---
+
+[90mstdout[2m | src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22m[2mData Layer E2E Flow[2m > [22m[2mshould execute full E2E data repository lifecycle (Create -> Read -> Update -> Delete)
+[22m[39m
+--- 4. CREATING MATCH ---
+
+[90mstdout[2m | src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22m[2mData Layer E2E Flow[2m > [22m[2mshould execute full E2E data repository lifecycle (Create -> Read -> Update -> Delete)
+[22m[39m
+--- 5. ADD CONVOCADOS & START MATCH ---
+
+[90mstdout[2m | src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22m[2mData Layer E2E Flow[2m > [22m[2mshould execute full E2E data repository lifecycle (Create -> Read -> Update -> Delete)
+[22m[39m[MatchRepository] Final built Match object: {
+  "id": "cdbe4c40-1461-4ff4-b293-f5556c2a726a",
+  "teamId": "69603f24-0264-4ce6-ac6b-88252f1ea813",
+  "state": "programado",
+  "date": "2026-02-28T21:00:02.004+00:00",
+  "venue": null,
+  "localTeamName": "E2E Test Team",
+  "visitorTeamName": "E2E Rival Updated",
+  "isLocal": true,
+  "scoreLocal": 0,
+  "scoreVisitor": 0,
+  "currentQuarter": 1,
+  "timerState": {
+    "active": false,
+    "remainingSeconds": 600
+  },
+  "events": {},
+  "stats": {},
+  "roster": {},
+  "plantilla": {
+    "e691436b-c5f6-48d3-9d7a-e58a57cc9272": {
+      "id": "e691436b-c5f6-48d3-9d7a-e58a57cc9272",
+      "name": "E2E Player Updated",
+      "dorsal": "99",
+      "avatarConfig": null
+    }
+  },
+  "convocados": {},
+  "playersOnCourt": {},
+  "chronicle": null
+}
+[MatchRepository] MATCH SCORE => Local: 0, Visitor: 0, quarter: 1
+
+[90mstderr[2m | src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22m[2mData Layer E2E Flow[2m > [22m[2mshould execute full E2E data repository lifecycle (Create -> Read -> Update -> Delete)
+[22m[39m[MatchRepository] Error deleting old roster: {
+  code: [32m'PGRST205'[39m,
+  details: [1mnull[22m,
+  hint: [32m"Perhaps you meant the table 'public.match_requests'"[39m,
+  message: [32m"Could not find the table 'public.match_rosters' in the schema cache"[39m
+}
+
+[90mstdout[2m | src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22m[2mData Layer E2E Flow[2m > [22m[2mshould execute full E2E data repository lifecycle (Create -> Read -> Update -> Delete)
+[22m[39m[MatchRepository] saveMatchState: cdbe4c40-1461-4ff4-b293-f5556c2a726a {
+  id: [32m'cdbe4c40-1461-4ff4-b293-f5556c2a726a'[39m,
+  teamId: [32m'69603f24-0264-4ce6-ac6b-88252f1ea813'[39m,
+  competitionId: [90mundefined[39m,
+  state: [32m'en curso'[39m,
+  date: [32m'2026-02-28T21:00:02.004+00:00'[39m,
+  venue: [1mnull[22m,
+  localTeamName: [32m'E2E Test Team'[39m,
+  visitorTeamName: [32m'E2E Rival Updated'[39m,
+  isLocal: [33mtrue[39m,
+  scoreLocal: [33m2[39m,
+  scoreVisitor: [33m3[39m,
+  currentQuarter: [33m1[39m,
+  timerState: { active: [33mfalse[39m, remainingSeconds: [33m600[39m },
+  events: {},
+  stats: {},
+  roster: {},
+  plantilla: {
+    [32m'e691436b-c5f6-48d3-9d7a-e58a57cc9272'[39m: {
+      id: [32m'e691436b-c5f6-48d3-9d7a-e58a57cc9272'[39m,
+      name: [32m'E2E Player Updated'[39m,
+      dorsal: [32m'99'[39m,
+      avatarConfig: [1mnull[22m
+    }
+  },
+  convocados: {},
+  playersOnCourt: {},
+  chronicle: [1mnull[22m
+}
+
+[90mstdout[2m | src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22m[2mData Layer E2E Flow[2m > [22m[2mshould execute full E2E data repository lifecycle (Create -> Read -> Update -> Delete)
+[22m[39m
+--- 6. VERIFY FINAL REPOSITORY READS ---
+
+[90mstdout[2m | src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22m[2mData Layer E2E Flow[2m > [22m[2mshould execute full E2E data repository lifecycle (Create -> Read -> Update -> Delete)
+[22m[39m[MatchRepository] Final built Match object: {
+  "id": "cdbe4c40-1461-4ff4-b293-f5556c2a726a",
+  "teamId": "69603f24-0264-4ce6-ac6b-88252f1ea813",
+  "state": "en curso",
+  "date": "2026-02-28T21:00:02.004+00:00",
+  "venue": null,
+  "localTeamName": "E2E Test Team",
+  "visitorTeamName": "E2E Rival Updated",
+  "isLocal": true,
+  "scoreLocal": 2,
+  "scoreVisitor": 3,
+  "currentQuarter": 1,
+  "timerState": {
+    "active": false,
+    "remainingSeconds": 600
+  },
+  "events": {},
+  "stats": {},
+  "roster": {},
+  "plantilla": {
+    "e691436b-c5f6-48d3-9d7a-e58a57cc9272": {
+      "id": "e691436b-c5f6-48d3-9d7a-e58a57cc9272",
+      "name": "E2E Player Updated",
+      "dorsal": "99",
+      "avatarConfig": null
+    }
+  },
+  "convocados": {},
+  "playersOnCourt": {},
+  "chronicle": null
+}
+[MatchRepository] MATCH SCORE => Local: 2, Visitor: 3, quarter: 1
+
+[90mstdout[2m | src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22m[2mData Layer E2E Flow[2m > [22m[2mshould execute full E2E data repository lifecycle (Create -> Read -> Update -> Delete)
+[22m[39mE2E Test Flow Complete. All Repositories CRUD verifications passed.
+
+[90mstdout[2m | src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22m[2mData Layer E2E Flow
+[22m[39m
+================ CLEANING UP TEST DATA ================
+
+[90mstdout[2m | src/app/core/models/data/e2e.repository.integration.spec.ts[2m > [22m[2mData Layer E2E Flow
+[22m[39m================ CLEANUP COMPLETE ====================
+
+
+ [32m✓[39m src/app/core/models/data/e2e.repository.integration.spec.ts [2m([22m[2m1 test[22m[2m)[22m[33m 3504[2mms[22m[39m
+     [33m[2m✓[22m[39m should execute full E2E data repository lifecycle (Create -> Read -> Update -> Delete) [33m 2390[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m   Start at [22m 21:59:59
+[2m   Duration [22m 4.18s[2m (transform 171ms, setup 0ms, import 401ms, tests 3.50s, environment 0ms)[22m
+
