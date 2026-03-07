@@ -29,32 +29,32 @@
               },
               {
                 "glob": "**/*",
-                "input": "../old",
+                "input": "old",
                 "output": "/old"
               },
               {
                 "glob": "**/*",
-                "input": "../old/css",
+                "input": "old/css",
                 "output": "/css"
               },
               {
                 "glob": "**/*",
-                "input": "../old/js",
+                "input": "old/js",
                 "output": "/js"
               },
               {
                 "glob": "**/*",
-                "input": "../old/img",
+                "input": "old/img",
                 "output": "/img"
               },
               {
                 "glob": "**/*",
-                "input": "../old/db",
+                "input": "old/db",
                 "output": "/db"
               },
               {
                 "glob": "**/*",
-                "input": "../legacy",
+                "input": "legacy",
                 "output": "/legacy"
               }
             ],
