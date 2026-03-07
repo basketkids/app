@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Líderes y MVP - Baloncesto</title>
+<!-- Fonts and Icons -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f49d25",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#221a10",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "1.5rem", "xl": "2rem", "2xl": "2.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar hiding */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased selection:bg-primary/30">
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-white dark:bg-[#1a140c] shadow-xl">
+<!-- Header Section -->
+<header class="sticky top-0 z-20 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md px-4 pt-6 pb-2 border-b border-primary/10">
+<div class="flex items-center justify-between mb-4">
+<button class="flex h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-white/5 shadow-sm text-slate-900 dark:text-white hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full">
+<span class="material-symbols-outlined text-primary text-sm">calendar_today</span>
+<span class="text-primary text-sm font-bold tracking-wide">TEMPORADA 24/25</span>
+</div>
+<button class="flex h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-white/5 shadow-sm text-slate-900 dark:text-white hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+<div class="flex flex-col gap-4">
+<h1 class="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                    Líderes y MVP
+                </h1>
+<!-- Toggle -->
+<div class="flex p-1 bg-white dark:bg-white/5 rounded-full border border-primary/10 shadow-sm">
+<label class="flex-1 cursor-pointer">
+<input checked="" class="peer sr-only" name="view_mode" type="radio" value="partido"/>
+<div class="flex items-center justify-center py-2 px-4 rounded-full text-sm font-semibold text-slate-500 transition-all peer-checked:bg-primary peer-checked:text-white peer-checked:shadow-md">
+                            Partido
+                        </div>
+</label>
+<label class="flex-1 cursor-pointer">
+<input class="peer sr-only" name="view_mode" type="radio" value="temporada"/>
+<div class="flex items-center justify-center py-2 px-4 rounded-full text-sm font-semibold text-slate-500 transition-all peer-checked:bg-primary peer-checked:text-white peer-checked:shadow-md">
+                            Temporada
+                        </div>
+</label>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 px-4 py-6 flex flex-col gap-8 pb-24">
+<!-- MVP Card -->
+<section>
+<div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-xl shadow-primary/20">
+<!-- Background Pattern -->
+<div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-primary via-transparent to-transparent"></div>
+<div class="relative z-10 flex flex-col p-5">
+<div class="flex justify-between items-start mb-4">
+<div class="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">military_tech</span> MVP DEL PARTIDO
+                            </div>
+<span class="text-slate-400 text-xs font-medium">vs. Dragones FC</span>
+</div>
+<div class="flex items-center gap-5">
+<div class="relative">
+<div class="h-20 w-20 rounded-full border-4 border-primary p-0.5 bg-white">
+<img alt="Foto de perfil del jugador MVP sonriendo" class="h-full w-full rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDf_oJdJatGGhuLcegNg8QM-2R7I7wDXcYDu0ZapYOWuENfL8Oa82Vv8QV0MaQ4sYo2bwh5t_G3jvHUJcdOMKRZgRddIgsd14BPT34-AbgOv3Bk47l6yI6FUtf3-HmnAPNkR2Z402rur1zy0Dcu9Nf6J7Ija4ZVDSFP7bccmsf3ygkyYSdJcwxBQI484CxOujr48hvjot2EmvtjXPtErApFurbsBS1EGXWV3zX4Tkg6fT67IFIKk4hbmNzW8ZbiUrmLxE7KP-GbTP5n"/>
+</div>
+<div class="absolute -bottom-2 -right-2 bg-primary text-white h-8 w-8 flex items-center justify-center rounded-full border-2 border-slate-900 font-bold text-xs shadow-md">
+                                    #23
+                                </div>
+</div>
+<div class="flex flex-col">
+<h2 class="text-2xl font-bold leading-tight">Lucas G.</h2>
+<p class="text-primary font-medium text-sm mb-2">Base / Alero</p>
+<div class="flex gap-3">
+<div class="flex flex-col">
+<span class="text-xl font-bold leading-none">24</span>
+<span class="text-[10px] text-slate-400 uppercase tracking-wider">PTS</span>
+</div>
+<div class="w-px bg-white/20 h-8"></div>
+<div class="flex flex-col">
+<span class="text-xl font-bold leading-none">32</span>
+<span class="text-[10px] text-slate-400 uppercase tracking-wider">VAL</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Stats Sections -->
+<div class="flex flex-col gap-6">
+<!-- Puntos -->
+<section class="bg-white dark:bg-white/5 rounded-2xl p-5 shadow-sm border border-primary/5">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+<span class="flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
+<span class="material-symbols-outlined text-lg">sports_basketball</span>
+</span>
+                            Puntos
+                        </h3>
+<button class="text-primary text-xs font-bold hover:underline">Ver todos</button>
+</div>
+<div class="space-y-5">
+<!-- Top 1 -->
+<div class="relative group">
+<div class="flex items-center justify-between mb-1.5 relative z-10">
+<div class="flex items-center gap-3">
+<div class="relative">
+<img alt="Foto jugador" class="w-8 h-8 rounded-full object-cover border border-slate-100 dark:border-white/10" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDBKDSAspVuMgxrXsxVd0h_w1XLAw2I7Oguzz-MoZh21ztsbbdVmyCZKIkd1VfyWBQVqLxjuEVT6nORK9QUGhMPEkFh_4lSLILwoLVwJ5AChCy7khlFht-rKdBfXhkegiu3rdxNEORDovRj-1DFfFPpIpmh0SmJNAtk5qFYlxfQ0aVRWYAnU9o3LZPAykG2yfphTvOXERG-8J_sXb8AlTlRNHQ0Ox9ylPLNsx5kiPeAmk-5xkQ3v61PCJArEyNPEA9mVrhgjG6CDJj"/>
+<div class="absolute -top-1 -left-1 w-4 h-4 bg-yellow-400 text-[10px] font-bold text-yellow-900 rounded-full flex items-center justify-center shadow-sm">1</div>
+</div>
+<span class="text-sm font-semibold text-slate-800 dark:text-slate-200">Lucas G.</span>
+</div>
+<span class="text-sm font-bold text-slate-900 dark:text-white">24</span>
+</div>
+<div class="h-2 w-full bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 100%"></div>
+</div>
+</div>
+<!-- Top 2 -->
+<div class="relative group">
+<div class="flex items-center justify-between mb-1.5 relative z-10">
+<div class="flex items-center gap-3">
+<div class="relative">
+<img alt="Foto jugador" class="w-8 h-8 rounded-full object-cover border border-slate-100 dark:border-white/10" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3VdGCGgrX8jpBPCbCrP-roJEYDAmKPqUb173BLJSpw_iDq7DUe4SV3_BK7GXVCXgEUYF-dccLCm37iteL2-n_LX6Fj6s8AkiLTFr6vdcr8Vl4FBDIpv86XI-HA9nGiuiAzgg1ybXyXwx-QMOGtDTR-8NO4WZOSwYRN-iBDp6vvWnVXrAOMBvS9Sb5QwVISv4E8y6oOYyOnOYb5MVx9eyKaSOD_tGkTJafkjiVH_UJ5ffkNVg6x4AZ-yVIzGfyW3-L61ySfw4MGqRe"/>
+<div class="absolute -top-1 -left-1 w-4 h-4 bg-slate-300 text-[10px] font-bold text-slate-800 rounded-full flex items-center justify-center shadow-sm">2</div>
+</div>
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Mateo R.</span>
+</div>
+<span class="text-sm font-bold text-slate-900 dark:text-white">18</span>
+</div>
+<div class="h-2 w-full bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-primary/70 rounded-full" style="width: 75%"></div>
+</div>
+</div>
+<!-- Top 3 -->
+<div class="relative group">
+<div class="flex items-center justify-between mb-1.5 relative z-10">
+<div class="flex items-center gap-3">
+<div class="relative">
+<img alt="Foto jugador" class="w-8 h-8 rounded-full object-cover border border-slate-100 dark:border-white/10" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBis7VveM9oTpglfdn2e7AnU_iilRNkiLCjt2u3P28UdNx0s1gcw8mN2klFNjxn6aoNqekn6uGhNM5AGzItQeIZdzmZgRib0HGVFkHBqPZGBfCeNu53qm7OrDTCl98f8NYQ1Jx8QerYgRcmS1t3pU0muPZnOlzeWWt5Bk15npiVabasFVPAjgQ76yqApUUlsH2NhVvuvy8UtOUJcBGK4K2z4tryk4sadpSSAv3CT-CrpYHODvmWxIwVRr9nPcOg7EApPQcCP5qNYnMe"/>
+<div class="absolute -top-1 -left-1 w-4 h-4 bg-amber-700 text-[10px] font-bold text-amber-100 rounded-full flex items-center justify-center shadow-sm">3</div>
+</div>
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Dani S.</span>
+</div>
+<span class="text-sm font-bold text-slate-900 dark:text-white">12</span>
+</div>
+<div class="h-2 w-full bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-primary/40 rounded-full" style="width: 50%"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Rebotes -->
+<section class="bg-white dark:bg-white/5 rounded-2xl p-5 shadow-sm border border-primary/5">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+<span class="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+<span class="material-symbols-outlined text-lg">back_hand</span>
+</span>
+                            Rebotes
+                        </h3>
+<button class="text-primary text-xs font-bold hover:underline">Ver todos</button>
+</div>
+<div class="space-y-4">
+<!-- Top 1 -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="text-xs font-bold text-primary w-3 text-center">1</span>
+<img alt="Foto jugador" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5xGN6f2ZToFnFN7WiQr_8V2Fpb9g9xTNsnXLGSAhCX2ijUFXS1vTZCvnI0S3IBNuOYOpAkUBDk1Maea5SxYGxq6M7elBNTg33ZceltN3uXU6qLCX10JGDGG3tdE6ST3QEHOyVUtBZD-sx5mtl9IJjxnAz3IxHPCvTjx0nwcTiIUWo-L-nOy9lER8axAqVqiWMO-DgBfeNzj7-0YVIOeVf4b1ZO8SpSDUkcGJ8uzT5P03gYgX0HND63DCf2lJq46pVFBgdVhwiV6do"/>
+<span class="text-sm font-semibold text-slate-800 dark:text-slate-200">Carlos M.</span>
+</div>
+<div class="flex items-center gap-2 flex-1 justify-end">
+<div class="hidden sm:block h-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-full w-24">
+<div class="h-full bg-blue-500 rounded-full" style="width: 100%"></div>
+</div>
+<span class="text-sm font-bold text-slate-900 dark:text-white w-6 text-right">10</span>
+</div>
+</div>
+<!-- Top 2 -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="text-xs font-bold text-slate-400 w-3 text-center">2</span>
+<img alt="Foto jugador" class="w-8 h-8 rounded-full object-cover opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBy1VW1E7UneWRWN0c4SpO1hfOrjzMvtemx0j1CnfHtsVB3N94kUO2aWNZLRKd3gFDhxZnlmAuHZS0vak1YCNqW0anQrHnmTx_E4GbgbXVWXTa3JeuUopnloNAk4IViAsDvel0pq4yJblaWMSdvMcyMI-vrUMMfsQJqdLqqZll9rl15qsvaxvAW53XCwOHntd9fjDBPQ18LtqOdFf_z6V8lY7aka-aRTad3AZLP-0pCEns7VmZCWdY1wvUHjyvm7_lRLrHUzRztN2rv"/>
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Juan P.</span>
+</div>
+<div class="flex items-center gap-2 flex-1 justify-end">
+<div class="hidden sm:block h-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-full w-24">
+<div class="h-full bg-blue-400 rounded-full" style="width: 80%"></div>
+</div>
+<span class="text-sm font-bold text-slate-900 dark:text-white w-6 text-right">8</span>
+</div>
+</div>
+<!-- Top 3 -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="text-xs font-bold text-slate-400 w-3 text-center">3</span>
+<img alt="Foto jugador" class="w-8 h-8 rounded-full object-cover opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDs4wXTHyceFUzVCBHDTR0v_oeMU0vI_oVIaoxD3jTX83NGt7Hp77wTUALv9FPodi7O5CRvQCY_SSjDD1j66mnStUYRLLt4GECvOLKi0TnixmfwOoV4qn_0h6nmYjrOi_z0OSMyYKaX9bj5rS34e1Cw5sJhqs2zMtqZnO_xcVzLw5eA6mwmfmDwmwjuaeio4ISlm6-bYubi8XiA1R4wMlX6GN01Gqzlnp2-2WkDwOAfsZr0lvTb6cvOTDze-AGfxHY8yWUfI4Iba2tq"/>
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Lucas G.</span>
+</div>
+<div class="flex items-center gap-2 flex-1 justify-end">
+<div class="hidden sm:block h-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-full w-24">
+<div class="h-full bg-blue-300 rounded-full" style="width: 60%"></div>
+</div>
+<span class="text-sm font-bold text-slate-900 dark:text-white w-6 text-right">6</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Asistencias -->
+<section class="bg-white dark:bg-white/5 rounded-2xl p-5 shadow-sm border border-primary/5">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+<span class="flex items-center justify-center w-8 h-8 rounded-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400">
+<span class="material-symbols-outlined text-lg">handshake</span>
+</span>
+                           Asistencias
+                       </h3>
+<button class="text-primary text-xs font-bold hover:underline">Ver todos</button>
+</div>
+<div class="space-y-4">
+<!-- Top 1 -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="text-xs font-bold text-primary w-3 text-center">1</span>
+<img alt="Foto jugador" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDVQZ88jiBXUMYuzAhnZ1m0777zX5ViGjz2Ns3fq8rRwSlq_A1wUEWRy2VzGQysvZB-hYu3GnkrzknASoGUTFqY3D-NzxmSrQ-9l1q9XMcitGWLONfdELecOa_skkz3E_92vyT2aNXJIVUFaddeqvcboB37QyYdLCanh3GHweGv5PCogTlpQ2ZwtU65ZJjaoLCZnBNyeCQ8IxHE8GuL4gW-BZddx7AgD2JU1ywlhKrWIVetE9NA7gBzQhB9_xF8gChvqC7yiE27xj1H"/>
+<span class="text-sm font-semibold text-slate-800 dark:text-slate-200">Juan P.</span>
+</div>
+<div class="flex items-center gap-2 flex-1 justify-end">
+<div class="hidden sm:block h-1.5 bg-green-100 dark:bg-green-900/30 rounded-full w-24">
+<div class="h-full bg-green-500 rounded-full" style="width: 100%"></div>
+</div>
+<span class="text-sm font-bold text-slate-900 dark:text-white w-6 text-right">8</span>
+</div>
+</div>
+<!-- Top 2 -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="text-xs font-bold text-slate-400 w-3 text-center">2</span>
+<img alt="Foto jugador" class="w-8 h-8 rounded-full object-cover opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPNhxv7sz74M8VNXnAissAACDcPYn0FACCZ0jWD012ZbtuboEVYQvHRGE1Zy5W2BAGJF30yJEiriUJbO0Ie4pcPldqyIbV9M2-RiEyBDWIfIoxTRn1TwM_B2wa_YywX6oVYCjyVYmVo4Y5SlHysBrt-YtH_XekfFD4ozyLapdYOZDtjckpsblijYB9mmTwZEy5KBBTtefoqtmbqyBF19LWaEnKzWQGqR9EuervfIUQ0ptflszjQkIsUvFenu5jdFT4KOkF27nBrQWF"/>
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Lucas G.</span>
+</div>
+<div class="flex items-center gap-2 flex-1 justify-end">
+<div class="hidden sm:block h-1.5 bg-green-100 dark:bg-green-900/30 rounded-full w-24">
+<div class="h-full bg-green-400 rounded-full" style="width: 75%"></div>
+</div>
+<span class="text-sm font-bold text-slate-900 dark:text-white w-6 text-right">6</span>
+</div>
+</div>
+<!-- Top 3 -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="text-xs font-bold text-slate-400 w-3 text-center">3</span>
+<img alt="Foto jugador" class="w-8 h-8 rounded-full object-cover opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8AwuCEfoj6uKpzT98mdax5cYxfnieNo08wKVW35KHZGo3BUmaOX0Jpu7BEYuEMkh-8HwAqe89RhhA3FqrEQ3vZKKUk6KOZ6hWZnQu4_nRn56t850rAoWl0vXS3HMh-XWcCOp29PUf6f__hd6tBmj3D5nz1LqhCYTQLO21tMNk6bQbPqESUR9PTyD28bTs3Ac4EAz1wTQIlkjszljuV084rBL-dV-2teCfAH_Iu8q0HbTaULUrjLIfTLX0C9xf4q7cJlZ-XaonAYJE"/>
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Mateo R.</span>
+</div>
+<div class="flex items-center gap-2 flex-1 justify-end">
+<div class="hidden sm:block h-1.5 bg-green-100 dark:bg-green-900/30 rounded-full w-24">
+<div class="h-full bg-green-300 rounded-full" style="width: 50%"></div>
+</div>
+<span class="text-sm font-bold text-slate-900 dark:text-white w-6 text-right">4</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Bottom Navigation -->
+<nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto z-50 bg-white dark:bg-[#1a140c] border-t border-primary/10 px-6 pb-6 pt-3 shadow-[0_-5px_10px_rgba(0,0,0,0.02)]">
+<div class="flex justify-between items-center">
+<a class="flex flex-col items-center gap-1 group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-[26px]">home</span>
+<span class="text-[10px] font-medium text-slate-400 group-hover:text-primary transition-colors">Inicio</span>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-[26px]">groups</span>
+<span class="text-[10px] font-medium text-slate-400 group-hover:text-primary transition-colors">Equipo</span>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<div class="h-12 w-12 -mt-8 bg-primary rounded-full shadow-lg shadow-primary/30 flex items-center justify-center border-4 border-white dark:border-[#1a140c]">
+<span class="material-symbols-outlined text-white text-[28px]">bar_chart</span>
+</div>
+<span class="text-[10px] font-bold text-primary">Stats</span>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-[26px]">calendar_month</span>
+<span class="text-[10px] font-medium text-slate-400 group-hover:text-primary transition-colors">Calendario</span>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-[26px]">person</span>
+<span class="text-[10px] font-medium text-slate-400 group-hover:text-primary transition-colors">Perfil</span>
+</a>
+</div>
+</nav>
+</div>
+</body></html>

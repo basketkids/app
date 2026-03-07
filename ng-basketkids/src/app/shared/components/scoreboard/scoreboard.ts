@@ -4,6 +4,7 @@ import { MatchTimerState } from '../../../core/models/match.model';
 
 @Component({
   selector: 'app-scoreboard',
+  standalone: true,
   templateUrl: './scoreboard.html',
   styleUrls: ['./scoreboard.css'],
   imports: [CommonModule]

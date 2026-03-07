@@ -1,132 +1,703 @@
-<div class="container py-3">
-    <div *ngIf="loading" class="text-center py-5 text-muted">
-        <div class="spinner-border me-2"></div>Cargando equipo...
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-hidden max-w-md md:max-w-4xl lg:max-w-6xl
+xl:max-w-[1400px] mx-auto border-x border-gray-200 dark:border-white/10 bg-white dark:bg-background-dark">
+
+    <div *ngIf="loading" class="flex flex-1 justify-center items-center py-8">
+        <span class="material-symbols-outlined animate-spin text-primary text-[32px]">progress_activity</span>
     </div>
 
     <ng-container *ngIf="!loading">
-        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-                <h2 class="mb-0 text-break">{{ team?.name }}</h2>
+        <!-- Header -->
+        <div
+            class="sticky top-0 z-20 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md border-b border-gray-200 dark:border-white/10 pb-0">
+            <div class="flex items-center justify-between px-4 pt-6 pb-4">
+                <h1 class="text-3xl font-bold tracking-tight text-slate-800 dark:text-white">{{ team?.name }}</h1>
+                <button (click)="openEditTeam()"
+                    class="h-10 w-10 flex items-center justify-center rounded-full text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
+                    <span class="material-symbols-outlined pb-2">settings</span>
+                </button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex overflow-x-auto no-scrollbar border-b border-gray-200 dark:border-white/5 px-2">
+                <button (click)="activeTab = 'plantilla'"
+                    [ngClass]="{'border-primary text-primary': activeTab === 'plantilla', 'border-transparent text-slate-500 dark:text-slate-400': activeTab !== 'plantilla'}"
+                    class="whitespace-nowrap flex-1 py-3 px-1 border-b-2 font-medium text-sm text-center transition-colors">
+                    Plantilla
+                </button>
+                <button (click)="activeTab = 'competiciones'"
+                    [ngClass]="{'border-primary text-primary': activeTab === 'competiciones', 'border-transparent text-slate-500 dark:text-slate-400': activeTab !== 'competiciones'}"
+                    class="whitespace-nowrap flex-1 py-3 px-1 border-b-2 font-medium text-sm text-center transition-colors">
+                    Competiciones
+                </button>
+                <button (click)="activeTab = 'miembros'"
+                    [ngClass]="{'border-primary text-primary': activeTab === 'miembros', 'border-transparent text-slate-500 dark:text-slate-400': activeTab !== 'miembros'}"
+                    class="whitespace-nowrap flex-1 py-3 px-1 border-b-2 font-medium text-sm text-center transition-colors">
+                    Miembros
+                </button>
+                <button (click)="activeTab = 'fantasy'"
+                    [ngClass]="{'border-primary text-primary': activeTab === 'fantasy', 'border-transparent text-slate-500 dark:text-slate-400': activeTab !== 'fantasy'}"
+                    class="whitespace-nowrap flex-1 py-3 px-1 border-b-2 font-medium text-sm text-center transition-colors">
+                    Fantasy
+                </button>
+                <button (click)="activeTab = 'destacados'"
+                    [ngClass]="{'border-primary text-primary': activeTab === 'destacados', 'border-transparent text-slate-500 dark:text-slate-400': activeTab !== 'destacados'}"
+                    class="whitespace-nowrap flex-1 py-3 px-1 border-b-2 font-medium text-sm text-center transition-colors">
+                    Destacados
+                </button>
+                <button (click)="activeTab = 'evolucion'"
+                    [ngClass]="{'border-primary text-primary': activeTab === 'evolucion', 'border-transparent text-slate-500 dark:text-slate-400': activeTab !== 'evolucion'}"
+                    class="whitespace-nowrap px-3 py-3 border-b-2 font-medium text-sm text-center transition-colors">
+                    Evolución
+                </button>
             </div>
         </div>
 
-        <div *ngIf="errorMsg" class="alert alert-danger">{{ errorMsg }}</div>
+        <!-- Main Content Area -->
+        <div class="flex-1 overflow-y-auto pb-24 p-4 space-y-4">
 
-        <!-- Tabs -->
-        <nav class="mb-4">
-            <ul class="nav nav-tabs">
-                <li class="nav-item">
-                    <a class="nav-link" [class.active]="activeTab==='plantilla'" href="#"
-                        (click)="$event.preventDefault(); activeTab='plantilla'">Plantilla</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" [class.active]="activeTab==='competiciones'" href="#"
-                        (click)="$event.preventDefault(); activeTab='competiciones'">Competiciones</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" [class.active]="activeTab==='miembros'" href="#"
-                        (click)="$event.preventDefault(); activeTab='miembros'">Miembros</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" [class.active]="activeTab==='fantasy'" href="#"
-                        (click)="$event.preventDefault(); activeTab='fantasy'">Fantasy</a>
-                </li>
-            </ul>
-        </nav>
+            <div *ngIf="errorMsg"
+                class="p-3 text-sm text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 rounded-lg">
+                {{ errorMsg }}
+            </div>
 
-        <!-- PLANTILLA Tab -->
-        <section *ngIf="activeTab === 'plantilla'">
-            <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addPlayerModal">
-                Añadir Jugador/a
-            </button>
-            <ul class="modern-list">
-                <li *ngIf="players.length === 0" class="modern-list-item justify-content-center text-muted">No hay
-                    jugadores</li>
-                <li *ngFor="let p of players" class="modern-list-item">
-                    <div>
-                        <span class="fw-bold fs-4 me-2 text-primary">{{ p.dorsal }}</span>
-                        <span>{{ p.name }}</span>
+            <!-- PLANTILLA Tab -->
+            <section *ngIf="activeTab === 'plantilla'" class="animate-in fade-in duration-300">
+                <div class="flex items-center justify-between mb-4">
+                    <span
+                        class="text-xs font-semibold text-slate-600 dark:text-slate-500 uppercase tracking-wider">Jugadores
+                        ({{ players.length }})</span>
+                    <div class="flex items-center gap-3">
+                        <span *ngIf="statsLoading"
+                            class="material-symbols-outlined animate-spin text-primary text-[16px]">progress_activity</span>
+                        <button (click)="showAddPlayerModal = true"
+                            class="text-xs font-medium text-primary hover:text-orange-400 flex items-center gap-1 transition-colors">
+                            <span class="material-symbols-outlined text-[16px]">add</span> Añadir
+                        </button>
                     </div>
-                    <button class="btn btn-sm btn-danger" (click)="deletePlayer(p.id)">
-                        <i class="bi bi-trash-fill"></i>
+                </div>
+
+                <!-- Unified player + inline stats table -->
+                <div
+                    class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead *ngIf="statRows.length > 0"
+                                class="text-[11px] text-slate-400 dark:text-slate-500 uppercase bg-slate-50 dark:bg-white/5 border-b border-slate-200 dark:border-white/5 select-none">
+                                <tr>
+                                    <th class="px-4 py-2 text-left font-semibold">Jugador</th>
+                                    <th (click)="sortStats('gamesPlayed')"
+                                        class="cursor-pointer px-2 py-2 text-center font-semibold hover:text-primary transition-colors whitespace-nowrap">
+                                        PJ <span *ngIf="statSortCol==='gamesPlayed'"
+                                            class="material-symbols-outlined text-[11px] align-middle text-primary">{{statSortAsc?'arrow_drop_up':'arrow_drop_down'}}</span>
+                                    </th>
+                                    <th (click)="sortStats('ppg')"
+                                        class="cursor-pointer px-2 py-2 text-center font-semibold hover:text-primary transition-colors whitespace-nowrap">
+                                        PTS <span *ngIf="statSortCol==='ppg'"
+                                            class="material-symbols-outlined text-[11px] align-middle text-primary">{{statSortAsc?'arrow_drop_up':'arrow_drop_down'}}</span>
+                                    </th>
+                                    <th (click)="sortStats('apg')"
+                                        class="hidden sm:table-cell cursor-pointer px-2 py-2 text-center font-semibold hover:text-primary transition-colors whitespace-nowrap">
+                                        AST <span *ngIf="statSortCol==='apg'"
+                                            class="material-symbols-outlined text-[11px] align-middle text-primary">{{statSortAsc?'arrow_drop_up':'arrow_drop_down'}}</span>
+                                    </th>
+                                    <th (click)="sortStats('rpg')"
+                                        class="hidden sm:table-cell cursor-pointer px-2 py-2 text-center font-semibold hover:text-primary transition-colors whitespace-nowrap">
+                                        REB <span *ngIf="statSortCol==='rpg'"
+                                            class="material-symbols-outlined text-[11px] align-middle text-primary">{{statSortAsc?'arrow_drop_up':'arrow_drop_down'}}</span>
+                                    </th>
+                                    <th (click)="sortStats('spg')"
+                                        class="hidden md:table-cell cursor-pointer px-2 py-2 text-center font-semibold hover:text-primary transition-colors whitespace-nowrap">
+                                        ROB <span *ngIf="statSortCol==='spg'"
+                                            class="material-symbols-outlined text-[11px] align-middle text-primary">{{statSortAsc?'arrow_drop_up':'arrow_drop_down'}}</span>
+                                    </th>
+                                    <th (click)="sortStats('bpg')"
+                                        class="hidden md:table-cell cursor-pointer px-2 py-2 text-center font-semibold hover:text-primary transition-colors whitespace-nowrap">
+                                        TAP <span *ngIf="statSortCol==='bpg'"
+                                            class="material-symbols-outlined text-[11px] align-middle text-primary">{{statSortAsc?'arrow_drop_up':'arrow_drop_down'}}</span>
+                                    </th>
+                                    <th (click)="sortStats('fpg')"
+                                        class="hidden lg:table-cell cursor-pointer px-2 py-2 text-center font-semibold hover:text-primary transition-colors whitespace-nowrap">
+                                        F <span *ngIf="statSortCol==='fpg'"
+                                            class="material-symbols-outlined text-[11px] align-middle text-primary">{{statSortAsc?'arrow_drop_up':'arrow_drop_down'}}</span>
+                                    </th>
+                                    <th (click)="sortStats('vpg')"
+                                        class="cursor-pointer px-3 py-2 text-center font-semibold hover:text-primary transition-colors whitespace-nowrap">
+                                        VAL <span *ngIf="statSortCol==='vpg'"
+                                            class="material-symbols-outlined text-[11px] align-middle text-primary">{{statSortAsc?'arrow_drop_up':'arrow_drop_down'}}</span>
+                                    </th>
+                                    <th class="px-3 py-2"></th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-white/5">
+                                <tr *ngFor="let p of players" (click)="openPlayerDetails(p)"
+                                    class="group hover:bg-slate-50 dark:hover:bg-white/5 transition-colors cursor-pointer">
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <div class="flex items-center gap-3">
+                                            <span
+                                                class="flex-shrink-0 w-7 text-center text-base font-bold tabular-nums text-slate-400 dark:text-slate-500">{{
+                                                p.dorsal }}</span>
+                                            <app-avatar [seed]="p.id" [config]="p.avatarConfig"
+                                                [jerseyColor]="team?.jerseyColor || '5199e4'" [size]="36"
+                                                class="flex-shrink-0 border-2 border-white dark:border-white/10 rounded-full"></app-avatar>
+                                            <span class="font-semibold text-slate-800 dark:text-white">{{ p.name
+                                                }}</span>
+                                        </div>
+                                    </td>
+                                    <ng-container *ngIf="statsMap[p.id] as s; else noStats">
+                                        <td class="px-2 py-3 text-center text-xs text-slate-400 tabular-nums">{{
+                                            s.gamesPlayed }}</td>
+                                        <td
+                                            class="px-2 py-3 text-center font-bold text-slate-800 dark:text-white tabular-nums">
+                                            {{ fmt(s.ppg) }}</td>
+                                        <td
+                                            class="hidden sm:table-cell px-2 py-3 text-center text-slate-600 dark:text-slate-300 tabular-nums">
+                                            {{ fmt(s.apg) }}</td>
+                                        <td
+                                            class="hidden sm:table-cell px-2 py-3 text-center text-slate-600 dark:text-slate-300 tabular-nums">
+                                            {{ fmt(s.rpg) }}</td>
+                                        <td
+                                            class="hidden md:table-cell px-2 py-3 text-center text-slate-600 dark:text-slate-300 tabular-nums">
+                                            {{ fmt(s.spg) }}</td>
+                                        <td
+                                            class="hidden md:table-cell px-2 py-3 text-center text-slate-600 dark:text-slate-300 tabular-nums">
+                                            {{ fmt(s.bpg) }}</td>
+                                        <td
+                                            class="hidden lg:table-cell px-2 py-3 text-center text-slate-400 dark:text-slate-500 tabular-nums">
+                                            {{ fmt(s.fpg) }}</td>
+                                        <td
+                                            class="px-3 py-3 text-center font-bold text-slate-800 dark:text-white tabular-nums">
+                                            {{ fmt(s.vpg) }}
+                                        </td>
+                                    </ng-container>
+                                    <ng-template #noStats>
+                                        <td colspan="8"
+                                            class="hidden sm:table-cell px-2 py-3 text-center text-xs text-slate-300 dark:text-slate-600 italic">
+                                            sin partidos</td>
+                                    </ng-template>
+                                    <td class="px-3 py-3 text-right whitespace-nowrap">
+                                        <div
+                                            class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button (click)="openEditPlayer(p)"
+                                                class="h-7 w-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
+                                                <span class="material-symbols-outlined text-[16px]">edit</span>
+                                            </button>
+                                            <button (click)="confirmDeletePlayer(p.id)"
+                                                class="h-7 w-7 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                                                <span class="material-symbols-outlined text-[16px]">delete</span>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr *ngIf="players.length === 0">
+                                    <td colspan="10" class="p-8 text-center text-slate-500 text-sm">No hay jugadores en
+                                        la plantilla.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p *ngIf="statRows.length > 0"
+                        class="px-4 py-2 text-[10px] text-slate-400 dark:text-slate-600 border-t border-slate-100 dark:border-white/5">
+                        Media por partido · Pulsa una columna para ordenar · Más columnas en pantallas más grandes
+                    </p>
+                </div>
+            </section>
+
+            <!-- DESTACADOS Tab -->
+            <section *ngIf="activeTab === 'destacados'" class="animate-in fade-in duration-300">
+                <app-leaders-chart [statRows]="statRows" [matchScores]="matchScores"
+                    [jerseyColor]="team?.jerseyColor || '5199e4'" title="Temporada">
+                </app-leaders-chart>
+            </section>
+
+            <!-- EVOLUCIÓN Tab -->
+            <section *ngIf="activeTab === 'evolucion'" class="animate-in fade-in duration-300 flex flex-col gap-6">
+                <!-- Global -->
+                <app-evolution-chart [matchScores]="matchScores" title="Puntos (Global)"></app-evolution-chart>
+                <app-evolution-chart [matchScores]="matchScores" type="diff"
+                    title="Diferencia (Global)"></app-evolution-chart>
+
+                <!-- Per Competition -->
+                <ng-container *ngFor="let c of competitions">
+                    <ng-container *ngIf="matchesForComp(c.id).length > 0">
+                        <app-evolution-chart [matchScores]="matchesForComp(c.id)"
+                            [title]="'Puntos - ' + c.name"></app-evolution-chart>
+                        <app-evolution-chart [matchScores]="matchesForComp(c.id)" type="diff"
+                            [title]="'Diferencia - ' + c.name"></app-evolution-chart>
+                    </ng-container>
+                </ng-container>
+            </section>
+
+
+            <!-- COMPETICIONES Tab -->
+            <section *ngIf="activeTab === 'competiciones'" class="animate-in fade-in duration-300">
+                <div class="flex items-center justify-between mb-4">
+                    <span
+                        class="text-xs font-semibold text-slate-600 dark:text-slate-500 uppercase tracking-wider">Competiciones
+                        ({{
+                        competitions.length }})</span>
+                    <button (click)="showAddCompetitionModal = true"
+                        class="text-xs font-medium text-primary hover:text-orange-400 flex items-center gap-1 transition-colors">
+                        <span class="material-symbols-outlined text-[16px]">add</span> Añadir
                     </button>
-                </li>
-            </ul>
-        </section>
+                </div>
 
-        <!-- COMPETICIONES Tab -->
-        <section *ngIf="activeTab === 'competiciones'">
-            <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal"
-                data-bs-target="#addCompeticionModal">
-                Nueva Competición
-            </button>
-            <ul class="modern-list">
-                <li *ngIf="competitions.length === 0" class="modern-list-item justify-content-center text-muted">
-                    No hay competiciones
-                </li>
-                <li *ngFor="let c of competitions" class="modern-list-item" (click)="goToCompetition(c.id)"
-                    style="cursor:pointer">
-                    <span class="item-title">{{ c.name }}</span>
-                    <i class="bi bi-chevron-right text-muted"></i>
-                </li>
-            </ul>
-        </section>
+                <div *ngIf="competitions.length === 0"
+                    class="text-center py-8 text-slate-500 dark:text-slate-500 text-sm">
+                    No hay competiciones registradas.
+                </div>
 
-        <!-- MIEMBROS Tab -->
-        <section *ngIf="activeTab === 'miembros'">
-            <div class="alert alert-info">
-                Gestiona los permisos de tu equipo. Puedes asignar roles a tus seguidores.
-            </div>
-        </section>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div *ngFor="let c of competitions" (click)="goToCompetition(c.id)"
+                        class="group flex items-center justify-between border border-slate-200 dark:border-white/5 bg-white dark:bg-surface-dark hover:border-primary/30 rounded-2xl px-4 py-4 transition-colors cursor-pointer shadow-sm">
+                        <span class="text-[15px] font-medium text-slate-800 dark:text-white">{{ c.name }}</span>
+                        <span
+                            class="material-symbols-outlined text-slate-400 dark:text-slate-500 group-hover:text-primary dark:group-hover:text-white transition-colors">chevron_right</span>
+                    </div>
+                </div>
+            </section>
 
-        <!-- FANTASY Tab -->
-        <section *ngIf="activeTab === 'fantasy'">
-            <div class="alert alert-light border">
-                <i class="bi bi-info-circle me-2"></i>Aquí puedes ver el rendimiento Fantasy acumulado de tus jugadores
-                en todos los partidos.
-            </div>
-        </section>
+            <!-- MIEMBROS Tab -->
+            <section *ngIf="activeTab === 'miembros'" class="animate-in fade-in duration-300">
+                <div class="p-4 rounded-xl bg-primary/10 border border-primary/20 flex gap-3 text-primary">
+                    <span class="material-symbols-outlined shrink-0 text-[20px]">info</span>
+                    <p class="text-sm">Gestiona los permisos de tu equipo. Puedes asignar roles a tus seguidores
+                        (Próximamente).</p>
+                </div>
+            </section>
+
+            <!-- FANTASY Tab -->
+            <section *ngIf="activeTab === 'fantasy'" class="animate-in fade-in duration-300">
+                <!-- Loading -->
+                <div *ngIf="statsLoading" class="flex justify-center py-12">
+                    <span
+                        class="material-symbols-outlined animate-spin text-primary text-[36px]">progress_activity</span>
+                </div>
+                <!-- Empty -->
+                <div *ngIf="!statsLoading && statRows.length === 0" class="py-16 text-center">
+                    <span
+                        class="material-symbols-outlined text-[48px] text-slate-300 dark:text-slate-600 block mb-3">sports_basketball</span>
+                    <p class="text-slate-500 text-sm">No hay partidos con estadísticas aún.</p>
+                </div>
+                <!-- Leaderboard -->
+                <div *ngIf="!statsLoading && statRows.length > 0">
+                    <div class="mb-5">
+                        <h2 class="text-xl font-bold text-slate-800 dark:text-white">Fantasy</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Media por partido · PTS×1 + AST×2 +
+                            REB×1 + ROB×3 + TAP×3</p>
+                    </div>
+                    <!-- Podium top 3 -->
+                    <div *ngIf="fantasySorted.length >= 3" class="grid grid-cols-3 gap-2 mb-6">
+                        <!-- 2nd -->
+                        <div class="flex flex-col items-center pt-6">
+                            <div class="relative mb-2">
+                                <div
+                                    class="w-14 h-14 rounded-full bg-gradient-to-br from-slate-300 to-slate-400 p-1 flex items-center justify-center shadow-lg">
+                                    <app-avatar [seed]="fantasySorted[1].playerId"
+                                        [config]="fantasySorted[1].avatarConfig"
+                                        [jerseyColor]="team?.jerseyColor || '5199e4'" [size]="48"
+                                        class="block rounded-full overflow-hidden"></app-avatar>
+                                </div>
+                                <span
+                                    class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-slate-400 flex items-center justify-center text-xs font-black text-white shadow">2</span>
+                            </div>
+                            <p
+                                class="text-xs font-semibold text-slate-700 dark:text-slate-300 text-center truncate w-full px-1">
+                                {{ fantasySorted[1].name }}</p>
+                            <p class="text-lg font-black text-slate-500 dark:text-slate-300">{{
+                                fmt(fantasySorted[1].fantasyPpg) }}</p>
+                        </div>
+                        <!-- 1st -->
+                        <div class="flex flex-col items-center">
+                            <div class="relative mb-2">
+                                <div
+                                    class="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 p-1 flex items-center justify-center shadow-xl ring-4 ring-amber-300/50 dark:ring-amber-500/30">
+                                    <app-avatar [seed]="fantasySorted[0].playerId"
+                                        [config]="fantasySorted[0].avatarConfig"
+                                        [jerseyColor]="team?.jerseyColor || '5199e4'" [size]="72"
+                                        class="block rounded-full overflow-hidden"></app-avatar>
+                                </div>
+                                <span
+                                    class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-amber-400 flex items-center justify-center text-xs font-black text-white shadow-lg">1</span>
+                            </div>
+                            <p
+                                class="text-sm font-bold text-slate-800 dark:text-white text-center truncate w-full px-1">
+                                {{ fantasySorted[0].name }}</p>
+                            <p class="text-3xl font-black text-amber-500">{{ fmt(fantasySorted[0].fantasyPpg) }}</p>
+                            <p class="text-[10px] text-amber-400 font-semibold">pts/pj</p>
+                        </div>
+                        <!-- 3rd -->
+                        <div class="flex flex-col items-center pt-8">
+                            <div class="relative mb-2">
+                                <div
+                                    class="w-12 h-12 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 p-1 flex items-center justify-center shadow-lg">
+                                    <app-avatar [seed]="fantasySorted[2].playerId"
+                                        [config]="fantasySorted[2].avatarConfig"
+                                        [jerseyColor]="team?.jerseyColor || '5199e4'" [size]="40"
+                                        class="block rounded-full overflow-hidden"></app-avatar>
+                                </div>
+                                <span
+                                    class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-amber-700 flex items-center justify-center text-[10px] font-black text-white shadow">3</span>
+                            </div>
+                            <p
+                                class="text-xs font-semibold text-slate-700 dark:text-slate-300 text-center truncate w-full px-1">
+                                {{ fantasySorted[2].name }}</p>
+                            <p class="text-base font-black text-amber-700 dark:text-amber-600">{{
+                                fmt(fantasySorted[2].fantasyPpg) }}</p>
+                        </div>
+                    </div>
+                    <!-- Full ranking list -->
+                    <div
+                        class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm">
+                        <div *ngFor="let r of fantasySorted; let i = index"
+                            class="flex items-center gap-3 px-4 py-3 border-b border-slate-100 dark:border-white/5 last:border-0 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                            <div class="flex-shrink-0 w-6 text-center">
+                                <span *ngIf="i===0"
+                                    class="material-symbols-outlined text-amber-400 text-[20px]">emoji_events</span>
+                                <span *ngIf="i===1" class="text-slate-400 font-bold text-sm">2</span>
+                                <span *ngIf="i===2"
+                                    class="text-amber-700 dark:text-amber-600 font-bold text-sm">3</span>
+                                <span *ngIf="i>2" class="text-slate-400 dark:text-slate-600 text-sm">{{ i+1 }}</span>
+                            </div>
+                            <span
+                                class="flex-shrink-0 w-7 text-center text-sm font-bold tabular-nums text-slate-500 dark:text-slate-400">{{
+                                r.dorsal }}</span>
+                            <p class="flex-1 min-w-0 font-semibold text-slate-800 dark:text-white truncate">{{ r.name }}
+                            </p>
+                            <span class="flex-shrink-0 text-xs text-slate-400 dark:text-slate-500">{{ r.gamesPlayed }}
+                                pj</span>
+                            <div class="flex-shrink-0 text-right w-16">
+                                <span class="text-lg font-black"
+                                    [ngClass]="i===0?'text-amber-500':i===1?'text-slate-500':i===2?'text-amber-700 dark:text-amber-600':'text-primary'">
+                                    {{ fmt(r.fantasyPpg) }}
+                                </span>
+                                <span class="text-[10px] text-slate-400 block -mt-0.5">pts/pj</span>
+                            </div>
+                            <div
+                                class="hidden sm:block flex-shrink-0 w-20 h-1.5 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
+                                <div class="h-full rounded-full"
+                                    [ngClass]="i===0?'bg-amber-400':i===1?'bg-slate-400':i===2?'bg-amber-700':'bg-primary'"
+                                    [style.width.%]="fantasySorted[0].fantasyPpg > 0 ? (r.fantasyPpg / fantasySorted[0].fantasyPpg * 100) : 0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
     </ng-container>
-</div>
 
-<!-- Modal Añadir Jugador -->
-<div class="modal fade" id="addPlayerModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <form class="modal-content" (ngSubmit)="addPlayer()">
-            <div class="modal-header">
-                <h5 class="modal-title">Añadir Jugador/a</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <input type="text" class="form-control mb-3" placeholder="Nombre jugador" [(ngModel)]="newPlayer.name"
-                    name="playerName" required>
-                <input type="text" class="form-control" placeholder="Dorsal (0, 00, 1-99)"
-                    [(ngModel)]="newPlayer.dorsal" name="playerDorsal" required maxlength="2">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="submit" class="btn btn-primary">Guardar jugador/a</button>
-            </div>
-        </form>
-    </div>
-</div>
 
-<!-- Modal Añadir Competición -->
-<div class="modal fade" id="addCompeticionModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <form class="modal-content" (ngSubmit)="addCompetition()">
-            <div class="modal-header">
-                <h5 class="modal-title">Nueva Competición</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <!-- Modal: Add Player -->
+    <div *ngIf="showAddPlayerModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div
+            class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+            <div
+                class="px-5 py-4 border-b border-gray-200 dark:border-white/5 flex justify-between items-center bg-slate-50 dark:bg-white/5">
+                <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Añadir Jugador/a</h3>
+                <button (click)="showAddPlayerModal = false"
+                    class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
             </div>
-            <div class="modal-body">
-                <input type="text" class="form-control" placeholder="Nombre competición"
-                    [(ngModel)]="newCompetitionName" name="compName" required>
+
+            <div class="p-5 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Nombre</label>
+                    <input type="text" [(ngModel)]="newPlayer.name" placeholder="Ej. Marc"
+                        class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Dorsal</label>
+                    <input type="text" [(ngModel)]="newPlayer.dorsal" placeholder="00, 1-99" maxlength="2"
+                        class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
+                </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="submit" class="btn btn-primary">Crear competición</button>
+
+            <div
+                class="px-5 py-4 border-t border-gray-200 dark:border-white/5 flex justify-end gap-3 bg-slate-50 dark:bg-white/5">
+                <button (click)="showAddPlayerModal = false"
+                    class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors">Cancelar</button>
+                <button (click)="addPlayer()" [disabled]="!newPlayer.name.trim() || !newPlayer.dorsal.trim()"
+                    class="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    Guardar
+                </button>
             </div>
-        </form>
+        </div>
     </div>
-</div>
+
+    <!-- Modal: Edit Player -->
+    <div *ngIf="showEditPlayerModal && editingPlayer"
+        class="fixed inset-0 z-50 flex items-center justify-center p-2 bg-black/60 backdrop-blur-sm overflow-y-auto">
+        <div
+            class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-2xl shadow-xl w-full max-w-md my-auto flex flex-col animate-in fade-in zoom-in duration-200">
+            <div
+                class="px-5 py-4 border-b border-gray-200 dark:border-white/5 flex justify-between items-center bg-slate-50 dark:bg-white/5 sticky top-0 z-10">
+                <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Editar Jugador/a</h3>
+                <button (click)="showEditPlayerModal = false"
+                    class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="p-5 overflow-y-auto" style="max-height: calc(100vh - 160px);">
+                <div class="flex gap-4 mb-6">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Nombre</label>
+                        <input type="text" [(ngModel)]="editingPlayer.name"
+                            class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
+                    </div>
+                    <div class="w-24">
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Dorsal</label>
+                        <input type="text" [(ngModel)]="editingPlayer.dorsal" maxlength="2"
+                            class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
+                    </div>
+                </div>
+
+                <h6
+                    class="border-b border-gray-200 dark:border-white/10 pb-2 mb-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    Personalizar Avatar</h6>
+                <app-avatar-editor [seed]="editingPlayer.id" [initialConfig]="editingAvatarConfig"
+                    [jerseyColor]="team?.jerseyColor || '5199e4'" (configChange)="onAvatarConfigChange($event)">
+                </app-avatar-editor>
+            </div>
+
+            <div
+                class="px-5 py-4 border-t border-gray-200 dark:border-white/5 flex justify-end gap-3 bg-slate-50 dark:bg-white/5 sticky bottom-0">
+                <button (click)="showEditPlayerModal = false"
+                    class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors">Cancelar</button>
+                <button (click)="savePlayer()" [disabled]="!editingPlayer.name.trim() || !editingPlayer.dorsal"
+                    class="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    Guardar cambios
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Player Match Log Details -->
+    <div *ngIf="showPlayerDetailsModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div
+            class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+            <!-- Header -->
+            <div
+                class="px-6 py-5 border-b border-gray-200 dark:border-white/5 flex justify-between items-center bg-slate-50 dark:bg-white/5">
+                <div class="flex items-center gap-4">
+                    <app-avatar *ngIf="selectedPlayer" [seed]="selectedPlayer.id" [config]="selectedPlayer.avatarConfig"
+                        [jerseyColor]="team?.jerseyColor || '5199e4'" [size]="48"
+                        class="flex-shrink-0 border-2 border-white dark:border-white/10 rounded-full shadow-sm"></app-avatar>
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                            <span class="text-primary">#{{ selectedPlayer?.dorsal }}</span> {{ selectedPlayer?.name }}
+                        </h3>
+                        <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Historial de Partidos</p>
+                    </div>
+                </div>
+                <button (click)="showPlayerDetailsModal = false"
+                    class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full p-2">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-0 overflow-y-auto flex-1">
+                <div *ngIf="playerDetailsLoading" class="p-12 flex justify-center items-center">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+
+                <div *ngIf="!playerDetailsLoading && selectedPlayerMatchLog.length === 0"
+                    class="p-12 text-center text-slate-500 dark:text-slate-400">
+                    <span class="material-symbols-outlined text-4xl mb-3 opacity-50">history_toggle_off</span>
+                    <p>No hay registro de partidos para este jugador.</p>
+                </div>
+
+                <div *ngIf="!playerDetailsLoading && selectedPlayerMatchLog.length > 0">
+                    <!-- Sparkline charts -->
+                    <div class="px-5 pt-5 pb-4 border-b border-slate-100 dark:border-white/5">
+                        <h4
+                            class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">
+                            Evolución por partido</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <app-player-sparkline [series]="playerSparklineSeries"></app-player-sparkline>
+                        </div>
+                    </div>
+                    <!-- Match log table -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead
+                                class="bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-white/5 text-xs uppercase tracking-wider sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-3 font-semibold">Fecha</th>
+                                    <th class="px-4 py-3 font-semibold text-center hidden sm:table-cell">Comp</th>
+                                    <th class="px-4 py-3 font-semibold">Partido</th>
+                                    <th class="px-3 py-3 font-semibold text-center text-primary">PTS</th>
+                                    <th class="px-2 py-3 font-semibold text-center">REB</th>
+                                    <th class="px-2 py-3 font-semibold text-center">AST</th>
+                                    <th class="px-2 py-3 font-semibold text-center">ROB</th>
+                                    <th class="px-2 py-3 font-semibold text-center">TAP</th>
+                                    <th class="px-2 py-3 font-semibold text-center text-red-400">FLT</th>
+                                    <th class="px-4 py-3 font-bold text-center text-slate-800 dark:text-white">VAL</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-white/5">
+                                <tr *ngFor="let m of selectedPlayerMatchLog"
+                                    class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                                    <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ m.dateStr }}</td>
+                                    <td class="px-4 py-3 text-center hidden sm:table-cell">
+                                        <span
+                                            class="text-[10px] bg-slate-100 dark:bg-white/10 text-slate-500 px-2 py-1 rounded truncate max-w-[80px] inline-block"
+                                            [title]="getCompetitionName(m.competitionId)">{{
+                                            getCompetitionName(m.competitionId) }}</span>
+                                    </td>
+                                    <td class="px-4 py-3 font-medium">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-slate-800 dark:text-white">{{ team?.name }}</span>
+                                            <span class="px-1.5 py-0.5 rounded textxs font-bold"
+                                                [ngClass]="m.ourScore > m.rivalScore ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : (m.ourScore < m.rivalScore ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-300')">{{
+                                                m.ourScore }} - {{ m.rivalScore }}</span>
+                                            <span class="text-slate-500 dark:text-slate-400">{{ m.rivalName }}</span>
+                                        </div>
+                                    </td>
+                                    <td
+                                        class="px-3 py-3 text-center font-bold text-slate-800 dark:text-white tabular-nums">
+                                        {{ m.points }}</td>
+                                    <td class="px-2 py-3 text-center text-slate-600 dark:text-slate-300 tabular-nums">{{
+                                        m.rebounds }}</td>
+                                    <td class="px-2 py-3 text-center text-slate-600 dark:text-slate-300 tabular-nums">{{
+                                        m.assists }}</td>
+                                    <td class="px-2 py-3 text-center text-slate-600 dark:text-slate-300 tabular-nums">{{
+                                        m.steals }}</td>
+                                    <td class="px-2 py-3 text-center text-slate-600 dark:text-slate-300 tabular-nums">{{
+                                        m.blocks }}</td>
+                                    <td class="px-2 py-3 text-center text-red-400/80 tabular-nums">{{ m.fouls }}</td>
+                                    <td
+                                        class="px-4 py-3 text-center font-bold bg-slate-50 dark:bg-white/5 text-slate-800 dark:text-white tabular-nums">
+                                        {{ m.valoracion }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div
+                    class="px-6 py-4 border-t border-gray-200 dark:border-white/5 bg-slate-50 dark:bg-white/5 flex justify-end">
+                    <button (click)="showPlayerDetailsModal = false"
+                        class="px-5 py-2.5 rounded-xl font-semibold bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors shadow-sm">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Delete Player Confirm -->
+        <div *ngIf="showDeletePlayerModal"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div
+                class="bg-white dark:bg-surface-dark border border-red-200 dark:border-red-900/50 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center animate-in fade-in zoom-in duration-200">
+                <div
+                    class="mx-auto w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center mb-4 text-red-500">
+                    <span class="material-symbols-outlined text-[32px]">warning</span>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">¿Borrar jugador/a?</h3>
+                <p class="text-slate-600 dark:text-slate-400 text-sm mb-6">Esta acción no se puede deshacer y borrará
+                    sus
+                    estadísticas en los
+                    partidos no finalizados.</p>
+                <div class="flex flex-col gap-2">
+                    <button (click)="deletePlayer()"
+                        class="w-full py-3 rounded-lg font-semibold bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-500 hover:bg-red-500 hover:text-white border border-red-200 dark:border-red-500/20 hover:border-red-500 transition-colors">
+                        Sí, eliminar
+                    </button>
+                    <button (click)="showDeletePlayerModal = false"
+                        class="w-full py-3 rounded-lg font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 border border-transparent transition-colors">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Edit Team Settings -->
+        <div *ngIf="showEditTeamModal"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div
+                class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+                <div
+                    class="px-5 py-4 border-b border-gray-200 dark:border-white/5 flex justify-between items-center bg-slate-50 dark:bg-white/5">
+                    <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Ajustes del Equipo</h3>
+                    <button (click)="showEditTeamModal = false"
+                        class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="p-5 flex flex-col gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Nombre del
+                            equipo</label>
+                        <input type="text" [(ngModel)]="editTeamData.name" placeholder="Ej. Los Leones"
+                            class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Entrenador
+                            (Coach)</label>
+                        <input type="text" [(ngModel)]="editTeamData.coach" placeholder="Ej. Coach Carter"
+                            class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Color de la
+                            Equipación</label>
+                        <div class="grid grid-cols-5 gap-2">
+                            <ng-container *ngFor="let c of DICEBEAR_COLORS">
+                                <button (click)="editTeamData.jerseyColor = c.hex" [title]="c.name"
+                                    [ngClass]="editTeamData.jerseyColor === c.hex ? 'ring-2 ring-primary ring-offset-2 dark:ring-offset-background-dark scale-110' : 'hover:scale-110'"
+                                    class="w-10 h-10 rounded-full border border-black/10 transition-all duration-200 shadow-sm"
+                                    [style.backgroundColor]="'#' + c.hex">
+                                </button>
+                            </ng-container>
+                        </div>
+                    </div>
+                </div>
+                <div
+                    class="px-5 py-4 border-t border-gray-200 dark:border-white/5 flex justify-end gap-3 bg-slate-50 dark:bg-white/5">
+                    <button (click)="showEditTeamModal = false"
+                        class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors">Cancelar</button>
+                    <button (click)="saveTeamSettings()" [disabled]="!editTeamData.name.trim()"
+                        class="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Add Competition -->
+        <div *ngIf="showAddCompetitionModal"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div
+                class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+                <div
+                    class="px-5 py-4 border-b border-gray-200 dark:border-white/5 flex justify-between items-center bg-slate-50 dark:bg-white/5">
+                    <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Nueva Competición</h3>
+                    <button (click)="showAddCompetitionModal = false"
+                        class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="p-5">
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Nombre de la
+                        competición</label>
+                    <input type="text" [(ngModel)]="newCompetitionName" placeholder="Ej. Liga Regular"
+                        class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
+                </div>
+                <div
+                    class="px-5 py-4 border-t border-gray-200 dark:border-white/5 flex justify-end gap-3 bg-slate-50 dark:bg-white/5">
+                    <button (click)="showAddCompetitionModal = false"
+                        class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors">Cancelar</button>
+                    <button (click)="addCompetition()" [disabled]="!newCompetitionName.trim()"
+                        class="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        Crear competición
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>

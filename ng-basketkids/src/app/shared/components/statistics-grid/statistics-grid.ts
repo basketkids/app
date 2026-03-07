@@ -9,6 +9,7 @@ interface StatsRow {
 
 @Component({
   selector: 'app-statistics-grid',
+  standalone: true,
   templateUrl: './statistics-grid.html',
   styleUrls: ['./statistics-grid.css'],
   imports: [CommonModule]

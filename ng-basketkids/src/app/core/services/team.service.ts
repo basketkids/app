@@ -51,6 +51,14 @@ export class TeamService implements OnDestroy {
         return this.repository.createTeam(userId, name);
     }
 
+    async getTeam(teamId: string): Promise<Team | null> {
+        return this.repository.getTeamById(teamId);
+    }
+
+    async updateTeam(teamId: string, updates: Partial<Team>): Promise<boolean> {
+        return this.repository.updateTeam(teamId, updates);
+    }
+
     async delete(teamId: string): Promise<void> {
         await this.repository.deleteTeam(teamId);
     }

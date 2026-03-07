@@ -13,7 +13,7 @@ export class PlayerRepository {
     async getPlayersByTeam(teamId: string): Promise<Player[]> {
         const { data, error } = await this.supabase.instance
             .from(this.TABLE_NAME)
-            .select('*')
+            .select('*, avatar_configs(*)')
             .eq('team_id', teamId);
 
         if (error) {
@@ -27,7 +27,7 @@ export class PlayerRepository {
     async getPlayerById(playerId: string): Promise<Player | null> {
         const { data, error } = await this.supabase.instance
             .from(this.TABLE_NAME)
-            .select('*')
+            .select('*, avatar_configs(*)')
             .eq('id', playerId)
             .single();
 
@@ -59,11 +59,11 @@ export class PlayerRepository {
         return this.mapRowToPlayer(data);
     }
 
-    async updatePlayer(playerId: string, updates: Partial<Player>): Promise<Player | null> {
+    async updatePlayer(playerId: string, updates: Partial<Player> & { avatar_config_id?: string }): Promise<Player | null> {
         const payload: any = {};
         if (updates.name !== undefined) payload.name = updates.name;
         if (updates.dorsal !== undefined) payload.number = updates.dorsal?.toString();
-        // and other fields...
+        if (updates.avatar_config_id !== undefined) payload.avatar_config_id = updates.avatar_config_id;
 
         const { data, error } = await this.supabase.instance
             .from(this.TABLE_NAME)
@@ -95,11 +95,14 @@ export class PlayerRepository {
     }
 
     private mapRowToPlayer(row: any): Player {
+        let ac = row.avatar_configs;
+        if (Array.isArray(ac)) ac = ac[0];
+
         return {
             id: row.id,
             name: row.name,
             dorsal: parseInt(row.number, 10) || 0,
-            avatarConfig: row.avatar_config_id || null
+            avatarConfig: ac || null
         } as Player;
     }
 }

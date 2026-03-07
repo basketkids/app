@@ -1,22 +1,30 @@
-<!-- Bootstrap responsive row: 1 col mobile, 2 md, 3 lg, 4 xl — same as old/public/index.html -->
-<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-3">
-    <div *ngFor="let day of days" class="col day-column">
-        <div class="card h-100 border-0 bg-transparent">
-            <!-- Day header: weekday left, day number right -->
-            <div class="card-header p-2 d-flex justify-content-between align-items-center rounded-top"
-                [class.bg-primary]="!day.isToday" [class.bg-warning]="day.isToday" [class.text-white]="!day.isToday"
-                [class.text-dark]="day.isToday">
-                <span class="text-uppercase fw-bold small">{{ day.weekday }}</span>
-                <span class="fs-5 fw-bold">{{ day.dayNum }}</span>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-4">
+    <div *ngFor="let day of days"
+        class="flex flex-col bg-white dark:bg-background-dark border border-gray-200 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm">
+
+        <!-- Day header -->
+        <div class="px-4 py-2 border-b border-gray-100 dark:border-white/5 flex justify-between items-center"
+            [ngClass]="{'bg-primary/10 border-primary/20': day.isToday, 'bg-slate-50 dark:bg-surface-dark/50 border-gray-100 dark:border-white/5': !day.isToday}">
+            <span class="text-xs font-bold uppercase tracking-wider"
+                [ngClass]="{'text-primary': day.isToday, 'text-slate-500 dark:text-slate-400': !day.isToday}">
+                {{ day.weekday }}
+            </span>
+            <span class="text-xl font-bold"
+                [ngClass]="{'text-primary': day.isToday, 'text-slate-800 dark:text-white': !day.isToday}">
+                {{ day.dayNum }}
+            </span>
+        </div>
+
+        <!-- Matches container -->
+        <div class="p-3 flex-1 flex flex-col gap-3 min-h-[120px] bg-slate-50/50 dark:bg-background-dark/50">
+            <div *ngIf="day.matches.length === 0"
+                class="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 py-4 opacity-50">
+                <span class="material-symbols-outlined text-2xl mb-1">event_busy</span>
+                <span class="text-xs font-medium">Libre</span>
             </div>
-            <!-- Matches -->
-            <div class="card-body p-0 pt-2 matches-container">
-                <div *ngIf="day.matches.length === 0" class="text-muted text-center small py-3">
-                    Sin partidos
-                </div>
-                <app-match-card *ngFor="let m of day.matches" [match]="m" (matchClick)="matchClick.emit($event)">
-                </app-match-card>
-            </div>
+
+            <app-match-card *ngFor="let m of day.matches" [match]="m" (matchClick)="matchClick.emit($event)">
+            </app-match-card>
         </div>
     </div>
 </div>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Toma de Datos Simple (Claro)</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ff6b00",
+                        "primary-dark": "#e65100",
+                        "primary-light": "#ff9e40",
+                        "surface": "#ffffff",
+                        "surface-offset": "#f8fafc",
+                        "surface-highlight": "#e2e8f0",
+                        "rival": "#ef4444",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            height: 100dvh;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface-offset font-display text-slate-900 flex flex-col h-screen overflow-hidden selection:bg-primary selection:text-white">
+<header class="flex-none bg-white border-b border-slate-200 px-4 py-3 z-20 shadow-sm">
+<div class="flex items-center justify-between gap-2">
+<div class="flex flex-col items-center w-16">
+<span class="text-xs text-primary font-bold uppercase tracking-wider">Nosotros</span>
+<span class="text-3xl font-black text-slate-900 leading-none">42</span>
+</div>
+<div class="flex-1 flex flex-col items-center justify-center bg-slate-50 rounded-lg px-3 py-1 border border-slate-100">
+<div class="flex items-center gap-1.5 mb-0.5">
+<div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+<span class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">En Vivo</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-[11px] text-slate-400 font-bold">P2</span>
+<span class="text-2xl font-mono font-bold tracking-tight text-slate-800 leading-none">04:23</span>
+</div>
+</div>
+<div class="flex flex-col items-center w-16">
+<span class="text-xs text-slate-400 font-bold uppercase tracking-wider">Rival</span>
+<span class="text-3xl font-black text-slate-400 leading-none">38</span>
+</div>
+<button class="ml-1 p-2 text-slate-400 hover:text-slate-600">
+<span class="material-symbols-outlined !text-[24px]">menu</span>
+</button>
+</div>
+</header>
+<main class="flex-1 flex flex-col gap-3 p-3 h-full overflow-hidden">
+<section class="flex-1 min-h-0 flex flex-col">
+<h3 class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2 flex justify-between items-center px-1">
+                Jugadores en Pista
+                <span class="text-primary text-[10px]">5 Seleccionados</span>
+</h3>
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-3 h-full">
+<button class="relative bg-primary text-white border-2 border-primary-light rounded-2xl flex flex-col items-center justify-center p-2 shadow-lg shadow-primary/30 transition-all active:scale-95 ring-2 ring-offset-2 ring-primary/50">
+<div class="absolute top-2 right-2 w-2.5 h-2.5 bg-white rounded-full shadow-sm"></div>
+<span class="text-2xl font-bold leading-tight">Juan</span>
+<span class="text-4xl font-black mb-1">#10</span>
+<span class="text-[11px] bg-white/20 px-2 py-0.5 rounded-full font-medium mt-1">12 Pts • 2 Fal</span>
+</button>
+<button class="bg-white hover:bg-slate-50 border border-slate-200 shadow-sm rounded-2xl flex flex-col items-center justify-center p-2 text-slate-600 transition-all active:scale-95 active:bg-slate-100">
+<span class="text-xl font-bold leading-tight">Alex</span>
+<span class="text-3xl font-bold text-slate-400 mb-1">#5</span>
+<span class="text-[10px] text-slate-400 mt-1">8 Pts • 1 Fal</span>
+</button>
+<button class="bg-white hover:bg-slate-50 border border-slate-200 shadow-sm rounded-2xl flex flex-col items-center justify-center p-2 text-slate-600 transition-all active:scale-95 active:bg-slate-100">
+<span class="text-xl font-bold leading-tight">Marcos</span>
+<span class="text-3xl font-bold text-slate-400 mb-1">#23</span>
+<span class="text-[10px] text-slate-400 mt-1">15 Pts • 3 Fal</span>
+</button>
+<button class="bg-white hover:bg-slate-50 border border-slate-200 shadow-sm rounded-2xl flex flex-col items-center justify-center p-2 text-slate-600 transition-all active:scale-95 active:bg-slate-100">
+<span class="text-xl font-bold leading-tight">David</span>
+<span class="text-3xl font-bold text-slate-400 mb-1">#7</span>
+<span class="text-[10px] text-slate-400 mt-1">4 Pts • 0 Fal</span>
+</button>
+<button class="bg-white hover:bg-slate-50 border border-slate-200 shadow-sm rounded-2xl flex flex-col items-center justify-center p-2 text-slate-600 transition-all active:scale-95 active:bg-slate-100">
+<span class="text-xl font-bold leading-tight">Luis</span>
+<span class="text-3xl font-bold text-slate-400 mb-1">#11</span>
+<span class="text-[10px] text-slate-400 mt-1">6 Pts • 1 Fal</span>
+</button>
+<button class="bg-slate-100 hover:bg-slate-200 border border-slate-200 border-dashed rounded-2xl flex flex-col items-center justify-center p-2 text-slate-400 transition-all active:scale-95">
+<span class="material-symbols-outlined !text-[32px] mb-1">groups</span>
+<span class="text-xs font-bold uppercase">Cambios</span>
+</button>
+</div>
+</section>
+<section class="flex-none">
+<h3 class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2 px-1">Acciones para Juan #10</h3>
+<div class="grid grid-cols-3 gap-2.5 h-auto">
+<button class="h-16 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-xl flex flex-col items-center justify-center shadow-md shadow-emerald-500/20 active:scale-95 transition-all">
+<span class="text-3xl font-black leading-none">+1</span>
+<span class="text-[10px] font-bold uppercase opacity-90">Tiro Libre</span>
+</button>
+<button class="h-16 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-xl flex flex-col items-center justify-center shadow-md shadow-emerald-500/20 active:scale-95 transition-all">
+<span class="text-3xl font-black leading-none">+2</span>
+<span class="text-[10px] font-bold uppercase opacity-90">Campo</span>
+</button>
+<button class="h-16 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-xl flex flex-col items-center justify-center shadow-md shadow-emerald-500/20 active:scale-95 transition-all">
+<span class="text-3xl font-black leading-none">+3</span>
+<span class="text-[10px] font-bold uppercase opacity-90">Triple</span>
+</button>
+<button class="h-14 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl flex flex-col items-center justify-center shadow-sm active:scale-95 transition-all">
+<span class="text-lg font-bold">REB</span>
+<span class="text-[9px] text-slate-400 uppercase font-semibold">Rebote</span>
+</button>
+<button class="h-14 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl flex flex-col items-center justify-center shadow-sm active:scale-95 transition-all">
+<span class="text-lg font-bold">AST</span>
+<span class="text-[9px] text-slate-400 uppercase font-semibold">Asistencia</span>
+</button>
+<button class="h-14 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl flex flex-col items-center justify-center shadow-sm active:scale-95 transition-all">
+<span class="text-lg font-bold">TAP</span>
+<span class="text-[9px] text-slate-400 uppercase font-semibold">Tapón</span>
+</button>
+<button class="h-14 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl flex flex-col items-center justify-center shadow-sm active:scale-95 transition-all">
+<span class="text-lg font-bold">ROB</span>
+<span class="text-[9px] text-slate-400 uppercase font-semibold">Robo</span>
+</button>
+<button class="h-14 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-600 rounded-xl flex flex-col items-center justify-center active:scale-95 transition-all">
+<span class="text-lg font-bold">FAL</span>
+<span class="text-[9px] uppercase font-bold opacity-80">Falta P.</span>
+</button>
+<button class="h-14 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-xl flex flex-col items-center justify-center active:scale-95 transition-all">
+<span class="material-symbols-outlined !text-[24px] mb-0.5">close</span>
+<span class="text-[10px] font-bold uppercase">Fallo</span>
+</button>
+</div>
+</section>
+<section class="flex-none bg-slate-100 rounded-xl p-3 border border-slate-200">
+<div class="flex items-center justify-between mb-2 px-1">
+<span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Acciones Rival</span>
+<span class="text-xs font-bold text-slate-500">Faltas Eq: <span class="text-slate-800">4</span></span>
+</div>
+<div class="grid grid-cols-4 gap-2">
+<button class="h-10 bg-white hover:bg-slate-50 border border-slate-200 active:bg-slate-100 text-slate-700 rounded-lg flex items-center justify-center gap-1 active:scale-95 transition-all shadow-sm">
+<span class="text-sm font-black">+1</span>
+<span class="text-[9px] uppercase font-bold text-slate-400">Rival</span>
+</button>
+<button class="h-10 bg-white hover:bg-slate-50 border border-slate-200 active:bg-slate-100 text-slate-700 rounded-lg flex items-center justify-center gap-1 active:scale-95 transition-all shadow-sm">
+<span class="text-sm font-black">+2</span>
+<span class="text-[9px] uppercase font-bold text-slate-400">Rival</span>
+</button>
+<button class="h-10 bg-white hover:bg-slate-50 border border-slate-200 active:bg-slate-100 text-slate-700 rounded-lg flex items-center justify-center gap-1 active:scale-95 transition-all shadow-sm">
+<span class="text-sm font-black">+3</span>
+<span class="text-[9px] uppercase font-bold text-slate-400">Rival</span>
+</button>
+<button class="h-10 bg-red-50 hover:bg-red-100 border border-red-200 active:bg-red-200 text-red-600 rounded-lg flex items-center justify-center gap-1 active:scale-95 transition-all">
+<span class="text-xs font-bold uppercase">Falta</span>
+<span class="text-[9px] uppercase font-bold opacity-70">Rival</span>
+</button>
+</div>
+</section>
+</main>
+<script>
+        // Adjust for safe areas
+        const root = document.documentElement;
+        root.style.setProperty('--safe-area-inset-bottom', 'env(safe-area-inset-bottom)');
+    </script>
+
+</body></html>

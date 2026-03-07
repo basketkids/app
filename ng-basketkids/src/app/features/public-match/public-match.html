@@ -1,51 +1,81 @@
-<div class="container py-4" *ngIf="match; else loading">
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-hidden max-w-md md:max-w-4xl lg:max-w-6xl
+xl:max-w-[1400px] mx-auto border-x border-white/10 bg-background-dark">
+    <ng-container *ngIf="match; else loading">
+        <div class="sticky top-0 z-20 bg-surface-dark border-b border-white/10 shrink-0">
+            <!-- Header title -->
+            <div class="flex items-center justify-center px-4 py-3">
+                <h1 class="text-sm font-bold tracking-widest uppercase text-white truncate max-w-[250px] opacity-80">{{
+                    match.localTeamName }} vs {{ match.visitorTeamName }}</h1>
+            </div>
 
-    <div class="row">
-        <!-- Center Scoreboard Area -->
-        <div class="col-12 mb-4">
-            <app-scoreboard [localScore]="match.scoreLocal" [visitorScore]="match.scoreVisitor"
-                [localName]="match.localTeamName" [visitorName]="match.visitorTeamName" [quarter]="match.currentQuarter"
-                [timerState]="match.timerState">
-            </app-scoreboard>
-        </div>
-    </div>
+            <!-- Scoreboard -->
+            <div class="px-2 pb-2">
+                <app-scoreboard [localScore]="match.scoreLocal" [visitorScore]="match.scoreVisitor"
+                    [localName]="match.localTeamName" [visitorName]="match.visitorTeamName"
+                    [quarter]="match.currentQuarter" [timerState]="match.timerState">
+                </app-scoreboard>
+            </div>
 
-    <div class="row g-4">
-        <!-- Live Events Column -->
-        <div class="col-md-5 col-lg-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-broadcast"></i> En Vivo</h5>
-                    <span class="badge bg-light text-danger blink">LIVE</span>
-                </div>
-                <div class="card-body p-0">
-                    <app-live-events [events]="match.events" [roster]="match.roster">
-                    </app-live-events>
-                </div>
+            <!-- Live indicator if in progress -->
+            <div *ngIf="match.timerState.active" class="flex justify-center items-center pb-3">
+                <span
+                    class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-red-500/30 bg-red-500/10 text-[10px] font-bold uppercase tracking-widest text-red-400">
+                    <span class="relative flex h-1.5 w-1.5">
+                        <span
+                            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
+                    </span>
+                    En Directo
+                </span>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex overflow-x-auto no-scrollbar border-t border-white/5 px-2 bg-background-dark/50">
+                <button (click)="activeTab = 'en-vivo'"
+                    [ngClass]="{'border-primary text-primary': activeTab === 'en-vivo', 'border-transparent text-slate-400': activeTab !== 'en-vivo'}"
+                    class="whitespace-nowrap flex-1 py-3 px-1 border-b-2 font-medium text-sm text-center transition-colors">
+                    En Vivo
+                </button>
+                <button (click)="activeTab = 'estadisticas'"
+                    [ngClass]="{'border-primary text-primary': activeTab === 'estadisticas', 'border-transparent text-slate-400': activeTab !== 'estadisticas'}"
+                    class="whitespace-nowrap flex-1 py-3 px-1 border-b-2 font-medium text-sm text-center transition-colors">
+                    Estadísticas
+                </button>
             </div>
         </div>
 
-        <!-- Statistics Grid Column -->
-        <div class="col-md-7 col-lg-8">
-            <div class="card shadow-sm h-100">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0"><i class="bi bi-bar-chart-fill"></i> Estadísticas</h5>
-                </div>
-                <div class="card-body p-0">
-                    <app-statistics-grid [stats]="match.stats" [roster]="match.roster">
-                    </app-statistics-grid>
+        <!-- Main Content Area -->
+        <div class="flex-1 overflow-y-auto pb-24 flex flex-col pt-2 bg-background-dark">
+
+            <!-- TAB: En Vivo (Play by Play) -->
+            <div *ngIf="activeTab === 'en-vivo'" class="flex-1 p-3 animate-in fade-in duration-300">
+                <app-live-events [events]="match.events" [roster]="match.roster"></app-live-events>
+            </div>
+
+            <!-- TAB: Estadísticas (Box Score) -->
+            <div *ngIf="activeTab === 'estadisticas'" class="flex-1 p-3 animate-in fade-in duration-300">
+                <div class="bg-surface-dark border border-white/10 rounded-xl overflow-hidden shadow-sm">
+                    <div class="bg-white/5 px-3 py-2 border-b border-white/5">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Box Score</h3>
+                    </div>
+                    <app-statistics-grid [stats]="match.stats" [roster]="match.roster"></app-statistics-grid>
                 </div>
             </div>
-        </div>
-    </div>
 
+        </div>
+    </ng-container>
 </div>
 
 <!-- Loading State -->
 <ng-template #loading>
-    <div class="d-flex justify-content-center align-items-center vh-100">
-        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
-            <span class="visually-hidden">Cargando partido...</span>
+    <div
+        class="flex flex-col justify-center items-center min-h-screen bg-background-dark text-slate-400 animate-in fade-in">
+        <div class="relative w-16 h-16 mb-4">
+            <div class="absolute inset-0 border-4 border-white/5 rounded-full"></div>
+            <div class="absolute inset-0 border-4 border-primary rounded-full border-t-transparent animate-spin"></div>
+            <span
+                class="material-symbols-outlined absolute inset-0 flex items-center justify-center text-primary text-2xl">sports_basketball</span>
         </div>
+        <h4 class="text-base font-bold text-white mb-1">Cargando partido...</h4>
     </div>
 </ng-template>

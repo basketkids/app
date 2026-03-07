@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tabla de Estadísticas (Claro)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#278cf1",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen pb-safe">
+<!-- Sticky Header Wrapper -->
+<div class="sticky top-0 z-30 bg-background-light/95 backdrop-blur-md dark:bg-background-dark/95 border-b border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300">
+<!-- iOS Navigation Bar -->
+<div class="flex items-center justify-between px-4 h-14 max-w-5xl mx-auto">
+<button class="text-primary p-2 -ml-2 rounded-full hover:bg-primary/10 transition-colors">
+<span class="material-icons">arrow_back_ios_new</span>
+</button>
+<h1 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Estadísticas</h1>
+<button class="text-primary p-2 -mr-2 rounded-full hover:bg-primary/10 transition-colors">
+<span class="material-icons">share</span>
+</button>
+</div>
+<!-- Scoreboard Summary -->
+<div class="px-4 pb-4 max-w-5xl mx-auto">
+<div class="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 flex justify-between items-center relative overflow-hidden">
+<!-- Decorative background accent -->
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-blue-300"></div>
+<!-- Team Home -->
+<div class="flex flex-col items-center flex-1">
+<div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-2 overflow-hidden border border-slate-200 dark:border-slate-700">
+<img alt="Home Team Logo basketball abstract" class="w-full h-full object-cover" data-alt="Home Team Logo basketball abstract" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8fCL0YyrKhQgpezaYaSIEGpe-9uHiRJ6_gOWfizFdn0ONuPpxAON08ek1nC3zvJGVATEtHUEL5j0D2HLJovNDSBMw3-8pYqr8XpeFyU6c4g2jAFWCuYRdiOX9cRFG9r2cbdszXUdp1rAccpY7dlKCYoxQAfmKu3dYEY5Y1cLf4KEry3zbiMkmQuCkEnWjRnSlxbno_mxSY3k89b5luZ8O5Lt9ys8GO6KOUjVKnu4Lk8CbakHx-MfIwZnvs_37oxhDkhDozWk6WIF3"/>
+</div>
+<span class="font-bold text-sm tracking-tight text-slate-900 dark:text-white">Lakers</span>
+<span class="text-xs text-slate-500 dark:text-slate-400">Local</span>
+</div>
+<!-- Score & Time -->
+<div class="flex flex-col items-center justify-center px-4">
+<div class="text-3xl font-bold tabular-nums tracking-tighter text-slate-900 dark:text-white">
+                        86 <span class="text-slate-300 mx-1">-</span> 82
+                    </div>
+<div class="mt-1 px-3 py-1 bg-primary/10 rounded-full">
+<span class="text-xs font-semibold text-primary uppercase tracking-wide">Q4 • 04:20</span>
+</div>
+</div>
+<!-- Team Away -->
+<div class="flex flex-col items-center flex-1">
+<div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-2 overflow-hidden border border-slate-200 dark:border-slate-700">
+<img alt="Away Team Logo basketball abstract" class="w-full h-full object-cover" data-alt="Away Team Logo basketball abstract" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9GlauMiUNmTxlfGRRWxzXg-dxLAwVF1mdFxTE9sDAvH3mkP3YV6_aF7mpl3Y-vC47nbJbXgtbFGxe3_B6FDlJvjpyxZQ2xjV2TlaOQYcB_Gq5tcNP8-d6kUx2VNOkoBTwtghT8jprqpTZtW54p298oJrKm0nDQHTR5vEkVYlor5R5qEY1pOdm90ztAPxSDe1t4shLspIZLgggweGiAYTvFYC8_cnKbZQv7SncW7tFceew5848ZmqX2_3Cat1nKxUO02OtSvLjsMXM"/>
+</div>
+<span class="font-bold text-sm tracking-tight text-slate-900 dark:text-white">Celtics</span>
+<span class="text-xs text-slate-500 dark:text-slate-400">Visitante</span>
+</div>
+</div>
+<!-- Team Toggle Segmented Control -->
+<div class="mt-4 bg-slate-200 dark:bg-slate-800 rounded-lg p-1 flex">
+<button class="flex-1 py-1.5 px-3 rounded text-sm font-semibold shadow-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-all">Lakers</button>
+<button class="flex-1 py-1.5 px-3 rounded text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all">Celtics</button>
+</div>
+</div>
+</div>
+<!-- Main Content Area -->
+<main class="max-w-5xl mx-auto px-0 md:px-4 py-4 w-full">
+<!-- Table Container -->
+<div class="bg-white dark:bg-slate-900 md:rounded-xl shadow-sm border-y md:border border-slate-200 dark:border-slate-800 overflow-hidden">
+<!-- Scrollable Wrapper -->
+<div class="overflow-x-auto no-scrollbar relative">
+<table class="w-full text-left border-collapse">
+<thead class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 text-xs uppercase text-slate-500 dark:text-slate-400">
+<tr>
+<!-- Sticky Column: Player Name -->
+<th class="sticky left-0 z-20 bg-slate-50 dark:bg-slate-900 py-3 pl-4 pr-2 font-semibold text-slate-700 dark:text-slate-300 min-w-[140px] shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)] border-r border-slate-100 dark:border-slate-800">
+                                Jugador
+                            </th>
+<!-- Essential Stats (Always Visible) -->
+<th class="py-3 px-2 text-center font-bold text-slate-900 dark:text-white min-w-[50px] cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                                Pts
+                            </th>
+<th class="py-3 px-2 text-center font-semibold min-w-[50px] cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                                Reb
+                            </th>
+<th class="py-3 px-2 text-center font-semibold min-w-[50px] cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                                Fal
+                            </th>
+<!-- Extended Stats (Hidden on small vertical screens via container queries/media queries logic in CSS if purely portrait, but here we allow horizontal scroll) 
+                                 The prompt asks for "Rotar o pantallas grandes" -> Usually handled by media queries, but scrolling tables are standard on mobile. 
+                                 Here we use responsive utility classes to show/hide complexity or just rely on horizontal scroll which is native UX.
+                                 Let's use `md:table-cell` for columns that should only appear on wider views if strictly hiding is desired, 
+                                 but for a table, horizontal scroll is usually preferred to data loss.
+                                 However, to follow the prompt's "landscape expands" instruction visually:
+                                 We will show primary always, and secondary columns will be present but require scrolling or appear naturally on wider screens.
+                            -->
+<th class="py-3 px-2 text-center font-semibold min-w-[50px] hidden md:table-cell bg-slate-50/50">Ast</th>
+<th class="py-3 px-2 text-center font-semibold min-w-[50px] hidden md:table-cell bg-slate-50/50">Tap</th>
+<th class="py-3 px-2 text-center font-semibold min-w-[50px] hidden md:table-cell bg-slate-50/50">Rob</th>
+<th class="py-3 px-2 text-center font-semibold min-w-[60px] hidden md:table-cell bg-slate-50/50">% TC</th>
+<th class="py-3 px-2 text-center font-semibold min-w-[60px] hidden md:table-cell bg-slate-50/50">Fallos</th>
+<th class="py-3 px-2 text-center font-semibold min-w-[50px] hidden md:table-cell bg-slate-50/50">+/-</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+<!-- Player Row 1 (Highlight / Top Scorer) -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+<td class="sticky left-0 z-10 bg-white dark:bg-slate-900 py-3 pl-4 pr-2 font-medium text-slate-900 dark:text-white border-r border-slate-100 dark:border-slate-800 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)] group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors">
+<div class="flex items-center gap-2">
+<span class="text-xs text-slate-400 font-normal w-4">23</span>
+<span class="truncate">L. James</span>
+</div>
+</td>
+<td class="py-3 px-2 text-center font-bold text-primary bg-primary/5">28</td>
+<td class="py-3 px-2 text-center text-slate-600 dark:text-slate-300">10</td>
+<td class="py-3 px-2 text-center text-slate-600 dark:text-slate-300">2</td>
+<!-- Landscape Columns -->
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">8</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">1</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">2</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">58%</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">5</td>
+<td class="py-3 px-2 text-center text-green-500 hidden md:table-cell">+12</td>
+</tr>
+<!-- Player Row 2 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+<td class="sticky left-0 z-10 bg-white dark:bg-slate-900 py-3 pl-4 pr-2 font-medium text-slate-900 dark:text-white border-r border-slate-100 dark:border-slate-800 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)] group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors">
+<div class="flex items-center gap-2">
+<span class="text-xs text-slate-400 font-normal w-4">3</span>
+<span class="truncate">A. Davis</span>
+</div>
+</td>
+<td class="py-3 px-2 text-center font-bold text-slate-900 dark:text-white">22</td>
+<td class="py-3 px-2 text-center text-slate-600 dark:text-slate-300">14</td>
+<td class="py-3 px-2 text-center text-slate-600 dark:text-slate-300">3</td>
+<!-- Landscape Columns -->
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">3</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">4</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">1</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">62%</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">4</td>
+<td class="py-3 px-2 text-center text-green-500 hidden md:table-cell">+8</td>
+</tr>
+<!-- Player Row 3 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+<td class="sticky left-0 z-10 bg-white dark:bg-slate-900 py-3 pl-4 pr-2 font-medium text-slate-900 dark:text-white border-r border-slate-100 dark:border-slate-800 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)] group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors">
+<div class="flex items-center gap-2">
+<span class="text-xs text-slate-400 font-normal w-4">15</span>
+<span class="truncate">A. Reaves</span>
+</div>
+</td>
+<td class="py-3 px-2 text-center font-bold text-slate-900 dark:text-white">14</td>
+<td class="py-3 px-2 text-center text-slate-600 dark:text-slate-300">3</td>
+<td class="py-3 px-2 text-center text-slate-600 dark:text-slate-300">1</td>
+<!-- Landscape Columns -->
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">5</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">0</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">0</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">45%</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">6</td>
+<td class="py-3 px-2 text-center text-red-500 hidden md:table-cell">-2</td>
+</tr>
+<!-- Player Row 4 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+<td class="sticky left-0 z-10 bg-white dark:bg-slate-900 py-3 pl-4 pr-2 font-medium text-slate-900 dark:text-white border-r border-slate-100 dark:border-slate-800 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)] group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors">
+<div class="flex items-center gap-2">
+<span class="text-xs text-slate-400 font-normal w-4">1</span>
+<span class="truncate">D. Russell</span>
+</div>
+</td>
+<td class="py-3 px-2 text-center font-bold text-slate-900 dark:text-white">12</td>
+<td class="py-3 px-2 text-center text-slate-600 dark:text-slate-300">2</td>
+<td class="py-3 px-2 text-center text-slate-600 dark:text-slate-300">4</td>
+<!-- Landscape Columns -->
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">7</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">0</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">1</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">40%</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">7</td>
+<td class="py-3 px-2 text-center text-green-500 hidden md:table-cell">+4</td>
+</tr>
+<!-- Player Row 5 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+<td class="sticky left-0 z-10 bg-white dark:bg-slate-900 py-3 pl-4 pr-2 font-medium text-slate-900 dark:text-white border-r border-slate-100 dark:border-slate-800 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)] group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors">
+<div class="flex items-center gap-2">
+<span class="text-xs text-slate-400 font-normal w-4">28</span>
+<span class="truncate">R. Hachimura</span>
+</div>
+</td>
+<td class="py-3 px-2 text-center font-bold text-slate-900 dark:text-white">8</td>
+<td class="py-3 px-2 text-center text-slate-600 dark:text-slate-300">5</td>
+<td class="py-3 px-2 text-center text-slate-600 dark:text-slate-300">1</td>
+<!-- Landscape Columns -->
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">1</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">0</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">0</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">50%</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">4</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">0</td>
+</tr>
+<!-- Player Row 6 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+<td class="sticky left-0 z-10 bg-white dark:bg-slate-900 py-3 pl-4 pr-2 font-medium text-slate-900 dark:text-white border-r border-slate-100 dark:border-slate-800 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)] group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors">
+<div class="flex items-center gap-2">
+<span class="text-xs text-slate-400 font-normal w-4">35</span>
+<span class="truncate">C. Wood</span>
+</div>
+</td>
+<td class="py-3 px-2 text-center font-bold text-slate-900 dark:text-white">2</td>
+<td class="py-3 px-2 text-center text-slate-600 dark:text-slate-300">4</td>
+<td class="py-3 px-2 text-center text-slate-600 dark:text-slate-300">3</td>
+<!-- Landscape Columns -->
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">0</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">1</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">0</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">33%</td>
+<td class="py-3 px-2 text-center text-slate-500 hidden md:table-cell">2</td>
+<td class="py-3 px-2 text-center text-red-500 hidden md:table-cell">-5</td>
+</tr>
+<!-- Totals Row -->
+<tr class="bg-slate-50 dark:bg-slate-800 font-semibold border-t-2 border-slate-200 dark:border-slate-700">
+<td class="sticky left-0 z-10 bg-slate-50 dark:bg-slate-800 py-3 pl-4 pr-2 text-slate-900 dark:text-white border-r border-slate-200 dark:border-slate-700 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)]">
+<span class="uppercase tracking-wider text-xs">Total</span>
+</td>
+<td class="py-3 px-2 text-center text-primary">86</td>
+<td class="py-3 px-2 text-center text-slate-700 dark:text-slate-200">38</td>
+<td class="py-3 px-2 text-center text-slate-700 dark:text-slate-200">14</td>
+<!-- Landscape Columns -->
+<td class="py-3 px-2 text-center text-slate-700 dark:text-slate-200 hidden md:table-cell">24</td>
+<td class="py-3 px-2 text-center text-slate-700 dark:text-slate-200 hidden md:table-cell">6</td>
+<td class="py-3 px-2 text-center text-slate-700 dark:text-slate-200 hidden md:table-cell">4</td>
+<td class="py-3 px-2 text-center text-slate-700 dark:text-slate-200 hidden md:table-cell">48%</td>
+<td class="py-3 px-2 text-center text-slate-700 dark:text-slate-200 hidden md:table-cell">32</td>
+<td class="py-3 px-2 text-center text-slate-700 dark:text-slate-200 hidden md:table-cell"></td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Landscape Hint (Only visible on small screens to suggest rotation) -->
+<div class="md:hidden py-3 text-center bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700">
+<p class="text-[10px] text-slate-400 uppercase tracking-wide flex items-center justify-center gap-1">
+<span class="material-icons text-sm">screen_rotation</span>
+                    Gira para ver más detalles
+                </p>
+</div>
+</div>
+<!-- Legend / Info -->
+<div class="mt-4 px-4 md:px-0 grid grid-cols-2 gap-2 text-xs text-slate-400 dark:text-slate-500">
+<div><span class="font-bold">PTS:</span> Puntos</div>
+<div><span class="font-bold">REB:</span> Rebotes</div>
+<div><span class="font-bold">FAL:</span> Faltas Personales</div>
+<div class="hidden md:block"><span class="font-bold">AST:</span> Asistencias</div>
+<div class="hidden md:block"><span class="font-bold">TAP:</span> Tapones</div>
+<div class="hidden md:block"><span class="font-bold">ROB:</span> Robos</div>
+</div>
+</main>
+<!-- Bottom Actions (Optional context) -->
+<div class="fixed bottom-6 right-6 z-50">
+<button class="bg-primary text-white p-4 rounded-full shadow-lg shadow-blue-500/30 hover:bg-blue-600 transition-transform active:scale-95 flex items-center justify-center">
+<span class="material-icons">filter_alt</span>
+</button>
+</div>
+</body></html>

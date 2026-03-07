@@ -1,0 +1,122 @@
+<div class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-white/5 rounded-2xl p-5 shadow-sm">
+    <div class="flex items-start justify-between mb-6">
+        <div>
+            <h3 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-lg">ssid_chart</span>
+                {{ title }}
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Comparativa de puntos anotados vs recibidos</p>
+        </div>
+        <div
+            class="flex items-center gap-4 text-[11px] font-medium bg-slate-50 dark:bg-white/5 px-3 py-1.5 rounded-full border border-slate-100 dark:border-white/10">
+            <div class="flex items-center gap-1.5">
+                <div class="h-2.5 w-2.5 rounded-full" [style.backgroundColor]="safeColor"></div>
+                <span class="text-slate-700 dark:text-slate-200">Nosotros</span>
+            </div>
+            <div class="flex items-center gap-1.5" *ngIf="type === 'score'">
+                <div class="h-2 w-2 rounded-full" [style.backgroundColor]="rivalColor"></div>
+                <span class="text-slate-700 dark:text-slate-200">Rival</span>
+            </div>
+        </div>
+    </div>
+
+    <div *ngIf="matchScores.length === 0" class="text-center py-8 text-slate-400">
+        <span class="material-symbols-outlined text-3xl mb-2 block">query_stats</span>
+        <p class="text-sm">No hay partidos para mostrar evolución</p>
+    </div>
+
+    <div *ngIf="matchScores.length > 0" class="relative" style="height: 220px;">
+        <!-- Y axis container -->
+        <div
+            class="absolute left-0 top-0 bottom-6 flex flex-col justify-between text-[10px] text-slate-400 pointer-events-none pr-2 z-10 font-medium whitespace-nowrap">
+            <ng-container *ngIf="type === 'score'">
+                <span>{{ chartMax }}</span>
+                <span>{{ (chartMax / 2) | number:'1.0-0' }}</span>
+                <span>0</span>
+            </ng-container>
+            <ng-container *ngIf="type === 'diff'">
+                <span>+{{ chartMax }}</span>
+                <span>0</span>
+                <span>-{{ chartMax }}</span>
+            </ng-container>
+        </div>
+
+        <!-- Chart SVG -->
+        <svg class="absolute left-7 right-0 top-0 bottom-6 w-[calc(100%-28px)] h-[calc(100%-24px)] overflow-visible"
+            [attr.viewBox]="'0 0 ' + chartWidth + ' ' + chartHeight" preserveAspectRatio="none">
+
+            <ng-container *ngIf="type === 'score'">
+                <defs>
+                    <linearGradient [attr.id]="gradId" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" [attr.stop-color]="safeColor" stop-opacity="0.3" />
+                        <stop offset="100%" [attr.stop-color]="safeColor" stop-opacity="0" />
+                    </linearGradient>
+                </defs>
+
+                <!-- Grid lines -->
+                <line [attr.x1]="0" [attr.y1]="chartHeight/2" [attr.x2]="chartWidth" [attr.y2]="chartHeight/2"
+                    stroke="currentColor" stroke-width="0.5" stroke-dasharray="4 4"
+                    class="text-slate-200 dark:text-white/10" />
+
+                <!-- Area under OUR curve -->
+                <path [attr.d]="ourArea" [attr.fill]="'url(#' + gradId + ')'" />
+
+                <!-- Rival Path (underneath) -->
+                <path [attr.d]="rivalPath" fill="none" [attr.stroke]="rivalColor" stroke-width="3"
+                    stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"
+                    stroke-dasharray="0" />
+
+                <!-- Our Path -->
+                <path [attr.d]="ourPath" fill="none" [attr.stroke]="safeColor" stroke-width="3" stroke-linecap="round"
+                    stroke-linejoin="round" vector-effect="non-scaling-stroke" />
+
+                <!-- Data points -->
+                <ng-container *ngFor="let p of chartPoints">
+                    <!-- Rival dot -->
+                    <circle [attr.cx]="p.x" [attr.cy]="p.yRival" r="3.5" [attr.fill]="rivalColor"
+                        class="stroke-white dark:stroke-slate-900" stroke-width="1.5"
+                        vector-effect="non-scaling-stroke" />
+                    <!-- Our dot -->
+                    <circle [attr.cx]="p.x" [attr.cy]="p.yOur" r="3.5" [attr.fill]="safeColor"
+                        class="stroke-white dark:stroke-slate-900" stroke-width="1.5"
+                        vector-effect="non-scaling-stroke" />
+                </ng-container>
+            </ng-container>
+
+            <!-- Diff chart -->
+            <ng-container *ngIf="type === 'diff'">
+                <!-- Grid lines -->
+                <line [attr.x1]="0" [attr.y1]="chartHeight/2" [attr.x2]="chartWidth" [attr.y2]="chartHeight/2"
+                    stroke="currentColor" stroke-width="1" class="text-slate-300 dark:text-white/20" />
+
+                <line [attr.x1]="0" [attr.y1]="chartHeight/4" [attr.x2]="chartWidth" [attr.y2]="chartHeight/4"
+                    stroke="currentColor" stroke-width="0.5" stroke-dasharray="4 4"
+                    class="text-slate-200 dark:text-white/5" />
+
+                <line [attr.x1]="0" [attr.y1]="chartHeight*0.75" [attr.x2]="chartWidth" [attr.y2]="chartHeight*0.75"
+                    stroke="currentColor" stroke-width="0.5" stroke-dasharray="4 4"
+                    class="text-slate-200 dark:text-white/5" />
+
+                <ng-container *ngFor="let p of chartPoints">
+                    <rect [attr.x]="p.x - 8" [attr.y]="p.barY" width="16" [attr.height]="p.barHeight"
+                        [attr.fill]="p.diff > 0 ? '#22c55e' : p.diff < 0 ? '#ef4444' : '#94a3b8'" rx="3" />
+                </ng-container>
+            </ng-container>
+        </svg>
+
+        <!-- X axis labels (Dates) -->
+        <div class="absolute left-7 right-0 bottom-0 flex justify-between text-[10px] text-slate-400 font-medium">
+            <span *ngFor="let p of chartPoints">{{ p.dateStr }}</span>
+        </div>
+    </div>
+
+    <!-- Match results summary pills -->
+    <div class="flex gap-2 flex-wrap mt-2 overflow-x-auto no-scrollbar pb-1">
+        <div *ngFor="let m of chartPoints"
+            class="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium border"
+            [ngClass]="m.ourScore > m.rivalScore ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900/50' : m.ourScore < m.rivalScore ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/50' : 'bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-white/10'">
+            <span class="font-bold">{{ m.ourScore }}-{{ m.rivalScore }}</span>
+            <span class="opacity-70 truncate max-w-[80px]">vs {{ m.rivalName }}</span>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,125 @@
+<div class="p-4 max-w-5xl mx-auto pb-20">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-primary text-3xl">bar_chart</span>
+            <h1 class="text-2xl font-bold text-slate-800 dark:text-white">Estadísticas de Usuarios</h1>
+        </div>
+        <a routerLink="/admin"
+            class="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-slate-600 dark:text-gray-300 text-sm hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+            <span class="material-symbols-outlined text-[18px]">arrow_back</span> Volver
+        </a>
+    </div>
+
+    <div *ngIf="error" class="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-sm">
+        {{ error }}</div>
+
+    <!-- Card -->
+    <div
+        class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-2xl shadow-sm overflow-hidden">
+        <div *ngIf="loading" class="flex justify-center p-12">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+        <div *ngIf="!loading" class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-50 dark:bg-white/5">
+                    <tr>
+                        <th class="text-left font-semibold text-slate-500 px-5 py-3">Usuario</th>
+                        <th class="text-center font-semibold text-slate-500 px-5 py-3">Equipos</th>
+                        <th class="text-center font-semibold text-slate-500 px-5 py-3">Partidos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let u of stats"
+                        class="border-t border-gray-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                        <td class="px-5 py-3">
+                            <div class="font-semibold text-slate-800 dark:text-white">{{ u.profile.display_name || 'Sin
+                                nombre' }}</div>
+                            <div class="text-xs text-slate-400">{{ u.profile.email }}</div>
+                        </td>
+                        <td class="px-5 py-3 text-center">
+                            <button (click)="openTeams(u)" class="font-bold text-primary hover:underline">{{ u.teamCount
+                                }}</button>
+                        </td>
+                        <td class="px-5 py-3 text-center">
+                            <span
+                                class="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 dark:bg-white/10 text-slate-600 dark:text-slate-300">{{
+                                u.matchCount }}</span>
+                        </td>
+                    </tr>
+                    <tr *ngIf="stats.length === 0">
+                        <td colspan="3" class="text-center py-10 text-slate-400">No hay usuarios registrados.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Teams / Matches -->
+<div *ngIf="selectedUser" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+    (click)="closeModal()">
+    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-200 dark:border-white/10 shadow-xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col"
+        (click)="$event.stopPropagation()">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-white/5">
+            <div class="flex items-center gap-2">
+                <button *ngIf="selectedTeamId" (click)="backToTeams()" class="p-1 text-slate-400 hover:text-slate-600">
+                    <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+                </button>
+                <h3 class="font-bold text-slate-800 dark:text-white text-base">
+                    <span *ngIf="!selectedTeamId">Equipos de {{ selectedUser.profile.display_name }}</span>
+                    <span *ngIf="selectedTeamId">Partidos de {{ selectedTeam?.name }}</span>
+                </h3>
+            </div>
+            <button (click)="closeModal()" class="p-1 text-slate-400 hover:text-slate-600">
+                <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+        </div>
+
+        <!-- Teams view -->
+        <div *ngIf="!selectedTeamId" class="flex-1 overflow-y-auto">
+            <div *ngIf="selectedUser.teams.length === 0" class="p-8 text-center text-slate-400">Sin equipos.</div>
+            <div *ngFor="let team of selectedUser.teams"
+                class="flex items-center justify-between px-5 py-3 border-b border-gray-50 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5">
+                <button (click)="openMatches(team.id)"
+                    class="font-medium text-slate-800 dark:text-white hover:text-primary text-left">
+                    {{ team.name || 'Equipo sin nombre' }}
+                </button>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-400">{{ teamMatches[team.id]?.length ?? 0 }} partidos</span>
+                    <button (click)="openMatches(team.id)" class="p-1 text-primary"><span
+                            class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+                    <button (click)="deleteTeam(team.id)"
+                        class="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded"><span
+                            class="material-symbols-outlined text-[18px]">delete</span></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Matches view -->
+        <div *ngIf="selectedTeamId" class="flex-1 overflow-y-auto">
+            <div *ngIf="selectedTeamMatches.length === 0" class="p-8 text-center text-slate-400">Sin partidos.</div>
+            <table *ngIf="selectedTeamMatches.length > 0" class="w-full text-sm">
+                <thead class="bg-slate-50 dark:bg-white/5 sticky top-0">
+                    <tr>
+                        <th class="text-left px-5 py-2 text-slate-500 font-semibold">Fecha</th>
+                        <th class="text-left px-5 py-2 text-slate-500 font-semibold">Rival</th>
+                        <th class="px-5 py-2"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let m of selectedTeamMatches" class="border-t border-gray-100 dark:border-white/5">
+                        <td class="px-5 py-2 text-slate-500 text-xs">{{ formatDate(m.date) }}</td>
+                        <td class="px-5 py-2 text-slate-800 dark:text-white">{{ m.rival_name || 'Rival' }}</td>
+                        <td class="px-5 py-2">
+                            <button (click)="deleteMatch(m.id)"
+                                class="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded"><span
+                                    class="material-symbols-outlined text-[18px]">delete</span></button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

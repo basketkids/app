@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Toma de Datos Simple</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f48c25",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#121212", // Deep black/charcoal
+                        "surface-dark": "#1E1E1E",
+                        "surface-light": "#2C2C2C",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Lexend', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        /* Hide scrollbar for clean UI */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-dark text-white h-screen flex flex-col overflow-hidden">
+<!-- Top Header -->
+<header class="flex items-center justify-between px-4 py-3 bg-surface-dark border-b border-white/10 shrink-0">
+<button class="p-2 -ml-2 text-gray-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold tracking-tight">Partido en Vivo</h1>
+<button class="p-2 -mr-2 text-primary font-medium text-sm">Guardar</button>
+</header>
+<!-- Scoreboard & Clock -->
+<section class="grid grid-cols-3 gap-4 px-4 py-4 bg-surface-dark shrink-0">
+<div class="flex flex-col items-center justify-center">
+<span class="text-3xl font-bold text-white">82</span>
+<span class="text-xs text-gray-400 uppercase tracking-wider">Local</span>
+</div>
+<div class="flex flex-col items-center justify-center border-x border-white/10">
+<span class="text-2xl font-mono font-bold text-primary">10:00</span>
+<span class="text-xs text-gray-400">Q4</span>
+</div>
+<div class="flex flex-col items-center justify-center">
+<span class="text-3xl font-bold text-gray-300">78</span>
+<span class="text-xs text-gray-400 uppercase tracking-wider">Visitante</span>
+</div>
+</section>
+<!-- Main Content Area (Flex Grow to fill space) -->
+<main class="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
+<!-- Players on Court (Grid) -->
+<div class="flex flex-col gap-2 shrink-0">
+<div class="flex justify-between items-end mb-1">
+<h3 class="text-sm font-medium text-gray-400 uppercase tracking-wider">En Pista</h3>
+<button class="text-xs text-primary flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">sync_alt</span> Sustituir
+                </button>
+</div>
+<div class="grid grid-cols-5 gap-2">
+<!-- Selected Player (Active State) -->
+<button class="aspect-[4/5] flex flex-col items-center justify-center gap-1 rounded-xl bg-primary text-white shadow-lg shadow-orange-900/20 ring-2 ring-primary ring-offset-2 ring-offset-[#121212]">
+<span class="text-xl font-bold">4</span>
+<span class="text-[10px] font-semibold truncate w-full px-1 text-center">GARCÍA</span>
+</button>
+<!-- Inactive Players -->
+<button class="aspect-[4/5] flex flex-col items-center justify-center gap-1 rounded-xl bg-surface-light text-gray-300 hover:bg-gray-700 transition-colors">
+<span class="text-xl font-bold">7</span>
+<span class="text-[10px] font-medium truncate w-full px-1 text-center">LÓPEZ</span>
+</button>
+<button class="aspect-[4/5] flex flex-col items-center justify-center gap-1 rounded-xl bg-surface-light text-gray-300 hover:bg-gray-700 transition-colors">
+<span class="text-xl font-bold">11</span>
+<span class="text-[10px] font-medium truncate w-full px-1 text-center">MARTÍNEZ</span>
+</button>
+<button class="aspect-[4/5] flex flex-col items-center justify-center gap-1 rounded-xl bg-surface-light text-gray-300 hover:bg-gray-700 transition-colors">
+<span class="text-xl font-bold">23</span>
+<span class="text-[10px] font-medium truncate w-full px-1 text-center">JORDAN</span>
+</button>
+<button class="aspect-[4/5] flex flex-col items-center justify-center gap-1 rounded-xl bg-surface-light text-gray-300 hover:bg-gray-700 transition-colors">
+<span class="text-xl font-bold">34</span>
+<span class="text-[10px] font-medium truncate w-full px-1 text-center">ONEAL</span>
+</button>
+</div>
+</div>
+<!-- Action Buttons (Grid) -->
+<div class="flex-1 grid grid-cols-3 gap-3 content-start mt-2">
+<!-- Points -->
+<button class="flex flex-col items-center justify-center rounded-lg bg-surface-light hover:bg-gray-700 active:bg-gray-600 transition-colors py-3 group">
+<span class="text-2xl font-bold text-white group-active:scale-95 transition-transform">+1</span>
+<span class="text-[10px] text-gray-400 mt-1">Tiro Libre</span>
+</button>
+<button class="flex flex-col items-center justify-center rounded-lg bg-surface-light hover:bg-gray-700 active:bg-gray-600 transition-colors py-3 group">
+<span class="text-2xl font-bold text-white group-active:scale-95 transition-transform">+2</span>
+<span class="text-[10px] text-gray-400 mt-1">Campo</span>
+</button>
+<button class="flex flex-col items-center justify-center rounded-lg bg-surface-light hover:bg-gray-700 active:bg-gray-600 transition-colors py-3 group">
+<span class="text-2xl font-bold text-white group-active:scale-95 transition-transform">+3</span>
+<span class="text-[10px] text-gray-400 mt-1">Triple</span>
+</button>
+<!-- Positive Stats -->
+<button class="flex flex-col items-center justify-center rounded-lg bg-surface-light hover:bg-gray-700 active:bg-gray-600 transition-colors py-3 group">
+<span class="material-symbols-outlined text-green-400 mb-1 group-active:scale-95 transition-transform">sports_basketball</span>
+<span class="text-xs font-medium text-gray-200">Rebote</span>
+</button>
+<button class="flex flex-col items-center justify-center rounded-lg bg-surface-light hover:bg-gray-700 active:bg-gray-600 transition-colors py-3 group">
+<span class="material-symbols-outlined text-blue-400 mb-1 group-active:scale-95 transition-transform">handshake</span>
+<span class="text-xs font-medium text-gray-200">Asistencia</span>
+</button>
+<button class="flex flex-col items-center justify-center rounded-lg bg-surface-light hover:bg-gray-700 active:bg-gray-600 transition-colors py-3 group">
+<span class="material-symbols-outlined text-yellow-400 mb-1 group-active:scale-95 transition-transform">lock</span>
+<span class="text-xs font-medium text-gray-200">Robo</span>
+</button>
+<!-- Negative Stats -->
+<button class="flex flex-col items-center justify-center rounded-lg bg-surface-light hover:bg-gray-700 active:bg-gray-600 transition-colors py-3 group">
+<span class="material-symbols-outlined text-red-400 mb-1 group-active:scale-95 transition-transform">block</span>
+<span class="text-xs font-medium text-gray-200">Tapón</span>
+</button>
+<button class="flex flex-col items-center justify-center rounded-lg bg-surface-light hover:bg-gray-700 active:bg-gray-600 transition-colors py-3 group">
+<span class="material-symbols-outlined text-orange-400 mb-1 group-active:scale-95 transition-transform">error</span>
+<span class="text-xs font-medium text-gray-200">Pérdida</span>
+</button>
+<button class="flex flex-col items-center justify-center rounded-lg bg-surface-light hover:bg-gray-700 active:bg-gray-600 transition-colors py-3 group">
+<span class="material-symbols-outlined text-rose-500 mb-1 group-active:scale-95 transition-transform">gavel</span>
+<span class="text-xs font-medium text-gray-200">Falta</span>
+</button>
+<!-- Undo Button (Span 3 columns for easy access) -->
+<button class="col-span-3 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 active:bg-white/5 transition-colors py-3 mt-1 gap-2 text-gray-400">
+<span class="material-symbols-outlined text-[20px]">undo</span>
+<span class="text-xs font-medium">Deshacer última acción</span>
+</button>
+</div>
+<!-- Opponent Section (Footer) -->
+<div class="mt-auto pt-4 border-t border-white/10 shrink-0">
+<div class="flex items-center justify-between mb-2 px-1">
+<h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Rival (Visitante)</h3>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<button class="flex items-center justify-center gap-2 rounded-lg bg-red-900/20 border border-red-900/50 hover:bg-red-900/30 active:bg-red-900/20 transition-colors h-12">
+<span class="material-symbols-outlined text-red-400">scoreboard</span>
+<span class="text-sm font-semibold text-red-100">Canasta Rival</span>
+</button>
+<button class="flex items-center justify-center gap-2 rounded-lg bg-red-900/20 border border-red-900/50 hover:bg-red-900/30 active:bg-red-900/20 transition-colors h-12">
+<span class="material-symbols-outlined text-red-400">gavel</span>
+<span class="text-sm font-semibold text-red-100">Falta Rival</span>
+</button>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation -->
+<nav class="flex shrink-0 border-t border-white/10 bg-surface-dark pb-6 pt-2 px-6 justify-between">
+<a class="flex flex-col items-center justify-center gap-1 text-primary group" href="#">
+<span class="material-symbols-outlined filled text-[24px]">edit_note</span>
+<span class="text-[10px] font-medium">Anotar</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-gray-500 hover:text-gray-300 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px]">bar_chart</span>
+<span class="text-[10px] font-medium">Estadísticas</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-gray-500 hover:text-gray-300 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px]">list_alt</span>
+<span class="text-[10px] font-medium">Jugadas</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-gray-500 hover:text-gray-300 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px]">groups</span>
+<span class="text-[10px] font-medium">Equipos</span>
+</a>
+</nav>
+</body></html>

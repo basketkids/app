@@ -1,274 +1,398 @@
-<div class="container my-3" *ngIf="match; else loading">
-
-    <!-- Title -->
-    <h2 class="mb-3">{{ match.localTeamName }} vs {{ match.visitorTeamName }}</h2>
-
-    <!-- Glass Scoreboard + Timer controls row -->
-    <div class="d-flex flex-wrap justify-content-center align-items-center gap-4 my-2">
-
-        <app-scoreboard [localScore]="match.scoreLocal" [visitorScore]="match.scoreVisitor"
-            [localName]="match.localTeamName" [visitorName]="match.visitorTeamName" [quarter]="match.currentQuarter"
-            [timerState]="match.timerState">
-        </app-scoreboard>
-
-        <!-- Timer control buttons -->
-        <div class="d-flex gap-2 align-items-center">
-            <button class="btn btn-success btn-sm" title="Pausar / Reanudar" (click)="toggleTimer()">
-                <i class="bi" [ngClass]="match.timerState.active ? 'bi-pause-fill' : 'bi-play-fill'"></i>
-            </button>
-            <button class="btn btn-warning btn-sm" title="Terminar cuarto" (click)="advanceQuarter()">
-                <i class="bi bi-arrow-right-square"></i> Cuarto
-            </button>
-            <button class="btn btn-danger btn-sm" title="Terminar partido" (click)="endMatch()">
-                <i class="bi bi-stop-fill"></i> Final
-            </button>
-        </div>
-    </div>
-
-    <!-- Nav Tabs -->
-    <ul class="nav nav-tabs mb-3" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" [class.active]="activeTab === 'convocados'"
-                (click)="activeTab = 'convocados'">Convocados</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" [class.active]="activeTab === 'pista'"
-                (click)="activeTab = 'pista'">Partido</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" [class.active]="activeTab === 'en-vivo'" (click)="activeTab = 'en-vivo'">En
-                Vivo</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" [class.active]="activeTab === 'cronica'"
-                (click)="activeTab = 'cronica'">Crónica</button>
-        </li>
-    </ul>
-
-    <div class="tab-content">
-
-        <!-- TAB: Convocados / Estadísticas -->
-        <div class="tab-pane" [class.show]="activeTab === 'convocados'" [class.active]="activeTab === 'convocados'">
-            <div class="d-flex gap-2 mb-3">
-                <button class="btn btn-info btn-sm" (click)="openConvocatoriaModal()">
-                    <i class="bi bi-people-fill"></i> Cambiar convocatoria
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-hidden max-w-md md:max-w-3xl lg:max-w-4xl xl:max-w-5xl
+mx-auto border-x border-gray-200 dark:border-white/10 bg-white dark:bg-background-dark">
+    <ng-container *ngIf="match; else loading">
+        <!-- Header -->
+        <div
+            class="sticky top-0 z-20 bg-white dark:bg-surface-dark border-b border-gray-200 dark:border-white/10 shrink-0">
+            <div class="flex items-center justify-between px-4 py-3">
+                <button [routerLink]="['/competicion', match.competitionId]"
+                    class="p-2 -ml-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors"
+                    title="Volver a la competición">
+                    <span class="material-symbols-outlined text-[20px]">arrow_back</span>
                 </button>
-                <button class="btn btn-warning btn-sm" (click)="activeTab = 'pista'">
-                    <i class="bi bi-arrow-left-right"></i> Ir a Partido
-                </button>
-            </div>
-            <div id="tablaEstadisticasContainer">
-                <app-statistics-grid [stats]="match.stats" [roster]="match.convocados">
-                </app-statistics-grid>
-            </div>
-        </div>
-
-        <!-- TAB: Partido (pista) -->
-        <div class="tab-pane" [class.show]="activeTab === 'pista'" [class.active]="activeTab === 'pista'">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <button class="btn btn-warning btn-sm" (click)="openSubsModal()">
-                    <i class="bi bi-people-fill"></i> Cambios
-                </button>
-                <div class="text-muted small">Selecciona un jugador para anotar</div>
-            </div>
-
-            <!-- Player grid (Active Players on Court) -->
-            <div class="player-grid-container mb-4" id="active-players-grid">
-                <ng-container
-                    *ngIf="match.playersOnCourt && Object.keys(match.playersOnCourt).length > 0; else noPlayers">
-                    <div *ngFor="let pid of Object.keys(match.playersOnCourt)" class="player-card"
-                        [class.selected]="selectedPlayerId === pid" (click)="selectPlayer(pid)">
-                        <div class="dorsal">{{ match.plantilla[pid]?.dorsal || match.roster[pid]?.dorsal || '-' }}</div>
-                        <div class="nombre">{{ match.plantilla[pid]?.name || match.roster[pid]?.name || '?' }}</div>
-                        <div class="stats-summary">
-                            <span class="stat-tag text-success">{{ match.stats[pid]?.points || 0 }} pts</span>
-                            <span class="stat-tag"
-                                [ngClass]="(match.stats[pid]?.fouls || 0) >= 5 ? 'text-danger' : 'text-warning'">{{
-                                match.stats[pid]?.fouls || 0 }} F</span>
-                        </div>
-                    </div>
-                </ng-container>
-                <ng-template #noPlayers>
-                    <div class="alert alert-warning p-2 w-100 text-center small">No hay jugadores en pista. Pulsa en
-                        "Cambios".</div>
-                </ng-template>
-            </div>
-
-            <!-- Sticky Action Panel -->
-            <div class="action-panel-footer">
-                <div class="d-flex flex-column gap-2">
-
-                    <!-- Row 1: Positive Stats -->
-                    <div class="d-flex gap-2 justify-content-between">
-                        <button class="btn btn-outline-success flex-grow-1 action-btn"
-                            (click)="addStat(EventTypes.ASSISTS, 1)">AST</button>
-                        <button class="btn btn-outline-success flex-grow-1 action-btn"
-                            (click)="addStat(EventTypes.REBOUNDS, 1)">REB</button>
-                        <button class="btn btn-outline-success flex-grow-1 action-btn"
-                            (click)="addStat(EventTypes.STEALS, 1)">ROB</button>
-                        <button class="btn btn-outline-success flex-grow-1 action-btn"
-                            (click)="addStat(EventTypes.BLOCKS, 1)">TAP</button>
-                    </div>
-
-                    <!-- Row 2: Scoring + Fouls -->
-                    <div class="d-flex gap-2 justify-content-between align-items-center">
-                        <div class="d-flex gap-2 flex-grow-1">
-                            <button class="btn btn-primary action-btn-score flex-grow-1"
-                                (click)="addTeamPoints(1)">+1</button>
-                            <button class="btn btn-primary action-btn-score flex-grow-1"
-                                (click)="addTeamPoints(2)">+2</button>
-                            <button class="btn btn-primary action-btn-score flex-grow-1"
-                                (click)="addTeamPoints(3)">+3</button>
-                        </div>
-                        <button class="btn btn-outline-danger action-btn"
-                            (click)="addStat(EventTypes.FOULS, 1)">FAL</button>
-                        <button class="btn btn-outline-secondary action-btn"
-                            (click)="addStat(EventTypes.MISS, 1)">MISS</button>
-                    </div>
-
-                    <!-- Row 3: Rival -->
-                    <div class="d-flex gap-2 justify-content-center border-top pt-2 mt-1">
-                        <span class="small text-muted align-self-center">Rival:</span>
-                        <button class="btn btn-sm btn-light border" (click)="addRivalPoints(1)">+1</button>
-                        <button class="btn btn-sm btn-light border" (click)="addRivalPoints(2)">+2</button>
-                        <button class="btn btn-sm btn-light border" (click)="addRivalPoints(3)">+3</button>
-                        <button class="btn btn-sm btn-light border text-danger" (click)="addRivalFoul()">F+</button>
-                    </div>
+                <div class="text-center flex-1 mx-2 overflow-hidden">
+                    <h1 class="text-sm font-bold tracking-tight text-slate-800 dark:text-white truncate">{{
+                        match.localTeamName }} vs {{
+                        match.visitorTeamName }}</h1>
+                </div>
+                <div class="flex gap-1" *ngIf="activeTab === 'pista'">
+                    <button
+                        class="h-8 w-8 flex items-center justify-center rounded-full bg-primary/20 text-primary hover:bg-primary hover:text-white transition-colors"
+                        title="Pausar / Reanudar" (click)="toggleTimer()">
+                        <span class="material-symbols-outlined text-[18px]">{{ match.timerState.active ? 'pause' :
+                            'play_arrow' }}</span>
+                    </button>
                 </div>
             </div>
 
+            <!-- Glass Scoreboard -->
+            <div class="px-2 pb-2">
+                <app-scoreboard [localScore]="match.scoreLocal" [visitorScore]="match.scoreVisitor"
+                    [localName]="match.localTeamName" [visitorName]="match.visitorTeamName"
+                    [quarter]="match.currentQuarter" [timerState]="match.timerState">
+                </app-scoreboard>
+            </div>
 
+            <!-- Tabs -->
+            <div
+                class="flex overflow-x-auto no-scrollbar border-t border-gray-100 dark:border-white/5 px-2 bg-slate-50/50 dark:bg-background-dark/50">
+                <button (click)="activeTab = 'pista'"
+                    [ngClass]="{'border-primary text-primary': activeTab === 'pista', 'border-transparent text-slate-500 dark:text-slate-400': activeTab !== 'pista'}"
+                    class="whitespace-nowrap flex-1 py-3 px-1 border-b-2 font-medium text-sm text-center transition-colors">
+                    Anotar
+                </button>
+                <button (click)="activeTab = 'en-vivo'"
+                    [ngClass]="{'border-primary text-primary': activeTab === 'en-vivo', 'border-transparent text-slate-500 dark:text-slate-400': activeTab !== 'en-vivo'}"
+                    class="whitespace-nowrap flex-1 py-3 px-1 border-b-2 font-medium text-sm text-center transition-colors">
+                    Jugadas
+                </button>
+                <button (click)="activeTab = 'convocados'"
+                    [ngClass]="{'border-primary text-primary': activeTab === 'convocados', 'border-transparent text-slate-500 dark:text-slate-400': activeTab !== 'convocados'}"
+                    class="whitespace-nowrap flex-1 py-3 px-1 border-b-2 font-medium text-sm text-center transition-colors">
+                    Estadísticas
+                </button>
+                <button (click)="activeTab = 'cronica'"
+                    [ngClass]="{'border-primary text-primary': activeTab === 'cronica', 'border-transparent text-slate-500 dark:text-slate-400': activeTab !== 'cronica'}"
+                    class="whitespace-nowrap flex-1 py-3 px-1 border-b-2 font-medium text-sm text-center transition-colors">
+                    Crónica
+                </button>
+            </div>
         </div>
 
-        <!-- TAB: En Vivo -->
-        <div class="tab-pane" [class.show]="activeTab === 'en-vivo'" [class.active]="activeTab === 'en-vivo'">
-            <div class="mt-3">
+        <!-- Main Content Area -->
+        <div class="flex-1 overflow-y-auto pb-24 flex flex-col">
+
+            <!-- TAB: Partido (pista) - Toma de datos simple -->
+            <main *ngIf="activeTab === 'pista'"
+                class="flex-1 flex flex-col p-4 gap-4 overflow-hidden animate-in fade-in duration-300">
+
+                <!-- Players on Court -->
+                <div class="flex flex-col gap-2 shrink-0">
+                    <div class="flex justify-between items-end mb-1">
+                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">En Pista</h3>
+                        <button (click)="openSubsModal()"
+                            class="text-[11px] font-bold text-primary flex items-center gap-1 uppercase tracking-wide px-2 py-1 rounded bg-primary/10 hover:bg-primary hover:text-white transition-colors">
+                            <span class="material-symbols-outlined text-[14px]">sync_alt</span> Cambios
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-5 gap-2">
+                        <ng-container
+                            *ngIf="match.playersOnCourt && Object.keys(match.playersOnCourt).length > 0; else noPlayers">
+                            <button *ngFor="let pid of Object.keys(match.playersOnCourt)"
+                                class="aspect-[4/5] flex flex-col items-center justify-center gap-1 rounded-xl transition-all relative overflow-hidden group"
+                                [ngClass]="{'bg-primary text-white shadow-lg shadow-primary/20 ring-2 ring-primary ring-offset-2 ring-offset-white dark:ring-offset-[#121212]': selectedPlayerId === pid, 'bg-slate-100 dark:bg-surface-light text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 border border-slate-200 dark:border-white/5': selectedPlayerId !== pid}"
+                                (click)="selectPlayer(pid)">
+                                <span class="text-xl font-bold" [ngClass]="{'text-white': selectedPlayerId === pid}">{{
+                                    match.plantilla[pid]?.dorsal || match.roster[pid]?.dorsal || '-' }}</span>
+                                <span class="text-[9px] font-bold uppercase truncate w-full px-1 text-center"
+                                    [ngClass]="{'text-white font-black tracking-wide': selectedPlayerId === pid, 'text-slate-500 dark:text-slate-400': selectedPlayerId !== pid}">{{
+                                    (match.plantilla[pid]?.name || match.roster[pid]?.name || '?').split(' ')[0]
+                                    }}</span>
+                                <!-- Small indicators overlay -->
+                                <div class="absolute top-0 right-0 flex gap-0.5 p-0.5"
+                                    *ngIf="(match.stats[pid]?.fouls || 0) > 0">
+                                    <div class="w-1.5 h-1.5 rounded-full"
+                                        [ngClass]="(match.stats[pid]?.fouls || 0) >= 4 ? 'bg-red-500' : 'bg-yellow-500'">
+                                    </div>
+                                </div>
+                            </button>
+                        </ng-container>
+                        <ng-template #noPlayers>
+                            <div
+                                class="col-span-5 flex flex-col items-center justify-center py-6 text-slate-500 dark:text-slate-500 bg-slate-50 dark:bg-surface-dark border border-slate-200 dark:border-white/5 border-dashed rounded-xl">
+                                <span class="material-symbols-outlined text-3xl mb-1 opacity-50">group_off</span>
+                                <span class="text-xs font-medium">No hay jugadores en pista</span>
+                                <button (click)="openSubsModal()" class="mt-2 text-primary text-xs underline">Configurar
+                                    Quinteto</button>
+                            </div>
+                        </ng-template>
+                    </div>
+                </div>
+
+                <!-- Action Buttons Grid -->
+                <div class="flex-1 grid grid-cols-3 gap-3 content-start mt-2">
+                    <!-- Points -->
+                    <button (click)="addTeamPoints(1)"
+                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-surface-light hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
+                        <span
+                            class="text-2xl font-bold text-slate-800 dark:text-white group-active:scale-95 transition-transform">+1</span>
+                        <span class="text-[10px] uppercase font-bold text-slate-500 mt-1">Tiro Libre</span>
+                    </button>
+                    <button (click)="addTeamPoints(2)"
+                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-surface-light hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
+                        <span
+                            class="text-2xl font-bold text-slate-800 dark:text-white group-active:scale-95 transition-transform">+2</span>
+                        <span class="text-[10px] uppercase font-bold text-slate-500 mt-1">Campo</span>
+                    </button>
+                    <button (click)="addTeamPoints(3)"
+                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-surface-light hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
+                        <span
+                            class="text-2xl font-bold text-slate-800 dark:text-white group-active:scale-95 transition-transform">+3</span>
+                        <span class="text-[10px] uppercase font-bold text-slate-500 mt-1">Triple</span>
+                    </button>
+
+                    <!-- Positive Stats -->
+                    <button (click)="addStat(EventTypes.REBOUNDS, 1)"
+                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-surface-light hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
+                        <span
+                            class="material-symbols-outlined text-green-500 dark:text-green-400 mb-1 group-active:scale-95 transition-transform text-[28px]">sports_basketball</span>
+                        <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Rebote</span>
+                    </button>
+                    <button (click)="addStat(EventTypes.ASSISTS, 1)"
+                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-surface-light hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
+                        <span
+                            class="material-symbols-outlined text-blue-500 dark:text-blue-400 mb-1 group-active:scale-95 transition-transform text-[28px]">handshake</span>
+                        <span
+                            class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Asistencia</span>
+                    </button>
+                    <button (click)="addStat(EventTypes.STEALS, 1)"
+                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-surface-light hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
+                        <span
+                            class="material-symbols-outlined text-yellow-500 dark:text-yellow-400 mb-1 group-active:scale-95 transition-transform text-[28px]">lock</span>
+                        <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Robo</span>
+                    </button>
+
+                    <!-- Negative Stats -->
+                    <button (click)="addStat(EventTypes.BLOCKS, 1)"
+                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-surface-light hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
+                        <span
+                            class="material-symbols-outlined text-indigo-500 dark:text-indigo-400 mb-1 group-active:scale-95 transition-transform text-[28px]">back_hand</span>
+                        <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Tapón</span>
+                    </button>
+                    <button (click)="addStat(EventTypes.MISS, 1)"
+                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-surface-light hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
+                        <span
+                            class="material-symbols-outlined text-orange-500 dark:text-orange-400 mb-1 group-active:scale-95 transition-transform text-[28px]">error</span>
+                        <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Fallo</span>
+                    </button>
+                    <button (click)="addStat(EventTypes.FOULS, 1)"
+                        class="flex flex-col items-center justify-center rounded-xl bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20 active:bg-red-200 dark:active:bg-red-900/30 border border-red-200 dark:border-red-900/30 transition-all py-3 group">
+                        <span
+                            class="material-symbols-outlined text-red-500 mb-1 group-active:scale-95 transition-transform text-[28px]">gavel</span>
+                        <span class="text-[10px] uppercase font-bold text-red-600 dark:text-red-400">Falta</span>
+                    </button>
+                </div>
+
+                <!-- Opponent Section (Footer) -->
+                <div class="mt-auto pt-3 border-t border-white/10 shrink-0">
+                    <div class="flex items-center justify-between mb-2 px-1">
+                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Anotar Rival</h3>
+                        <div class="flex gap-1">
+                            <button
+                                class="px-2 py-0.5 text-[10px] font-bold text-slate-400 bg-surface-dark rounded hover:bg-slate-700 transition"
+                                (click)="advanceQuarter()">Finalizar Cuarto</button>
+                            <button
+                                class="px-2 py-0.5 text-[10px] font-bold text-red-400 bg-red-900/20 rounded hover:bg-red-900/40 transition"
+                                (click)="endMatch()">Finalizar Partido</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-2">
+                        <button (click)="addRivalPoints(1)"
+                            class="flex items-center justify-center gap-1 rounded-lg bg-red-900/10 border border-red-900/30 hover:bg-red-900/20 active:bg-red-900/30 transition-all h-10 group">
+                            <span
+                                class="text-xs font-bold text-red-400 group-active:scale-95 transition-transform">+1</span>
+                        </button>
+                        <button (click)="addRivalPoints(2)"
+                            class="flex items-center justify-center gap-1 rounded-lg bg-red-900/10 border border-red-900/30 hover:bg-red-900/20 active:bg-red-900/30 transition-all h-10 group">
+                            <span
+                                class="text-xs font-bold text-red-400 group-active:scale-95 transition-transform">+2</span>
+                        </button>
+                        <button (click)="addRivalPoints(3)"
+                            class="flex items-center justify-center gap-1 rounded-lg bg-red-900/10 border border-red-900/30 hover:bg-red-900/20 active:bg-red-900/30 transition-all h-10 group">
+                            <span
+                                class="text-xs font-bold text-red-400 group-active:scale-95 transition-transform">+3</span>
+                        </button>
+                        <button (click)="addRivalFoul()"
+                            class="flex items-center justify-center gap-1 rounded-lg bg-red-900/10 border border-red-900/30 hover:bg-red-900/20 active:bg-red-900/30 transition-all h-10 group">
+                            <span
+                                class="material-symbols-outlined text-[16px] text-red-500 group-active:scale-95 transition-transform">gavel</span>
+                        </button>
+                    </div>
+                </div>
+            </main>
+
+            <!-- TAB: Jugadas (En Vivo) -->
+            <div *ngIf="activeTab === 'en-vivo'" class="flex-1 p-4 animate-in fade-in duration-300 overflow-y-auto">
                 <app-live-events [events]="match.events" [roster]="match.roster"></app-live-events>
             </div>
-        </div>
 
-        <!-- TAB: Crónica -->
-        <div class="tab-pane" [class.show]="activeTab === 'cronica'" [class.active]="activeTab === 'cronica'">
-            <div id="cronicaContent" class="card p-3 bg-light mt-3">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">Crónica del Partido</h5>
-                </div>
-                <div class="alert alert-info small mb-3">
-                    <i class="bi bi-stars"></i> Genera una crónica automática o escribe la tuya propia.
-                </div>
-                <div class="d-flex gap-2 mb-3">
-                    <button class="btn btn-primary flex-grow-1">
-                        <i class="bi bi-cpu-fill"></i> Generar con IA
-                    </button>
-                    <button class="btn btn-outline-primary" title="Copiar Prompt">
-                        <i class="bi bi-clipboard"></i> Copiar Prompt
+            <!-- TAB: Estadísticas -->
+            <div *ngIf="activeTab === 'convocados'" class="flex-1 p-4 animate-in fade-in duration-300 overflow-y-auto">
+                <div class="flex gap-2 mb-4 justify-between items-center">
+                    <h3 class="text-sm font-bold text-slate-800 dark:text-white tracking-wide">Box Score</h3>
+                    <button
+                        class="px-3 py-1.5 bg-primary/10 text-primary text-xs font-bold rounded-lg border border-primary/20 hover:bg-primary hover:text-white transition-colors flex items-center gap-1"
+                        (click)="openConvocatoriaModal()">
+                        <span class="material-symbols-outlined text-[14px]">groups</span> Convocatoria
                     </button>
                 </div>
-                <div class="p-3 bg-white border rounded mb-3" style="min-height: 100px;">
-                    <div *ngIf="match.chronicle" [innerHTML]="match.chronicle"></div>
-                    <em *ngIf="!match.chronicle" class="text-muted">No hay crónica guardada. Genera una con la IA o
-                        escríbela.</em>
+                <div id="tablaEstadisticasContainer"
+                    class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm">
+                    <app-statistics-grid [stats]="match.stats" [roster]="match.convocados"></app-statistics-grid>
                 </div>
-                <button class="btn btn-outline-secondary w-100">
-                    <i class="bi bi-pencil"></i> Editar Crónica
-                </button>
             </div>
-        </div>
 
-    </div>
+            <!-- TAB: Crónica -->
+            <div *ngIf="activeTab === 'cronica'" class="flex-1 p-4 animate-in fade-in duration-300 overflow-y-auto">
+                <div
+                    class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-xl shadow-sm p-4">
+                    <h5 class="text-lg font-bold text-slate-800 dark:text-white mb-2">Crónica del Partido</h5>
+                    <div
+                        class="p-3 bg-primary/5 dark:bg-primary/10 border border-primary/20 text-primary rounded-lg text-sm mb-4 flex items-start gap-2">
+                        <span class="material-symbols-outlined text-[18px] shrink-0">auto_awesome</span>
+                        <span>Genera una crónica automática con IA o escribe la tuya propia (Próximamente).</span>
+                    </div>
 
-    <!-- Substitutions Modal -->
-    <div class="modal fade show" style="display: block; background: rgba(0,0,0,0.5); z-index: 1050;"
-        *ngIf="showSubsModal">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Seleccionar 5 en Pista</h5>
-                    <button type="button" class="btn-close" (click)="closeSubsModal()"></button>
-                </div>
-                <div class="modal-body">
-                    <ul class="list-group">
-                        <li class="list-group-item d-flex align-items-center gap-2"
-                            *ngFor="let pid of Object.keys(match.convocados || {})">
-                            <input class="form-check-input" type="checkbox" [checked]="tempSelectedCourtIds.has(pid)"
-                                (change)="togglePlayerSub(pid)" [id]="'sub_' + pid">
-                            <label class="form-check-label flex-grow-1" [for]="'sub_' + pid">
-                                #{{ match.convocados[pid].dorsal }} - {{ match.convocados[pid].name }}
-                            </label>
-                        </li>
-                    </ul>
-                    <div class="mt-3 text-end text-muted small">
-                        Seleccionados: {{ tempSelectedCourtIds.size }} / 5
+                    <div
+                        class="p-4 bg-slate-50 dark:bg-background-dark border border-slate-200 dark:border-white/5 rounded-lg mb-4 text-slate-700 dark:text-slate-300 text-sm min-h-[120px] shadow-inner">
+                        <div *ngIf="match.chronicle" [innerHTML]="match.chronicle"
+                            class="prose prose-sm dark:prose-invert max-w-none"></div>
+                        <em *ngIf="!match.chronicle"
+                            class="text-slate-500 dark:text-slate-500 flex flex-col items-center justify-center h-full py-6">
+                            <span class="material-symbols-outlined text-3xl mb-2 opacity-50">article</span>
+                            No hay crónica elaborada aún.
+                        </em>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button
+                            class="flex-1 py-2 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 rounded-lg text-sm font-medium text-slate-700 dark:text-white transition-colors flex justify-center items-center gap-2">
+                            <span class="material-symbols-outlined text-[16px]">edit</span> Editar Crónica
+                        </button>
+                        <button
+                            class="h-10 w-10 flex items-center justify-center bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 rounded-lg text-slate-600 dark:text-slate-300 transition-colors"
+                            title="Compartir">
+                            <span class="material-symbols-outlined text-[18px]">share</span>
+                        </button>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" (click)="closeSubsModal()">Cancelar</button>
-                    <button type="button" class="btn btn-primary" (click)="saveSubstitutions()">Guardar
-                        Cambios</button>
-                </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Convocatoria Modal -->
-    <div class="modal fade show" style="display: block; background: rgba(0,0,0,0.5); z-index: 1050;"
-        *ngIf="showConvocatoriaModal">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Convocatoria del Partido</h5>
-                    <button type="button" class="btn-close" (click)="closeConvocatoriaModal()"></button>
+        </div>
+
+        <!-- Substitutions Modal -->
+        <div *ngIf="showSubsModal"
+            class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+            <div
+                class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-300 max-h-[85vh]">
+                <div
+                    class="px-5 py-4 border-b border-gray-200 dark:border-white/5 flex justify-between items-center bg-slate-50 dark:bg-white/5 sticky top-0 z-10">
+                    <h3 class="text-base font-bold text-slate-800 dark:text-white">Configurar 5 en Pista</h3>
+                    <button (click)="closeSubsModal()"
+                        class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors h-8 w-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-surface-dark">
+                        <span class="material-symbols-outlined text-[18px]">close</span>
+                    </button>
                 </div>
-                <div class="modal-body">
-                    <ul class="list-group">
-                        <li class="list-group-item d-flex align-items-center gap-2"
-                            *ngFor="let pid of Object.keys(match.plantilla || {})">
-                            <input class="form-check-input" type="checkbox" [checked]="tempSelectedCourtIds.has(pid)"
-                                (change)="toggleConvocatoriaSub(pid)" [id]="'conv_' + pid">
-                            <label class="form-check-label flex-grow-1" [for]="'conv_' + pid">
-                                #{{ match.plantilla[pid].dorsal }} - {{ match.plantilla[pid].name }}
-                            </label>
-                        </li>
-                    </ul>
-                    <div class="mt-3 text-end text-muted small">
-                        Seleccionados: {{ tempSelectedCourtIds.size }} / {{ Object.keys(match.plantilla ||
-                        {}).length }}
+
+                <div class="p-2 overflow-y-auto">
+                    <div class="grid grid-cols-1 gap-1">
+                        <button *ngFor="let pid of Object.keys(match.convocados || {})" (click)="togglePlayerSub(pid)"
+                            class="flex items-center justify-between p-3 rounded-xl border transition-all text-left"
+                            [ngClass]="tempSelectedCourtIds.has(pid) ? 'bg-primary/10 border-primary/30' : 'bg-slate-50 dark:bg-background-dark border-transparent hover:bg-slate-100 dark:hover:bg-surface-light'">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0"
+                                    [ngClass]="tempSelectedCourtIds.has(pid) ? 'bg-primary text-white' : 'bg-white dark:bg-surface-dark text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/5'">
+                                    {{ match.convocados[pid].dorsal }}
+                                </div>
+                                <span class="font-medium text-[15px]"
+                                    [ngClass]="tempSelectedCourtIds.has(pid) ? 'text-slate-800 dark:text-white' : 'text-slate-600 dark:text-slate-300'">{{
+                                    match.convocados[pid].name }}</span>
+                            </div>
+                            <span class="material-symbols-outlined"
+                                [ngClass]="tempSelectedCourtIds.has(pid) ? 'text-primary' : 'text-slate-400 dark:text-slate-600'">
+                                {{ tempSelectedCourtIds.has(pid) ? 'check_circle' : 'radio_button_unchecked' }}
+                            </span>
+                        </button>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" (click)="closeConvocatoriaModal()">Cancelar</button>
-                    <button type="button" class="btn btn-primary" (click)="saveConvocatoria()">Guardar
-                        Convocados</button>
+
+                <div
+                    class="px-5 py-4 border-t border-gray-200 dark:border-white/5 bg-slate-50 dark:bg-background-dark sticky bottom-0 z-10">
+                    <div class="flex justify-between items-center mb-4">
+                        <span
+                            class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest">En
+                            Pista</span>
+                        <span class="text-sm font-bold"
+                            [ngClass]="tempSelectedCourtIds.size === 5 ? 'text-green-500 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'">{{
+                            tempSelectedCourtIds.size }} / 5</span>
+                    </div>
+                    <button (click)="saveSubstitutions()"
+                        class="w-full py-2.5 rounded-xl font-bold bg-primary text-white shadow-lg shadow-primary/20 hover:bg-orange-600 active:scale-[0.98] transition-all">
+                        Confirmar Cambios
+                    </button>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Bottom action strip -->
-    <div class="d-flex justify-content-center gap-2 mt-4">
-        <a class="btn btn-success btn-sm" target="_blank" rel="noopener">
-            <i class="bi bi-whatsapp"></i> Compartir
-        </a>
-        <a class="btn btn-primary btn-sm" target="_blank" rel="noopener">
-            <i class="bi bi-eye-fill"></i> Ver partido público
-        </a>
-    </div>
+        <!-- Convocados Modal -->
+        <div *ngIf="showConvocatoriaModal"
+            class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+            <div
+                class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-300 max-h-[85vh]">
+                <div
+                    class="px-5 py-4 border-b border-gray-200 dark:border-white/5 flex justify-between items-center bg-slate-50 dark:bg-white/5 sticky top-0 z-10">
+                    <h3 class="text-base font-bold text-slate-800 dark:text-white">Convocados al Partido</h3>
+                    <button (click)="closeConvocatoriaModal()"
+                        class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors h-8 w-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-surface-dark">
+                        <span class="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+                </div>
 
-</div>
+                <div class="p-2 overflow-y-auto">
+                    <div class="grid grid-cols-1 gap-1">
+                        <button *ngFor="let pid of Object.keys(match.plantilla || {})"
+                            (click)="toggleConvocatoriaSub(pid)"
+                            class="flex items-center justify-between p-3 rounded-xl border transition-all text-left"
+                            [ngClass]="tempSelectedCourtIds.has(pid) ? 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/30' : 'bg-slate-50 dark:bg-background-dark border-transparent hover:bg-slate-100 dark:hover:bg-surface-light'">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0"
+                                    [ngClass]="tempSelectedCourtIds.has(pid) ? 'bg-indigo-500 text-white' : 'bg-white dark:bg-surface-dark text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/5'">
+                                    {{ match.plantilla[pid].dorsal }}
+                                </div>
+                                <span class="font-medium text-[15px]"
+                                    [ngClass]="tempSelectedCourtIds.has(pid) ? 'text-slate-800 dark:text-white' : 'text-slate-600 dark:text-slate-300'">{{
+                                    match.plantilla[pid].name }}</span>
+                            </div>
+                            <span class="material-symbols-outlined"
+                                [ngClass]="tempSelectedCourtIds.has(pid) ? 'text-indigo-500 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-600'">
+                                {{ tempSelectedCourtIds.has(pid) ? 'check_circle' : 'radio_button_unchecked' }}
+                            </span>
+                        </button>
+                    </div>
+                </div>
 
-<!-- Loading State -->
-<ng-template #loading>
-    <div class="admin-loading d-flex flex-column justify-content-center align-items-center" style="min-height:70vh">
-        <!-- Animated basketball icon -->
-        <div class="loading-icon mb-4">
-            <i class="bi bi-dribbble" style="font-size: 4rem; color: var(--bs-primary, #0d6efd);"
-                [style.animation]="'spin 1.5s linear infinite'"></i>
+                <div
+                    class="px-5 py-4 border-t border-gray-200 dark:border-white/5 bg-slate-50 dark:bg-background-dark sticky bottom-0 z-10">
+                    <div class="flex justify-between items-center mb-4">
+                        <span
+                            class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Convocados</span>
+                        <span class="text-sm font-bold text-slate-800 dark:text-white">{{ tempSelectedCourtIds.size }} /
+                            {{
+                            Object.keys(match.plantilla || {}).length }}</span>
+                    </div>
+                    <button (click)="saveConvocatoria()"
+                        class="w-full py-2.5 rounded-xl font-bold bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-600 active:scale-[0.98] transition-all">
+                        Guardar Convocados
+                    </button>
+                </div>
+            </div>
         </div>
-        <!-- Spinner -->
-        <div class="spinner-border text-primary mb-3" role="status" style="width:3rem;height:3rem;">
-            <span class="visually-hidden">Cargando...</span>
+    </ng-container>
+
+    <!-- Loading State -->
+    <ng-template #loading>
+        <div
+            class="flex flex-col justify-center items-center min-h-screen bg-background-light dark:bg-background-dark text-slate-500 dark:text-slate-400 animate-in fade-in">
+            <div class="relative w-16 h-16 mb-4">
+                <div class="absolute inset-0 border-4 border-slate-200 dark:border-white/5 rounded-full"></div>
+                <div class="absolute inset-0 border-4 border-primary rounded-full border-t-transparent animate-spin">
+                </div>
+                <span
+                    class="material-symbols-outlined absolute inset-0 flex items-center justify-center text-primary text-2xl">sports_basketball</span>
+            </div>
+            <h4 class="text-base font-bold text-slate-800 dark:text-white mb-1">Cargando partido...</h4>
+            <p class="text-xs text-slate-500">Obteniendo datos desde Supabase</p>
         </div>
-        <h4 class="fw-semibold mb-1">Cargando partido...</h4>
-        <p class="text-secondary small">Obteniendo datos desde Supabase</p>
-    </div>
-</ng-template>
+    </ng-template>

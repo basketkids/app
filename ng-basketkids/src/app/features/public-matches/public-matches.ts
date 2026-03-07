@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { CalendarService, CalendarMatch } from '../../core/services/calendar.service';
+import { MatchState } from '../../core/models/match.model';
 
 @Component({
     selector: 'app-public-matches',
@@ -13,6 +14,7 @@ export class PublicMatches implements OnInit {
     matches: CalendarMatch[] = [];
     loading = true;
     errorMsg = '';
+    MatchState = MatchState;
 
     constructor(private calService: CalendarService, private router: Router) { }
 

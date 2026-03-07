@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Ranking y Quinteto</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec7f13",
+                        "background-light": "#f8f7f6",
+                        "background-dark": "#221910",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .court-bg {
+            background-color: #fffaf5;
+            background-image: 
+                radial-gradient(circle at 50% 100%, transparent 19%, #e5e7eb 20%, #e5e7eb 21%, transparent 22%),
+                radial-gradient(circle at 50% 25%, transparent 19%, #e5e7eb 20%, #e5e7eb 21%, transparent 22%);
+            position: relative;
+            overflow: hidden;
+        }
+        /* Simple court lines */
+        .court-lines {
+            position: absolute;
+            top: 5%;
+            left: 5%;
+            right: 5%;
+            bottom: 5%;
+            border: 2px solid #d1d5db;
+        }
+        .court-key {
+            position: absolute;
+            bottom: 0;
+            left: 35%;
+            width: 30%;
+            height: 40%;
+            border: 2px solid #d1d5db;
+            border-bottom: none;
+            background-color: rgba(236, 127, 19, 0.05);
+        }
+        .court-circle {
+            position: absolute;
+            bottom: 40%;
+            left: 35%;
+            width: 30%;
+            padding-top: 30%; /* Aspect ratio hack for circle based on width */
+            border-radius: 50%;
+            border: 2px solid #d1d5db;
+            transform: translateY(50%);
+        }
+        .three-point-line {
+            position: absolute;
+            bottom: 0;
+            left: 5%;
+            width: 90%;
+            height: 80%;
+            border-top-left-radius: 50% 80%;
+            border-top-right-radius: 50% 80%;
+            border: 2px solid #d1d5db;
+            border-bottom: none;
+        }
+        
+        /* Custom scrollbar for table */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background-color: #e5e7eb;
+            border-radius: 20px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 flex flex-col h-screen overflow-hidden">
+<!-- Header -->
+<header class="flex items-center justify-between px-6 py-4 bg-white dark:bg-[#1a120b] border-b border-gray-200 dark:border-gray-800 shrink-0 shadow-sm z-10">
+<div class="flex items-center gap-4">
+<button class="text-slate-500 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div>
+<h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Jornada 12: Valoración Fantasy</h1>
+<p class="text-sm text-slate-500 dark:text-slate-400">Madrid vs Barcelona • Finalizado</p>
+</div>
+</div>
+<div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+<button class="px-4 py-1.5 bg-white dark:bg-gray-700 text-primary dark:text-primary shadow-sm rounded-md text-sm font-medium transition-all">Mejor Quinteto</button>
+<button class="px-4 py-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-sm font-medium transition-all">Estadísticas</button>
+<button class="px-4 py-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-sm font-medium transition-all">Mapa de Tiro</button>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center size-10 rounded-full bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-slate-600 dark:text-slate-300 transition-colors">
+<span class="material-symbols-outlined">share</span>
+</button>
+<button class="flex items-center justify-center size-10 rounded-full bg-primary text-white shadow-lg shadow-primary/30 hover:bg-primary/90 transition-colors">
+<span class="material-symbols-outlined">download</span>
+</button>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex flex-1 overflow-hidden">
+<!-- Left Panel: The Court Visualization -->
+<section class="relative flex-1 bg-white dark:bg-[#1f1610] border-r border-gray-200 dark:border-gray-800 p-6 flex flex-col">
+<div class="flex justify-between items-center mb-4">
+<h2 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">stars</span>
+                    Quinteto Ideal
+                </h2>
+<div class="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-wider">
+                    Total: 184 Pts
+                </div>
+</div>
+<!-- Court Graphic -->
+<div class="flex-1 relative court-bg rounded-xl border border-gray-200 dark:border-gray-800 shadow-inner">
+<!-- CSS Drawing of Court -->
+<div class="court-lines"></div>
+<div class="three-point-line"></div>
+<div class="court-key"></div>
+<div class="court-circle"></div>
+<!-- Players on Court -->
+<!-- Point Guard (Base) - Top Center (visually bottom on half court) -->
+<div class="absolute bottom-[10%] left-1/2 -translate-x-1/2 flex flex-col items-center group cursor-pointer z-10">
+<div class="relative">
+<div class="w-14 h-14 rounded-full border-2 border-white shadow-lg overflow-hidden bg-gray-200">
+<img alt="Portrait of point guard player" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHK24FQn_CXiDs3QdQNMtdzuHt_iSqOEfMy3yE5FilM4ASgEc4G_DwqIViu_swcqfmMrdUSCzrA9KhKs0dZaxjPPM4kapkHRuUnBmfhE56VEN71XI2EmBK0JwQwuUnsZvpQehX3xvukOZpQxJdIe5z9n5Yrc43FJWK6bqRFtk1_DdlorAL-ypm5gVRsH66DmLUv9BmB7I2uFGiksQk8OGB1S-TYdjrFYvul-EjD4_yQG0kDOA-S4CmVyogTL07y_lK3pvuzAxKtLfW"/>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-white">PG</div>
+</div>
+<div class="mt-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 text-center transition-transform group-hover:scale-105">
+<p class="text-xs font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">F. Campazzo</p>
+<p class="text-[10px] text-slate-500 font-medium">32 Val</p>
+</div>
+</div>
+<!-- Shooting Guard (Escolta) - Right Wing -->
+<div class="absolute bottom-[25%] right-[15%] flex flex-col items-center group cursor-pointer z-10">
+<div class="relative">
+<div class="w-14 h-14 rounded-full border-2 border-white shadow-lg overflow-hidden bg-gray-200">
+<img alt="Portrait of shooting guard player" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCK3xm6aFsUWbRKocuAIPl9QElq_OilbN6YLCNECyS8vTXGHtRKJWB7mhTjw0bcmZvq6ipRh_DnzrI7bCb93pM8emGCqp0Cmc5-3ZAlytH-MpiAagwhhIA94aY3fCkeplVK6fFsIw337guuImXQDkEYkOlqqJPPXg0_JjQKf2ivhYHDSKYZNvjrPMaxU_GFQ7WCpWwzdQDum09jPvH1GGVwgrWrrOyPxDir7XN2Q-9HfzXzHHDb9r2AZmpjJWb_n4tLRflywPoNCo8T"/>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-slate-700 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-white">SG</div>
+</div>
+<div class="mt-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 text-center transition-transform group-hover:scale-105">
+<p class="text-xs font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">D. Musa</p>
+<p class="text-[10px] text-slate-500 font-medium">28 Val</p>
+</div>
+</div>
+<!-- Small Forward (Alero) - Left Wing -->
+<div class="absolute bottom-[25%] left-[15%] flex flex-col items-center group cursor-pointer z-10">
+<div class="relative">
+<div class="w-14 h-14 rounded-full border-2 border-white shadow-lg overflow-hidden bg-gray-200">
+<img alt="Portrait of small forward player" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCXPQy-y-f-Uu82oIREo6TXlUaWxy_JW3hTHMEFQGEx5uK0hZHamuTdFUVOQR9Ia5Iq7Mdp4pdXb22cCLsxf0aBoL_J057KnCDqhhXbwXdmaYiguTD7tHRCiIRPXTxDa_rEq_jQwmXB98sXUheJ8E6B7U-FDQnbfix5C7ZNSuM9_46LG-uGp2hwKIGLmfzLmljI16GP0ZvWaZdVvhD5KezI5bv3QnKrM9AWLUdc9-LAbw61grv1EoG3dAEW_RpTt3lwMe2TdYQsi3eo"/>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-slate-700 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-white">SF</div>
+</div>
+<div class="mt-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 text-center transition-transform group-hover:scale-105">
+<p class="text-xs font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">M. Hezonja</p>
+<p class="text-[10px] text-slate-500 font-medium">35 Val</p>
+</div>
+</div>
+<!-- Power Forward (Ala-Pívot) - Left Post -->
+<div class="absolute top-[30%] left-[25%] flex flex-col items-center group cursor-pointer z-10">
+<div class="relative">
+<div class="w-14 h-14 rounded-full border-2 border-white shadow-lg overflow-hidden bg-gray-200">
+<img alt="Portrait of power forward player" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMWsGLWUl--Ktfua3BX9jSQlpBjES_fNMDZj31LIw9XL8PrtvweDGX-Ctqb6aOmJUtH58WwwQoeizSZ1V3AHX49lXfaYa0IUMl4BGw9ldHJDYHk9_oborj-FU7LRjI-GykXZbDq-dPm0Xi0FOw4PRnftpRx9E4anmZMcKpEEj_aPtXWheUfGv-ZF6kUmSXew-rCNwRiClFIQncB9WJgmDu5lfJ0u_G6IOCUS8kTKkKe7tX4SdHaWZoiQjerxka2yS9HJtvtEKj0DIF"/>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-slate-700 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-white">PF</div>
+</div>
+<div class="mt-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 text-center transition-transform group-hover:scale-105">
+<p class="text-xs font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">G. Yabusele</p>
+<p class="text-[10px] text-slate-500 font-medium">41 Val</p>
+</div>
+</div>
+<!-- Center (Pívot) - Near Basket -->
+<div class="absolute top-[20%] right-[30%] flex flex-col items-center group cursor-pointer z-10">
+<div class="relative">
+<div class="w-16 h-16 rounded-full border-2 border-primary shadow-xl overflow-hidden bg-gray-200 ring-4 ring-primary/20">
+<img alt="Portrait of center player MVP" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBq755gFMKIMMl4tcdpLnKrKf3304owzMIdINLaccMxE6SlTFkI5be8W4p2pGKG3s3eWvoHAkFIAUD_GZ2_-ZLYfSc73fPdqccIWGmmvrb-GpyZTVSMRgc0pLi9r6y1X6FOwE8JbN3z4cDulbprFMapx2YpolTT6LCDgsS3YHI42U-WMp9941MhvcYqUix1elEnBjf-621EpnYy8LWpJ_Ui3XkFr-IrvOvWM0pkguQKldFPNHZz-9c45xBDrBs-4e_vQm2zkrUf4ZPC"/>
+</div>
+<div class="absolute -top-2 -right-2 bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-white shadow-sm flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[10px]">emoji_events</span> MVP
+                        </div>
+</div>
+<div class="mt-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-md border border-primary/30 text-center transition-transform group-hover:scale-105">
+<p class="text-sm font-bold text-slate-900 dark:text-white whitespace-nowrap">W. Tavares</p>
+<p class="text-xs text-primary font-bold">48 Val</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Panel: The Ranking Table -->
+<section class="w-[450px] bg-gray-50 dark:bg-[#1a120b] flex flex-col border-l border-gray-200 dark:border-gray-800">
+<div class="p-6 pb-2">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-lg font-bold text-slate-900 dark:text-white">Ranking Completo</h2>
+<div class="flex gap-2">
+<button class="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md text-slate-500">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+</button>
+<button class="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md text-slate-500">
+<span class="material-symbols-outlined text-[20px]">sort</span>
+</button>
+</div>
+</div>
+<!-- Search/Filter -->
+<div class="relative mb-4">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</span>
+<input class="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-slate-900 dark:text-white placeholder-slate-400" placeholder="Buscar jugador..." type="text"/>
+</div>
+</div>
+<!-- Table Header -->
+<div class="grid grid-cols-12 px-6 py-2 bg-gray-100 dark:bg-gray-800/50 border-y border-gray-200 dark:border-gray-700 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+<div class="col-span-1 text-center">#</div>
+<div class="col-span-5 pl-2">Jugador</div>
+<div class="col-span-1 text-center" title="Puntos">PTS</div>
+<div class="col-span-1 text-center" title="Rebotes">REB</div>
+<div class="col-span-1 text-center" title="Asistencias">AST</div>
+<div class="col-span-1 text-center" title="Fallos">ERR</div>
+<div class="col-span-2 text-right pr-2 text-primary font-bold" title="Valoración">VAL</div>
+</div>
+<!-- Table Body -->
+<div class="flex-1 overflow-y-auto custom-scroll p-2">
+<!-- Row 1: MVP -->
+<div class="grid grid-cols-12 items-center px-4 py-3 mb-1 bg-white dark:bg-gray-800 rounded-lg border-l-4 border-primary shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+<div class="col-span-1 text-center font-bold text-primary">1</div>
+<div class="col-span-5 flex items-center gap-2 pl-2">
+<img alt="W. Tavares avatar" class="w-8 h-8 rounded-full object-cover bg-gray-200" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCM6dH9avGhICDEbgxwsM6acQBBJMmRfH4jD6U6vicjqNZ96jrVx3S72mUFJ30fCyPFtt8uOfMLqOWXvKtHrKVeWnKYLqyQ4Ee1lp2DE3B_YyPZ9jJjLrgMVL4ZCfMPJ4Uh2ywPUkYofjn_CsjmLyKJuiUYGtzqR6VPVZDBmhY9WXquCNYW3d7QzUMGjmBci9_PCMbEV4KCbNEy-E4Jla3HVc0aBnFzTyCzk1khwnJk8qw_sbu6GNRalz_SuM4B7Ig81UrkfcmluS5V"/>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-900 dark:text-white leading-tight">W. Tavares</span>
+<span class="text-[10px] text-slate-500">Pívot</span>
+</div>
+</div>
+<div class="col-span-1 text-center text-sm font-medium">24</div>
+<div class="col-span-1 text-center text-sm font-medium text-slate-500">12</div>
+<div class="col-span-1 text-center text-sm font-medium text-slate-500">3</div>
+<div class="col-span-1 text-center text-sm font-medium text-red-400">1</div>
+<div class="col-span-2 text-right pr-2 text-base font-bold text-primary">48</div>
+</div>
+<!-- Row 2 -->
+<div class="grid grid-cols-12 items-center px-4 py-3 mb-1 bg-white dark:bg-gray-800 rounded-lg border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-colors cursor-pointer">
+<div class="col-span-1 text-center font-bold text-slate-400">2</div>
+<div class="col-span-5 flex items-center gap-2 pl-2">
+<img alt="G. Yabusele avatar" class="w-8 h-8 rounded-full object-cover bg-gray-200" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSq6dGwNH14MEv3x5m6031nFiUTEi2Q2QjyRxEVWNI24z06fJZTYbc1wq6_o9WQPgBjGDA4-jrAzkoTJVuPbwHCjPyoXZvCem0xa0qT09nQwT2DoH_K_-QXTnhR1-FafMtYd8dlemxWEvo7bJKYYOz5OOt7kcz-AFR6JVJkb2bOsnsPal3KaRE_QmzN181e1BveT8bZaLXmqTap7u470FfY4WxcYPlLIAPPhX65QmEFZAJFMkX2116Ch1UvHcx0Sm7HcXMtdKqbtZB"/>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-900 dark:text-white leading-tight">G. Yabusele</span>
+<span class="text-[10px] text-slate-500">Ala-Pívot</span>
+</div>
+</div>
+<div class="col-span-1 text-center text-sm font-medium">28</div>
+<div class="col-span-1 text-center text-sm font-medium text-slate-500">8</div>
+<div class="col-span-1 text-center text-sm font-medium text-slate-500">2</div>
+<div class="col-span-1 text-center text-sm font-medium text-red-400">3</div>
+<div class="col-span-2 text-right pr-2 text-base font-bold text-slate-800 dark:text-slate-200">41</div>
+</div>
+<!-- Row 3 -->
+<div class="grid grid-cols-12 items-center px-4 py-3 mb-1 bg-white dark:bg-gray-800 rounded-lg border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-colors cursor-pointer">
+<div class="col-span-1 text-center font-bold text-slate-400">3</div>
+<div class="col-span-5 flex items-center gap-2 pl-2">
+<img alt="M. Hezonja avatar" class="w-8 h-8 rounded-full object-cover bg-gray-200" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVvmRLHdhfEQGLdrHBuKWh6pjA_MMqc_5dXSdIa5LZAJiqveAZ6fOfYbBNW1YOnaD7edLxz0RsCl-eCD9JphKNC0nDk5yhoZpnui-_eA-p5AcqYPhMZZ-S6zhw7D7q677Wej_-k8kOe62ThbQGkmYCsPUZkTzMEDIOS4HpfI3RWIxeYEbUL_MbxIWMp_53eEPZgnqeq1eU8JCNMxL7KkAB6WczK5IptXNydHHJmyA-O-GcslcOyomVZFI4WkHedo0lsV6bFF0RVA4b"/>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-900 dark:text-white leading-tight">M. Hezonja</span>
+<span class="text-[10px] text-slate-500">Alero</span>
+</div>
+</div>
+<div class="col-span-1 text-center text-sm font-medium">19</div>
+<div class="col-span-1 text-center text-sm font-medium text-slate-500">6</div>
+<div class="col-span-1 text-center text-sm font-medium text-slate-500">4</div>
+<div class="col-span-1 text-center text-sm font-medium text-red-400">2</div>
+<div class="col-span-2 text-right pr-2 text-base font-bold text-slate-800 dark:text-slate-200">35</div>
+</div>
+<!-- Row 4 -->
+<div class="grid grid-cols-12 items-center px-4 py-3 mb-1 bg-white dark:bg-gray-800 rounded-lg border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-colors cursor-pointer">
+<div class="col-span-1 text-center font-bold text-slate-400">4</div>
+<div class="col-span-5 flex items-center gap-2 pl-2">
+<img alt="F. Campazzo avatar" class="w-8 h-8 rounded-full object-cover bg-gray-200" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBx6K4pQQ33G2ougC0fqt4j1Spv7zuKVXxo-tTEIJsZxhgIwV4eReMKixy2PnRsPPHlGBgfqy_Dku1gdYGMfBgLdHHcqOItdwfqb5Gv0w8TE5g6AUmlYcc23E3UWSrhXqjnQ-U-5-gqL9FsSREUDVLfp0Yvy9SNjrvpFWx2PqNFh3K_W0t4ek5A2x1pWay5sQsN8-tlD8hvxiXbEqdb6T-Ad2UdxC4BpbEGWt5y5I1vwuS1cfE2kk-4k_yOGm8k-5IENTiow8TYN7M"/>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-900 dark:text-white leading-tight">F. Campazzo</span>
+<span class="text-[10px] text-slate-500">Base</span>
+</div>
+</div>
+<div class="col-span-1 text-center text-sm font-medium">12</div>
+<div class="col-span-1 text-center text-sm font-medium text-slate-500">3</div>
+<div class="col-span-1 text-center text-sm font-medium text-slate-500">11</div>
+<div class="col-span-1 text-center text-sm font-medium text-red-400">4</div>
+<div class="col-span-2 text-right pr-2 text-base font-bold text-slate-800 dark:text-slate-200">32</div>
+</div>
+<!-- Row 5 -->
+<div class="grid grid-cols-12 items-center px-4 py-3 mb-1 bg-white dark:bg-gray-800 rounded-lg border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-colors cursor-pointer">
+<div class="col-span-1 text-center font-bold text-slate-400">5</div>
+<div class="col-span-5 flex items-center gap-2 pl-2">
+<img alt="D. Musa avatar" class="w-8 h-8 rounded-full object-cover bg-gray-200" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtVi8awygsRGB9cI5r0Fq57cpj6ghrhO43zp0r4PVdD2XV7qJmVkINP6XjFhYfzo8oG7v91yrCdpHV_6GNs6q99OoqxEPZrUqM9ZCwFrZtktYblqGZCaX3cbjra0i9RXfMiFPxpH9xA3GwdSa48vMfIzbiihKj-awDpp1mFrudWuOakAhZ1bIb6iD8EeFb-3EP1dDYZPgsajmdN2EL2sfUZx4Xw0EwhROYmWgCFoz9iM_fBB3xEyfzbMc_i5TEezP2zZfUdsx4Sfgx"/>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-900 dark:text-white leading-tight">D. Musa</span>
+<span class="text-[10px] text-slate-500">Escolta</span>
+</div>
+</div>
+<div class="col-span-1 text-center text-sm font-medium">21</div>
+<div class="col-span-1 text-center text-sm font-medium text-slate-500">4</div>
+<div class="col-span-1 text-center text-sm font-medium text-slate-500">3</div>
+<div class="col-span-1 text-center text-sm font-medium text-red-400">2</div>
+<div class="col-span-2 text-right pr-2 text-base font-bold text-slate-800 dark:text-slate-200">28</div>
+</div>
+<!-- Row 6 -->
+<div class="grid grid-cols-12 items-center px-4 py-3 mb-1 bg-white dark:bg-gray-800 rounded-lg border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-colors cursor-pointer opacity-70">
+<div class="col-span-1 text-center font-bold text-slate-400">6</div>
+<div class="col-span-5 flex items-center gap-2 pl-2">
+<div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-500">V</div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-900 dark:text-white leading-tight">V. Poirier</span>
+<span class="text-[10px] text-slate-500">Pívot</span>
+</div>
+</div>
+<div class="col-span-1 text-center text-sm font-medium text-slate-400">8</div>
+<div class="col-span-1 text-center text-sm font-medium text-slate-400">7</div>
+<div class="col-span-1 text-center text-sm font-medium text-slate-400">1</div>
+<div class="col-span-1 text-center text-sm font-medium text-slate-300">1</div>
+<div class="col-span-2 text-right pr-2 text-base font-bold text-slate-600 dark:text-slate-400">18</div>
+</div>
+<!-- Row 7 -->
+<div class="grid grid-cols-12 items-center px-4 py-3 mb-1 bg-white dark:bg-gray-800 rounded-lg border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-colors cursor-pointer opacity-70">
+<div class="col-span-1 text-center font-bold text-slate-400">7</div>
+<div class="col-span-5 flex items-center gap-2 pl-2">
+<div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-500">S</div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-900 dark:text-white leading-tight">S. Llull</span>
+<span class="text-[10px] text-slate-500">Escolta</span>
+</div>
+</div>
+<div class="col-span-1 text-center text-sm font-medium text-slate-400">11</div>
+<div class="col-span-1 text-center text-sm font-medium text-slate-400">1</div>
+<div class="col-span-1 text-center text-sm font-medium text-slate-400">4</div>
+<div class="col-span-1 text-center text-sm font-medium text-slate-300">3</div>
+<div class="col-span-2 text-right pr-2 text-base font-bold text-slate-600 dark:text-slate-400">14</div>
+</div>
+<!-- Row 8 -->
+<div class="grid grid-cols-12 items-center px-4 py-3 mb-1 bg-white dark:bg-gray-800 rounded-lg border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-colors cursor-pointer opacity-70">
+<div class="col-span-1 text-center font-bold text-slate-400">8</div>
+<div class="col-span-5 flex items-center gap-2 pl-2">
+<div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-500">R</div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-900 dark:text-white leading-tight">R. Fernandez</span>
+<span class="text-[10px] text-slate-500">Alero</span>
+</div>
+</div>
+<div class="col-span-1 text-center text-sm font-medium text-slate-400">6</div>
+<div class="col-span-1 text-center text-sm font-medium text-slate-400">2</div>
+<div class="col-span-1 text-center text-sm font-medium text-slate-400">2</div>
+<div class="col-span-1 text-center text-sm font-medium text-slate-300">0</div>
+<div class="col-span-2 text-right pr-2 text-base font-bold text-slate-600 dark:text-slate-400">12</div>
+</div>
+</div>
+<!-- Summary Footer -->
+<div class="px-6 py-4 bg-white dark:bg-[#1a120b] border-t border-gray-200 dark:border-gray-800">
+<div class="flex justify-between items-center text-sm">
+<span class="text-slate-500">Media del equipo</span>
+<span class="font-bold text-slate-900 dark:text-white">22.4 Val</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Nav (Contextually less useful on Tablet landscape but kept for consistency if needed, though split view usually replaces it. I will keep it minimal or remove based on standard tablet UI. Let's make it a minimal floating bar or hidden since we have the header nav) -->
+<!-- Decision: The prompt implies a tablet view which usually doesn't have a bottom tab bar like phones. The header navigation I added serves this purpose better. I will omit the bottom nav to respect the "Tablet" form factor requested in the prompt title "Ranking y Quinteto (Tablet - Claro)". -->
+</body></html>

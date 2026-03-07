@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Migración JSON -> Supabase</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+        body {
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .log-box {
+            background: #222;
+            color: #0f0;
+            font-family: monospace;
+            padding: 10px;
+            height: 400px;
+            overflow-y: auto;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Migrador BasketKids (JSON)</h1>
+        <p>Esta herramienta migra datos desde un archivo JSON (exportado de Firebase) a Supabase.</p>
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5>Migración desde JSON</h5>
+                <input type="file" id="jsonFile" class="form-control mb-2" accept=".json">
+                <button id="btnStartJson" class="btn btn-warning" disabled>Iniciar Migración JSON</button>
+                <small class="text-muted d-block">Sube el 'export.json' de Firebase Database.</small>
+
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" id="checkDryRun">
+                    <label class="form-check-label" for="checkDryRun">Simulacro (No escribir en Supabase)</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="log-box" id="logBox">Esperando archivo...</div>
+    </div>
+
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Configs -->
+    <script src="js/supabase-config.js"></script>
+
+    <script>
+        // Init Supabase
+        // window.supabaseClient is set in supabase-config.js
+        const sb = window.supabaseClient;
+
+        const logBox = document.getElementById('logBox');
+        function log(msg, type = 'info') {
+            const div = document.createElement('div');
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            if (type === 'error') div.style.color = 'red';
+            else if (type === 'success') div.style.color = '#0ff';
+            logBox.appendChild(div);
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        // JSON MIGRATION
+        const btnStartJson = document.getElementById('btnStartJson');
+        const jsonFileInput = document.getElementById('jsonFile');
+
+        // Global maps for cross-references
+        const globalTeamMap = new Map(); // FirebaseTeamId -> SupabaseTeamId
+        const globalPlayerMap = new Map(); // FirebasePlayerId -> SupabasePlayerId
+        const globalCompMap = new Map(); // FirebaseCompId -> SupabaseCompId
+        const globalMatchMap = new Map(); // FirebaseMatchId -> SupabaseMatchId
+
+        jsonFileInput.addEventListener('change', () => {
+            btnStartJson.disabled = !jsonFileInput.files.length;
+        });
+
+        btnStartJson.onclick = async () => {
+            const dryRun = document.getElementById('checkDryRun').checked;
+            const file = jsonFileInput.files[0];
+            if (!file) return;
+
+            btnStartJson.disabled = true;
+            log(`Leyendo archivo JSON...`);
+
+            // Reset maps
+            globalTeamMap.clear();
+            globalPlayerMap.clear();
+            globalCompMap.clear();
+            globalMatchMap.clear();
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    log(`JSON leído. Tamaño: ${(file.size / 1024 / 1024).toFixed(2)} MB.`);
+
+                    // Look for 'usuarios' node
+                    const usuarios = data.usuarios || {};
+                    const uids = Object.keys(usuarios);
+                    log(`Encontrados ${uids.length} usuarios para migrar.`);
+
+                    // Migrate Contact Messages
+                    // Check for 'contact_messages' OR 'messages'
+                    const messagesNode = data.contact_messages || data.messages;
+                    if (messagesNode) {
+                        await migrateMessages(messagesNode, dryRun);
+                    } else {
+                        log("No se encontraron mensajes (contact_messages/messages).");
+                    }
+
+                    let count = 0;
+                    for (const uid of uids) {
+                        const userData = usuarios[uid];
+
+                        const userObj = {
+                            uid: uid,
+                            email: userData.profile?.email || userData.email || null,
+                            displayName: userData.profile?.displayName || userData.displayName || 'Usuario',
+                            photoURL: userData.profile?.photoURL || userData.photoURL || null,
+                            ...userData
+                        };
+
+                        log(`Migrando usuario ${count + 1}/${uids.length}: ${uid}`);
+                        await migrateUserRecursive(userObj, dryRun);
+                        count++;
+                    }
+
+                    // Migrate Global Matches (partidosGlobales)
+                    if (data.partidosGlobales) {
+                        log("Migrando partidos globales...");
+                        await migrateGlobalMatches(data.partidosGlobales, dryRun);
+                    }
+
+                    log(`Migración masiva completada. ${count} usuarios procesados.`, 'success');
+
+                } catch (err) {
+                    log("Error parseando JSON o migrando: " + err.message, 'error');
+                    console.error(err);
+                } finally {
+                    btnStartJson.disabled = false;
+                }
+            };
+            reader.readAsText(file);
+        };
+
+        async function migrateUserRecursive(userObj, dryRun) {
+            // 1. Profile
+            await migrateProfile(userObj, dryRun);
+
+            // 2. Teams
+            if (userObj.equipos) {
+                const teams = userObj.equipos;
+                const teamIds = Object.keys(teams);
+                for (const teamId of teamIds) {
+                    const teamData = teams[teamId];
+                    await migrateTeam(userObj.uid, teamId, teamData, dryRun);
+                }
+            }
+        }
+
+        async function migrateAvatarConfig(config, dryRun, contextLabel = '') {
+            if (!config) return null;
+
+            // Normalize keys (handle camelCase vs snake_case if mixed in JSON)
+            // But usually JSON from Firebase uses camelCase for these properties if came from Flutter/JS app.
+            // We map to snake_case for Supabase.
+
+            const payload = {
+                skin_color: config.skinColor || config.skin_color,
+                top: config.top,
+                hair_color: config.hairColor || config.hair_color,
+                hat_color: config.hatColor || config.hat_color,
+                facial_hair_type: config.facialHairType || config.facial_hair_type,
+                facial_hair_color: config.facialHairColor || config.facial_hair_color,
+                eyes: config.eyes,
+                eyebrows: config.eyebrows,
+                mouth: config.mouth,
+                accessories_type: config.accessoriesType || config.accessories_type,
+                accessories_color: config.accessoriesColor || config.accessories_color,
+                clothing: config.clothing,
+                clothes_color: config.clothesColor || config.clothes_color,
+                clothing_graphic: config.clothingGraphic || config.clothing_graphic
+            };
+
+            // Check if payload is empty (all undefined)
+            if (Object.values(payload).every(v => v === undefined)) {
+                // log(`[Avatar] Config vacía o formato desconocido para ${contextLabel}`, 'info');
+                return null;
+            }
+
+            if (dryRun) {
+                // log(`[Avatar] Detectado para ${contextLabel}: ${JSON.stringify(payload)}`, 'info');
+                return 'dry-run-avatar-id';
+            }
+
+            const { data, error } = await sb.from('avatar_configs').insert(payload).select('id').single();
+            if (error) {
+                log("Error insertando avatar: " + error.message, 'error');
+                return null;
+            }
+            return data.id;
+        }
+
+        async function migrateProfile(user, dryRun) {
+            log(`Migrando perfil... ${user.uid}`);
+
+            let isAdmin = false;
+            // Handle different admin flag locations
+            if (user.profile && user.profile.admin === true) isAdmin = true;
+            else if (user.admin === true) isAdmin = true;
+
+            if (dryRun) {
+                log(`Perfil: ${user.email} (Admin: ${isAdmin})`);
+                return;
+            }
+
+            // Avatar Config
+            let avatarConfigId = null;
+            // Try determine where avatar config is
+            const avatarParams = user.avatarConfig || user.profile?.avatarConfig || user.avatar;
+            if (avatarParams) {
+                avatarConfigId = await migrateAvatarConfig(avatarParams, dryRun, `User ${user.uid}`);
+            }
+
+            if (dryRun) {
+                log(`[Perfil] ${user.email} (Admin: ${isAdmin}) - Avatar: ${!!avatarParams}`);
+                return;
+            }
+
+            const { error } = await sb.from('profiles').upsert({
+                id: user.uid,
+                email: user.email || null,
+                display_name: user.displayName || user.profile?.displayName || 'Usuario',
+                photo_url: user.photoURL || user.profile?.photoURL || null,
+                is_admin: isAdmin,
+                avatar_config_id: avatarConfigId,
+                updated_at: new Date()
+            }, { onConflict: 'id' });
+
+            if (error) throw new Error("Error perfil Supabase: " + error.message);
+            // log("Perfil migrado OK.");
+        }
+
+        async function migrateTeam(userId, teamId, teamData, dryRun) {
+            log(`Migrando equipo: ${teamData.nombre || 'Sin nombre'} (${teamId})`);
+
+            let sbTeamId = null;
+            if (!dryRun) {
+                const { data, error } = await sb.from('teams').insert({
+                    owner_id: userId,
+                    name: teamData.nombre || 'Equipo Sin Nombre',
+                    coach: teamData.entrenador || null,
+                    club: teamData.club || null,
+                    category: teamData.categoria || null,
+                    city: teamData.ciudad || null,
+                    color: teamData.jerseyColor || teamData.color || null // Handle jerseyColor from JSON
+                }).select().single();
+
+                if (error) {
+                    log(`Error creando equipo: ${error.message}`, 'error');
+                    return;
+                }
+                sbTeamId = data.id;
+                globalTeamMap.set(teamId, sbTeamId);
+                // log(`-> Equipo creado en SB con ID: ${sbTeamId}`);
+            } else {
+                sbTeamId = 'dry-run-id';
+                globalTeamMap.set(teamId, sbTeamId);
+            }
+
+            // Players (Handle 'plantilla' or 'jugadores')
+            const playersData = teamData.plantilla || teamData.jugadores;
+
+            if (playersData) {
+                await migratePlayers(sbTeamId, playersData, dryRun);
+            } else {
+                log(`-> Equipo sin jugadores/plantilla.`);
+            }
+
+            // Competitions
+            if (teamData.competiciones) {
+                await migrateCompetitions(userId, sbTeamId, teamData.competiciones, dryRun);
+            }
+        }
+
+        async function migratePlayers(sbTeamId, playersData, dryRun) {
+            const playerIds = Object.keys(playersData);
+            log(`-> Migrando ${playerIds.length} jugadores...`);
+
+            for (const fid of playerIds) {
+                const p = playersData[fid];
+                let avatarId = null;
+                // Avatar key varies: 'avatarConfig', 'avatar', or nested.
+                const avConfig = p.avatarConfig || p.avatar;
+                if (avConfig) {
+                    avatarId = await migrateAvatarConfig(avConfig, dryRun, `Player ${p.nombre}`);
+                }
+
+                if (!dryRun) {
+                    const { data, error } = await sb.from('players').insert({
+                        team_id: sbTeamId,
+                        name: p.nombre,
+                        number: p.dorsal,
+                        position: p.posicion || null,
+                        height: p.altura || null,
+                        weight: p.peso || null,
+                        birth_date: p.fechaNacimiento || null,
+                        avatar_config_id: avatarId
+                    }).select().single();
+
+                    if (error) log(`Error jugadores: ${error.message}`, 'error');
+                    else {
+                        if (data) globalPlayerMap.set(fid, data.id);
+                    }
+                } else {
+                    globalPlayerMap.set(fid, 'dry-run-player-id');
+                }
+            }
+            // if (!dryRun) log(`-> Jugadores insertados.`);
+        }
+
+        async function migrateCompetitions(userId, sbTeamId, compsData, dryRun) {
+            const compIds = Object.keys(compsData);
+            log(`-> Migrando ${compIds.length} competiciones...`);
+
+            for (const compFid of compIds) {
+                const comp = compsData[compFid];
+                let sbCompId = 'dry-run-comp-id';
+
+                if (!dryRun) {
+                    const { data, error } = await sb.from('competitions').insert({
+                        team_id: sbTeamId,
+                        name: comp.nombre || 'Competición'
+                    }).select().single();
+
+                    if (error) { log(`Error competición: ${error.message}`, 'error'); continue; }
+                    sbCompId = data.id;
+                    globalCompMap.set(compFid, sbCompId);
+                } else {
+                    globalCompMap.set(compFid, sbCompId);
+                }
+
+                // Rivals
+                const rivalsMap = new Map();
+                if (comp.rivales) {
+                    await migrateRivals(sbCompId, comp.rivales, rivalsMap, dryRun);
+                }
+
+                // Matches
+                if (comp.partidos) {
+                    await migrateMatches(userId, sbTeamId, sbCompId, comp.partidos, rivalsMap, dryRun);
+                }
+            }
+        }
+
+        async function migrateRivals(sbCompId, rivalsData, rivalsMap, dryRun) {
+            const rivalIds = Object.keys(rivalsData);
+            // log(`--> Migrando ${rivalIds.length} rivales...`);
+            for (const rId of rivalIds) {
+                const r = rivalsData[rId];
+                if (!dryRun) {
+                    const { data, error } = await sb.from('rivals').insert({
+                        competition_id: sbCompId,
+                        name: r.nombre
+                    }).select().single();
+                    if (!error) rivalsMap.set(r.nombre, data.id);
+                    rivalsMap.set(rId, data.id);
+                }
+            }
+        }
+
+        async function migrateMatches(userId, sbTeamId, sbCompId, matchesData, rivalsMap, dryRun) {
+            const matchIds = Object.keys(matchesData);
+            log(`--> Migrando ${matchIds.length} partidos...`);
+
+            for (const mId of matchIds) {
+                const m = matchesData[mId];
+                await insertMatch(mId, m, sbTeamId, sbCompId, rivalsMap, dryRun);
+            }
+        }
+
+        async function migrateGlobalMatches(matchesData, dryRun) {
+            const matchIds = Object.keys(matchesData);
+            log(`--> Migrando ${matchIds.length} partidos GLOBALES...`);
+
+            for (const mId of matchIds) {
+                const m = matchesData[mId];
+
+                // Try to find the Supabase Team ID
+                let sbTeamId = null;
+                if (m.equipoId && globalTeamMap.has(m.equipoId)) {
+                    sbTeamId = globalTeamMap.get(m.equipoId);
+                }
+
+                if (!sbTeamId) {
+                    log(`Skipping global match ${mId} - Team not found (ID: ${m.equipoId})`, 'info');
+                    continue;
+                }
+
+                // Try to find Supabase Comp ID
+                // Note: partidosGlobales might link to competiciones NOT in the team structure? 
+                // Or links to competiciones we already migrated?
+                // For now, if we can't find comp ID, we create a "Global/Imported" competition or skip?
+                // Let's check if we have it.
+                let sbCompId = null;
+                if (m.competicionId && globalCompMap.has(m.competicionId)) {
+                    sbCompId = globalCompMap.get(m.competicionId);
+                }
+
+                if (!sbCompId) {
+                    // Create a placeholder competition if needed? 
+                    // Or maybe it's fine. For now, try to insert without comp or create ad-hoc?
+                    // Matches table requires competition_id usually? Let's check schema.
+                    // Schema says: competition_id uuid references public.competitions(id) on delete cascade not null
+                    // So we NEED a competition.
+                    if (!dryRun) {
+                        // Find or Create ad-hoc competition for this team
+                        // But we don't want to create duplicates. 
+                        // Let's create a "Partidos Importados" competition for the team?
+                        // Or try to create the competition if we can derive name?
+                        // m.competicionId is useless if we don't have the data.
+                        // Let's look up competition name from somewhere? Not possible here.
+                        // Fallback: Create generic competition for team.
+                        const { data: compData, error: compError } = await sb.from('competitions')
+                            .insert({ team_id: sbTeamId, name: 'Partidos Importados' })
+                            .select().single();
+                        if (!compError) sbCompId = compData.id;
+                    } else {
+                        sbCompId = 'dry-run-comp-id';
+                    }
+                }
+
+                // Rivals Map?
+                // Global matches usually don't have a separate list of rivals, 
+                // they might use rivalId referring to the rival list inside competition... 
+                // BUT we just created a new competition or used on existing.
+                // We'll pass a empty rivals map and rely on m.nombreRival or create generic rival.
+
+                if (sbTeamId && sbCompId) {
+                    await insertMatch(mId, m, sbTeamId, sbCompId, new Map(), dryRun);
+                }
+            }
+        }
+
+        async function insertMatch(mId, m, sbTeamId, sbCompId, rivalsMap, dryRun) {
+            if (globalMatchMap.has(mId)) {
+                log(`Skipping duplicate match integration: ${mId}`, 'info');
+                return;
+            }
+
+            let sbMatchId = 'dry-run-match-id';
+
+            let matchDate = null;
+            if (m.fecha) {
+                matchDate = m.fecha;
+                if (m.hora) matchDate += 'T' + m.hora;
+            }
+            if (!matchDate && m.fechaHora) matchDate = m.fechaHora;
+
+            let rivalId = null;
+            if (m.rivalId && rivalsMap.has(m.rivalId)) {
+                rivalId = rivalsMap.get(m.rivalId);
+            } else if (!dryRun && m.nombreRival) {
+                // Try to find if rival exists in this competition by name
+                // (omitted for speed, just insert or leave null if not critical?)
+                // Better to create one if possible.
+                // let's create a rival on the fly?
+                if (sbCompId && m.nombreRival) {
+                    const { data: rData, error: rError } = await sb.from('rivals')
+                        .insert({ competition_id: sbCompId, name: m.nombreRival })
+                        .select().single();
+                    if (!rError) rivalId = rData.id;
+                }
+            }
+
+            if (!dryRun) {
+                const { data, error } = await sb.from('matches').insert({
+                    competition_id: sbCompId,
+                    team_id: sbTeamId,
+                    rival_id: rivalId,
+                    rival_name: m.nombreRival || m.rival || 'Rival',
+                    date: matchDate,
+                    location: m.lugar || m.pabellon,
+                    is_local: (m.esLocal !== false),
+                    state: m.estado || 'scheduled',
+                    match_config: m.configuracion || '4x10',
+                    team_score: m.puntosEquipo || 0,
+                    rival_score: m.puntosRival || 0,
+                    chronicle: m.cronica || null,
+                    live_state: m
+                }).select().single();
+
+                if (error) {
+                    log(`Error partido ${mId}: ${error.message}`, 'error');
+                    return;
+                }
+                sbMatchId = data.id;
+            }
+
+            globalMatchMap.set(mId, sbMatchId);
+
+            // Migrate Match Stats
+            await migrateMatchStats(sbMatchId, m, dryRun);
+
+            if (m.eventos) {
+                await migrateEvents(sbMatchId, m.eventos, dryRun);
+            }
+        }
+
+        async function migrateMatchStats(sbMatchId, matchData, dryRun) {
+            if (dryRun) return;
+
+            const statsMap = matchData.estadisticasJugadores || {};
+            const roster = matchData.convocados || {};
+            // Also need to check if 'jugadores' or 'plantilla' keys are used inside match? 
+            // Usually 'convocados' keys are Firebase UIDs.
+
+            const rosterIds = Object.keys(roster);
+            const statsPayload = [];
+            const rostersPayload = [];
+
+            for (const fid of rosterIds) {
+                // Resolve Supabase Player ID
+                let sbPlayerId = null;
+                if (globalPlayerMap.has(fid)) {
+                    sbPlayerId = globalPlayerMap.get(fid);
+                }
+
+                if (!sbPlayerId) continue; // Skip unknown players
+
+                const s = statsMap[fid] || {};
+                const playerInfo = roster[fid] || {};
+
+                statsPayload.push({
+                    match_id: sbMatchId,
+                    player_id: sbPlayerId,
+                    dorsal: playerInfo.dorsal || null, // Ensure dorsal is captured
+                    points: s.puntos || 0,
+                    rebounds: s.rebotes || 0,
+                    asistencias: s.asistencias || 0,
+                    robos: s.robos || 0,
+                    tapones: s.tapones || 0,
+                    faltas: s.faltas || 0,
+                    valoracion: 0
+                });
+
+                rostersPayload.push({
+                    match_id: sbMatchId,
+                    player_id: sbPlayerId
+                });
+            }
+
+            if (statsPayload.length > 0) {
+                const { error: statsError } = await sb.from('match_player_stats').insert(statsPayload);
+                if (statsError) log(`Error stats partido: ${statsError.message}`, 'error');
+            }
+
+            if (rostersPayload.length > 0) {
+                const { error: rosterError } = await sb.from('match_rosters').insert(rostersPayload);
+                if (rosterError) log(`Error convocados partido: ${rosterError.message}`, 'error');
+            }
+        }
+
+        async function migrateEvents(sbMatchId, eventsData, dryRun) {
+            if (dryRun) return;
+            const eventKeys = Object.keys(eventsData);
+            const eventsPayload = [];
+
+            for (const k of eventKeys) {
+                const ev = eventsData[k];
+                let playerId = null;
+
+                // Try resolve player
+                if (ev.jugadorId && globalPlayerMap.has(ev.jugadorId)) {
+                    playerId = globalPlayerMap.get(ev.jugadorId);
+                }
+
+                eventsPayload.push({
+                    match_id: sbMatchId,
+                    event_type_id: ev.tipo,
+                    player_id: playerId,
+                    quarter: ev.cuarto || 1,
+                    timestamp: ev.tiempoSegundos || 0,
+                    value: ev.cantidad || (ev.valor || 0),
+                    properties: ev
+                });
+            }
+
+            if (eventsPayload.length > 0) {
+                const { error } = await sb.from('match_events').insert(eventsPayload);
+                if (error) log(`Error insertando eventos partido: ${error.message}`, 'error');
+            }
+        }
+
+        async function migrateMessages(messagesData, dryRun) {
+            if (!messagesData) return;
+            const messageIds = Object.keys(messagesData);
+            log(`--> Migrando ${messageIds.length} mensajes...`);
+
+            if (dryRun) return;
+
+            const messagesPayload = messageIds.map(k => {
+                const msg = messagesData[k];
+                return {
+                    id: k, // Store original ID if you want or generate new. 
+                    // Schema usually expects TEXT or UUID. If TEXT, we can reuse. 
+                    name: msg.name || 'Anónimo',
+                    email: msg.email || null,
+                    phone: msg.phone || null,
+                    message: msg.message || '',
+                    timestamp: msg.timestamp || new Date().toISOString(),
+                    read: msg.read || false,
+                    archived: msg.archived || false
+                };
+            });
+
+            const { error } = await sb.from('contact_messages').insert(messagesPayload);
+            if (error) log(`Error insertando mensajes: ${error.message}`, 'error');
+            else log(`Mensajes insertados correctamente.`);
+        }
+
+    </script>
+</body>
+
+</html>

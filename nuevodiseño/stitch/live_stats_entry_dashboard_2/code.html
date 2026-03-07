@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Simple Stats Entry (Two-Tap)</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ff6b00","primary-dark": "#e65100",
+                        "primary-light": "#ff9e40",
+                        "background-dark": "#0f172a",
+                        "surface-dark": "#1e293b",
+                        "surface-highlight": "#334155",
+                        "rival": "#ef4444",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                    },
+                    gridTemplateRows: {
+                        'layout': 'auto 1fr auto',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            height: 100dvh;
+            overflow: hidden;
+            touch-action: manipulation;}.no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-dark font-display text-white flex flex-col h-screen overflow-hidden selection:bg-primary selection:text-white">
+<header class="flex-none bg-surface-dark border-b border-slate-700/50 px-3 py-2 z-20 shadow-md">
+<div class="flex items-center justify-between gap-2">
+<div class="flex flex-col items-center w-16">
+<span class="text-xs text-primary font-bold uppercase tracking-wider">Us</span>
+<span class="text-2xl font-black text-white leading-none">42</span>
+</div>
+<div class="flex-1 flex flex-col items-center justify-center bg-background-dark/50 rounded px-2 py-1 border border-slate-700/50">
+<div class="flex items-center gap-2 mb-0.5">
+<div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+<span class="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Live Sync</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-[10px] text-slate-400 font-bold">P2</span>
+<span class="text-xl font-mono font-bold tracking-tight text-white leading-none">04:23</span>
+</div>
+</div>
+<div class="flex flex-col items-center w-16">
+<span class="text-xs text-slate-400 font-bold uppercase tracking-wider">Them</span>
+<span class="text-2xl font-black text-slate-300 leading-none">38</span>
+</div>
+<button class="ml-1 p-2 text-slate-400 hover:text-white">
+<span class="material-symbols-outlined !text-[20px]">menu</span>
+</button>
+</div>
+</header>
+<main class="flex-1 flex flex-col gap-2 p-2 h-full overflow-hidden">
+<section class="flex-1 flex flex-col min-h-0 bg-surface-dark/30 rounded-lg p-2 border border-slate-800">
+<h3 class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2 flex justify-between items-center">
+                Select Player
+                <span class="text-primary text-[10px]">On Court: 5</span>
+</h3>
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-2 h-full">
+<button class="relative bg-primary text-white border-2 border-primary-light rounded-xl flex flex-col items-center justify-center p-2 shadow-lg shadow-primary/20 transition-all active:scale-95 group">
+<div class="absolute top-2 right-2 w-2 h-2 bg-white rounded-full shadow-sm"></div>
+<span class="text-3xl font-bold mb-1">#12</span>
+<span class="text-lg font-bold leading-tight truncate w-full text-center">Jordan M.</span>
+<span class="text-[10px] opacity-90 mt-1 font-medium bg-black/20 px-2 py-0.5 rounded-full">12 Pts • 2 Fls</span>
+</button>
+<button class="bg-surface-dark hover:bg-surface-highlight border border-slate-700/50 rounded-xl flex flex-col items-center justify-center p-2 text-slate-300 transition-all active:scale-95">
+<span class="text-2xl font-bold mb-1 text-slate-500">#04</span>
+<span class="text-base font-semibold leading-tight truncate w-full text-center">Alex R.</span>
+<span class="text-[10px] text-slate-500 mt-1">8 Pts • 1 Fls</span>
+</button>
+<button class="bg-surface-dark hover:bg-surface-highlight border border-slate-700/50 rounded-xl flex flex-col items-center justify-center p-2 text-slate-300 transition-all active:scale-95">
+<span class="text-2xl font-bold mb-1 text-slate-500">#23</span>
+<span class="text-base font-semibold leading-tight truncate w-full text-center">Marcus T.</span>
+<span class="text-[10px] text-slate-500 mt-1">15 Pts • 3 Fls</span>
+</button>
+<button class="bg-surface-dark hover:bg-surface-highlight border border-slate-700/50 rounded-xl flex flex-col items-center justify-center p-2 text-slate-300 transition-all active:scale-95">
+<span class="text-2xl font-bold mb-1 text-slate-500">#07</span>
+<span class="text-base font-semibold leading-tight truncate w-full text-center">Devin C.</span>
+<span class="text-[10px] text-slate-500 mt-1">4 Pts • 0 Fls</span>
+</button>
+<button class="bg-surface-dark hover:bg-surface-highlight border border-slate-700/50 rounded-xl flex flex-col items-center justify-center p-2 text-slate-300 transition-all active:scale-95">
+<span class="text-2xl font-bold mb-1 text-slate-500">#10</span>
+<span class="text-base font-semibold leading-tight truncate w-full text-center">Juan P.</span>
+<span class="text-[10px] text-slate-500 mt-1">6 Pts • 1 Fls</span>
+</button>
+<button class="bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 border-dashed rounded-xl flex flex-col items-center justify-center p-2 text-slate-400 transition-all active:scale-95">
+<span class="material-symbols-outlined !text-[28px] mb-1">swap_horiz</span>
+<span class="text-xs font-bold uppercase">Subs</span>
+</button>
+</div>
+</section>
+<section class="flex-none pb-1">
+<h3 class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2 px-1">Log Action for #12 Jordan</h3>
+<div class="grid grid-cols-4 gap-2 h-48 sm:h-56">
+<button class="col-span-1 bg-green-600 hover:bg-green-500 active:bg-green-700 text-white rounded-lg flex flex-col items-center justify-center transition-colors shadow-lg shadow-green-900/20">
+<span class="text-2xl font-black">+1</span>
+<span class="text-[10px] font-bold uppercase opacity-80">FT</span>
+</button>
+<button class="col-span-1 bg-green-600 hover:bg-green-500 active:bg-green-700 text-white rounded-lg flex flex-col items-center justify-center transition-colors shadow-lg shadow-green-900/20">
+<span class="text-2xl font-black">+2</span>
+<span class="text-[10px] font-bold uppercase opacity-80">FG</span>
+</button>
+<button class="col-span-1 bg-green-600 hover:bg-green-500 active:bg-green-700 text-white rounded-lg flex flex-col items-center justify-center transition-colors shadow-lg shadow-green-900/20">
+<span class="text-2xl font-black">+3</span>
+<span class="text-[10px] font-bold uppercase opacity-80">3PT</span>
+</button>
+<button class="col-span-1 bg-red-500/10 border border-red-500/50 text-red-500 hover:bg-red-500/20 active:bg-red-500/30 rounded-lg flex flex-col items-center justify-center transition-colors">
+<span class="material-symbols-outlined !text-[28px] mb-1">block</span>
+<span class="text-xs font-black uppercase">Miss</span>
+</button>
+<button class="bg-surface-highlight hover:bg-slate-600 text-white rounded-lg flex flex-col items-center justify-center transition-colors active:scale-95 border border-slate-600">
+<span class="text-lg font-bold">REB</span>
+</button>
+<button class="bg-surface-highlight hover:bg-slate-600 text-white rounded-lg flex flex-col items-center justify-center transition-colors active:scale-95 border border-slate-600">
+<span class="text-lg font-bold">AST</span>
+</button>
+<button class="bg-surface-highlight hover:bg-slate-600 text-white rounded-lg flex flex-col items-center justify-center transition-colors active:scale-95 border border-slate-600">
+<span class="text-lg font-bold">STL</span>
+</button>
+<button class="bg-surface-highlight hover:bg-slate-600 text-white rounded-lg flex flex-col items-center justify-center transition-colors active:scale-95 border border-slate-600">
+<span class="text-lg font-bold">BLK</span>
+</button>
+<button class="col-span-4 bg-orange-500/10 border border-orange-500/50 text-orange-500 hover:bg-orange-500/20 active:bg-orange-500/30 rounded-lg flex items-center justify-center gap-2 h-12 transition-colors">
+<span class="material-symbols-outlined">sports_handball</span>
+<span class="text-sm font-black uppercase tracking-wide">Record Foul (Personal)</span>
+</button>
+</div>
+</section>
+<section class="flex-none bg-slate-900 rounded-lg p-2 border-t-2 border-slate-800">
+<div class="flex items-center justify-between mb-2 px-1">
+<span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Rival Actions (Eagles)</span>
+<span class="text-xs font-bold text-slate-500">Team Fouls: <span class="text-white">4</span></span>
+</div>
+<div class="grid grid-cols-4 gap-2">
+<button class="h-12 bg-slate-800 hover:bg-slate-700 border border-slate-700 active:bg-slate-600 text-slate-300 rounded flex flex-col items-center justify-center active:scale-95 transition-all">
+<span class="text-sm font-bold">+1</span>
+<span class="text-[8px] uppercase font-bold text-slate-500">Opp</span>
+</button>
+<button class="h-12 bg-slate-800 hover:bg-slate-700 border border-slate-700 active:bg-slate-600 text-slate-300 rounded flex flex-col items-center justify-center active:scale-95 transition-all">
+<span class="text-sm font-bold">+2</span>
+<span class="text-[8px] uppercase font-bold text-slate-500">Opp</span>
+</button>
+<button class="h-12 bg-slate-800 hover:bg-slate-700 border border-slate-700 active:bg-slate-600 text-slate-300 rounded flex flex-col items-center justify-center active:scale-95 transition-all">
+<span class="text-sm font-bold">+3</span>
+<span class="text-[8px] uppercase font-bold text-slate-500">Opp</span>
+</button>
+<button class="h-12 bg-red-900/20 hover:bg-red-900/40 border border-red-800/50 active:bg-red-900/50 text-red-400 rounded flex flex-col items-center justify-center active:scale-95 transition-all">
+<span class="text-xs font-bold uppercase">Foul</span>
+<span class="text-[8px] uppercase font-bold text-red-500/70">Opp</span>
+</button>
+</div>
+</section>
+</main>
+<div class="h-safe w-full bg-background-dark"></div>
+<script>
+        // Simple script to handle safe area padding if needed
+        const root = document.documentElement;
+        root.style.setProperty('--safe-area-inset-bottom', 'env(safe-area-inset-bottom)');
+    </script>
+
+</body></html>

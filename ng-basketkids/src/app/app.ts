@@ -3,10 +3,13 @@ import { RouterOutlet, RouterLink, Router, NavigationEnd } from '@angular/router
 import { CommonModule } from '@angular/common';
 import { AuthService } from './core/services/auth.service';
 import { filter } from 'rxjs/operators';
+import { HeaderComponent } from './shared/components/header/header';
+import { BottomNavComponent } from './shared/components/bottom-nav/bottom-nav';
+import { Footer } from './shared/components/footer/footer';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, CommonModule],
+  imports: [RouterOutlet, CommonModule, HeaderComponent, BottomNavComponent, Footer],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -40,18 +43,4 @@ export class App implements OnInit {
     localStorage.setItem('theme', dark ? 'dark' : 'light');
   }
 
-  get userEmail(): string {
-    return this.auth.currentSession?.user?.email ?? '';
-  }
-
-  get userAvatar(): string {
-    const email = this.userEmail;
-    return email
-      ? `https://ui-avatars.com/api/?name=${encodeURIComponent(email)}&background=random&size=50`
-      : '';
-  }
-
-  signOut(): void {
-    this.auth.signOut().then(() => this.router.navigate(['/login']));
-  }
 }

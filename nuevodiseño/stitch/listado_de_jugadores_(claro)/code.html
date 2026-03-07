@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Listado de Jugadores</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#278cf1",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar hiding for horizontal scroll areas */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen font-display">
+<div class="relative flex h-full min-h-screen w-full max-w-[430px] flex-col bg-background-light dark:bg-background-dark overflow-hidden shadow-2xl mx-auto">
+<!-- Header -->
+<header class="sticky top-0 z-20 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+<div class="flex items-center justify-between mb-4">
+<h1 class="text-slate-900 dark:text-slate-100 text-2xl font-bold tracking-tight">Jugadores</h1>
+<button class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-slate-900 dark:text-slate-100 transition-colors">
+<span class="material-symbols-outlined">tune</span>
+</button>
+</div>
+<!-- Search Bar -->
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-3 border-none rounded-xl bg-white dark:bg-gray-800 text-slate-900 dark:text-slate-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm text-sm" placeholder="Buscar nombre o dorsal..." type="text"/>
+</div>
+</header>
+<!-- Filters (Horizontal Scroll) -->
+<div class="flex-none px-5 py-3 overflow-x-auto no-scrollbar space-x-3 bg-background-light dark:bg-background-dark">
+<button class="px-5 py-2 rounded-full bg-primary text-white text-sm font-medium shadow-md shadow-primary/20 whitespace-nowrap">
+                Todos
+            </button>
+<button class="px-5 py-2 rounded-full bg-white dark:bg-gray-800 text-slate-600 dark:text-slate-300 border border-gray-200 dark:border-gray-700 hover:border-primary/50 text-sm font-medium shadow-sm whitespace-nowrap transition-colors">
+                Senior A
+            </button>
+<button class="px-5 py-2 rounded-full bg-white dark:bg-gray-800 text-slate-600 dark:text-slate-300 border border-gray-200 dark:border-gray-700 hover:border-primary/50 text-sm font-medium shadow-sm whitespace-nowrap transition-colors">
+                Cadete B
+            </button>
+<button class="px-5 py-2 rounded-full bg-white dark:bg-gray-800 text-slate-600 dark:text-slate-300 border border-gray-200 dark:border-gray-700 hover:border-primary/50 text-sm font-medium shadow-sm whitespace-nowrap transition-colors">
+                Infantil A
+            </button>
+</div>
+<!-- Player List Content -->
+<div class="flex-1 overflow-y-auto px-5 pb-24 pt-2 space-y-3">
+<!-- Section Title -->
+<div class="flex items-center justify-between pt-2 pb-1">
+<span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Plantilla (12)</span>
+<span class="text-xs font-medium text-primary cursor-pointer">Ver stats</span>
+</div>
+<!-- Player Card 1 -->
+<div class="group relative flex items-center gap-4 p-3 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-transparent hover:border-primary/20 transition-all active:scale-[0.99]">
+<div class="relative shrink-0">
+<img alt="Portrait of a male basketball player" class="h-16 w-16 rounded-full object-cover border-2 border-white dark:border-gray-700 shadow-sm" data-alt="Portrait of a male basketball player" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTbY_SBmWtKw0w0LILa1SVeYLYJHSIZgYEdeRrqPNaAwOVbFAo0kM1wH7ozeBncWKB16mwseGTry2ObPT8r9jcPtl7rTbV6hYxU-VKCQV81LjyYHlAfK8j3RswMUgzcXL0l6UemDPuPhlHpgHkgyNKvPyHnlIW4tMDZcghnbVPm_qgkH_kR9hzkSjIr_6hK-TgdCr4TVULghBQ2Fzk0MbCrIl5NIxwHF5NNINtZiJy80y8K6AsJr6dkPSh7mNZgnMgLjMJkJrURD3t"/>
+<div class="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-green-500 text-white border-2 border-white dark:border-gray-800 shadow-sm" title="Disponible">
+<span class="material-symbols-outlined text-[14px] font-bold">check</span>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-slate-900 dark:text-slate-100 font-bold text-base truncate">Marc Gasol</p>
+<p class="text-primary text-xs font-medium uppercase tracking-wide">Pívot</p>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-2xl font-bold text-gray-200 dark:text-gray-700 leading-none tabular-nums group-hover:text-primary/20 transition-colors">33</span>
+</div>
+</div>
+<div class="mt-2 flex items-center gap-3">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-gray-400 text-[14px]">height</span>
+<span class="text-xs text-gray-500">2.11m</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-gray-400 text-[14px]">scale</span>
+<span class="text-xs text-gray-500">110kg</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Player Card 2 -->
+<div class="group relative flex items-center gap-4 p-3 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-transparent hover:border-primary/20 transition-all active:scale-[0.99]">
+<div class="relative shrink-0">
+<img alt="Portrait of a male basketball player with beard" class="h-16 w-16 rounded-full object-cover border-2 border-white dark:border-gray-700 shadow-sm" data-alt="Portrait of a male basketball player with beard" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCW7ZVKgrDWDud3cPYyhaQCegj2trmK9CysTrd3jW7VYCIFDgvs9wi_fBAMzdnzk00fb0ZNqyJLLv6ywGHd5bu3mGo2BbwkTPGfNznSU3Rya8hcnfhilu6omRy3nf_gNH1RHmeG-uejhUFymLz4_zSXv-PKgxA7WSMdpZk9D9QGOL3WI7I4eDeIEV0AooTOZ7EIeWCxWwOs6RsWmKFFFhRG6iCvvnbGMEDLpoNQwf3yShwdk0xGGBHIN67cyo6fSSsXgM3EQXn1Kdn4"/>
+<div class="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-yellow-500 text-white border-2 border-white dark:border-gray-800 shadow-sm" title="Duda">
+<span class="material-symbols-outlined text-[14px] font-bold">priority_high</span>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-slate-900 dark:text-slate-100 font-bold text-base truncate">Ricky Rubio</p>
+<p class="text-primary text-xs font-medium uppercase tracking-wide">Base</p>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-2xl font-bold text-gray-200 dark:text-gray-700 leading-none tabular-nums group-hover:text-primary/20 transition-colors">09</span>
+</div>
+</div>
+<div class="mt-2 flex items-center gap-3">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-gray-400 text-[14px]">height</span>
+<span class="text-xs text-gray-500">1.88m</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-gray-400 text-[14px]">scale</span>
+<span class="text-xs text-gray-500">86kg</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Player Card 3 -->
+<div class="group relative flex items-center gap-4 p-3 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-transparent hover:border-primary/20 transition-all active:scale-[0.99]">
+<div class="relative shrink-0">
+<img alt="Portrait of a young male basketball player" class="h-16 w-16 rounded-full object-cover border-2 border-white dark:border-gray-700 shadow-sm" data-alt="Portrait of a young male basketball player" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKqMPfh-dNHge6Em999BzCpp916_OcefK8PiVGrUgtOLAzoADPYHCNjyDyZK5DufndjqFZL11YGBnisNd1prmolBQTs2Driq_lEqVilmwBECVXtI3_6QcXJ_6kdJZBXsSI6VTL5N8xeyB6seKnmO7g30HEljptGAjxKn_mNO1bGv6bS87RdOYCF6nQSfgTP4QrFa7UYyupLJlR-Po6-cDZoBICdOklli_o7OLogzJ5wOKbTxC9GxlGvm52eQxqbeJVAvzbGDBpvP1v"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-slate-900 dark:text-slate-100 font-bold text-base truncate">Pau Ribas</p>
+<p class="text-primary text-xs font-medium uppercase tracking-wide">Escolta</p>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-2xl font-bold text-gray-200 dark:text-gray-700 leading-none tabular-nums group-hover:text-primary/20 transition-colors">05</span>
+</div>
+</div>
+<div class="mt-2 flex items-center gap-3">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-gray-400 text-[14px]">height</span>
+<span class="text-xs text-gray-500">1.96m</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-gray-400 text-[14px]">scale</span>
+<span class="text-xs text-gray-500">95kg</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Player Card 4 -->
+<div class="group relative flex items-center gap-4 p-3 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-transparent hover:border-primary/20 transition-all active:scale-[0.99]">
+<div class="relative shrink-0">
+<div class="h-16 w-16 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400 border-2 border-white dark:border-gray-700 shadow-sm">
+<span class="material-symbols-outlined text-3xl">person</span>
+</div>
+<div class="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white border-2 border-white dark:border-gray-800 shadow-sm" title="Lesionado">
+<span class="material-symbols-outlined text-[14px] font-bold">medical_services</span>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-slate-900 dark:text-slate-100 font-bold text-base truncate">Juancho G.</p>
+<p class="text-primary text-xs font-medium uppercase tracking-wide">Alero</p>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-2xl font-bold text-gray-200 dark:text-gray-700 leading-none tabular-nums group-hover:text-primary/20 transition-colors">41</span>
+</div>
+</div>
+<div class="mt-2 flex items-center gap-3">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-gray-400 text-[14px]">height</span>
+<span class="text-xs text-gray-500">2.06m</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-gray-400 text-[14px]">scale</span>
+<span class="text-xs text-gray-500">97kg</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Player Card 5 -->
+<div class="group relative flex items-center gap-4 p-3 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-transparent hover:border-primary/20 transition-all active:scale-[0.99]">
+<div class="relative shrink-0">
+<img alt="Portrait of a focused male basketball player" class="h-16 w-16 rounded-full object-cover border-2 border-white dark:border-gray-700 shadow-sm" data-alt="Portrait of a focused male basketball player" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCueFaP4biGxug8UdCds2mJKV7PPOZCEmbEwfZaiVWWctyZxc1rGmPSO2BBuyjlh27GXh9vt-bigVD3rui-t4OivIj5tCREML63O59eM0Topy5QIBFu9b3NaHUyVq2SVXUCRyJ2UXalZ4UgDyPUCwldBe5Di53HvAFK2yMLzZDt8Iwz7a9wDRNn3KlVYyDA5jGIW4S0paDyPzRUKnKILVgkaRJQeGJeE2EpLvDK_menLA0TZtTQB3ReiX9eEKYNbSigBaZd6-UjfNH8"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-slate-900 dark:text-slate-100 font-bold text-base truncate">Sergio Llull</p>
+<p class="text-primary text-xs font-medium uppercase tracking-wide">Escolta</p>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-2xl font-bold text-gray-200 dark:text-gray-700 leading-none tabular-nums group-hover:text-primary/20 transition-colors">23</span>
+</div>
+</div>
+<div class="mt-2 flex items-center gap-3">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-gray-400 text-[14px]">height</span>
+<span class="text-xs text-gray-500">1.90m</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-gray-400 text-[14px]">scale</span>
+<span class="text-xs text-gray-500">94kg</span>
+</div>
+</div>
+</div>
+</div>
+<!-- End of list padding -->
+<div class="h-8"></div>
+</div>
+<!-- Floating Action Button -->
+<button class="absolute bottom-24 right-5 h-14 w-14 bg-primary rounded-full shadow-lg shadow-primary/40 flex items-center justify-center text-white hover:scale-105 active:scale-95 transition-transform z-30">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+<!-- Bottom Navigation Bar (Fixed) -->
+<div class="absolute bottom-0 w-full z-40">
+<div class="flex gap-2 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 pb-6 pt-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<div class="flex h-6 items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">home</span>
+</div>
+<p class="text-xs font-medium leading-normal tracking-[0.015em]">Inicio</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<div class="flex h-6 items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">groups</span>
+</div>
+<p class="text-xs font-medium leading-normal tracking-[0.015em]">Equipos</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 rounded-full text-primary" href="#">
+<div class="flex h-6 items-center justify-center">
+<span class="material-symbols-outlined text-[24px] font-variation-settings-'FILL'1">person_search</span>
+</div>
+<p class="text-xs font-medium leading-normal tracking-[0.015em]">Jugadores</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<div class="flex h-6 items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+</div>
+<p class="text-xs font-medium leading-normal tracking-[0.015em]">Ajustes</p>
+</a>
+</div>
+</div>
+</div>
+</body></html>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Gestión de Usuarios - Baloncesto</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#278cf1",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Lexend', sans-serif;
+        }
+        /* Custom scrollbar hiding for horizontal scroll */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light text-slate-900 antialiased selection:bg-primary/20">
+<div class="relative flex min-h-screen w-full flex-col overflow-hidden mx-auto max-w-md bg-white shadow-2xl">
+<!-- Header / Navigation -->
+<header class="sticky top-0 z-10 bg-white/90 backdrop-blur-md border-b border-slate-100">
+<!-- Status Bar Placeholder (iOS Safe Area) -->
+<div class="h-12 w-full"></div>
+<div class="flex items-center justify-between px-4 pb-4 pt-2">
+<h1 class="text-2xl font-bold tracking-tight text-slate-900">Gestión de Usuarios</h1>
+<button class="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors hover:bg-primary/20 active:scale-95">
+<span class="material-symbols-outlined text-[24px]">add</span>
+</button>
+</div>
+<!-- Search Bar -->
+<div class="px-4 pb-3">
+<div class="relative flex items-center">
+<span class="absolute left-3 text-slate-400 material-symbols-outlined text-[20px]">search</span>
+<input class="w-full rounded-xl border-0 bg-slate-100 py-3 pl-10 pr-4 text-sm font-medium text-slate-900 placeholder:text-slate-500 focus:ring-2 focus:ring-primary/50" placeholder="Buscar nombre o email" type="text"/>
+</div>
+</div>
+<!-- Filter Chips -->
+<div class="flex gap-2 overflow-x-auto px-4 pb-4 no-scrollbar">
+<button class="flex shrink-0 items-center rounded-full bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm shadow-primary/30">
+                    Todos
+                </button>
+<button class="flex shrink-0 items-center gap-1.5 rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-200">
+<span class="material-symbols-outlined text-[18px]">security</span>
+                    Admin
+                </button>
+<button class="flex shrink-0 items-center gap-1.5 rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-200">
+<span class="material-symbols-outlined text-[18px]">edit_note</span>
+                    Anotador
+                </button>
+<button class="flex shrink-0 items-center gap-1.5 rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-200">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+                    Espectador
+                </button>
+</div>
+</header>
+<!-- Main Content List -->
+<main class="flex-1 overflow-y-auto bg-slate-50 p-4 pb-24">
+<div class="flex flex-col gap-3">
+<!-- Section Header -->
+<div class="flex items-center justify-between px-1">
+<h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">Personal Técnico</h2>
+<span class="text-xs font-medium text-primary">3 Activos</span>
+</div>
+<!-- User Card 1: Admin (Online) -->
+<div class="group relative flex items-center gap-4 rounded-2xl bg-white p-3 shadow-sm transition-all hover:shadow-md border border-slate-100/50">
+<div class="relative shrink-0">
+<div class="h-14 w-14 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 p-1">
+<img alt="Foto de perfil de administrador masculino" class="h-full w-full rounded-full object-cover" data-alt="Portrait of a male administrator" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBeDgfftbKNpBlInHlTcvWoMSK-8vrgYWZqCP9X1lwc14wfx56QFXMz6daWyI2y-Ps1LBsRgFXosIzo21Y9DNWi93q5TdQeDMs39fYeNaThZMbeznw8RR6SkT6rqWcR3CSZC1xS-0LxShXJ-cmDuT790SCN2MNMpB6QK4jAhABY1ITyrsspzjj_EX0V2wL83HSDXzU3WBHa9b3UBnKw_nDBoMTNKD8HnyYw9cdb7ym5M8v3Wmjt6lSBjLeWv--POGeOppmr4Gcm4JLQ"/>
+</div>
+<div class="absolute bottom-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-white">
+<div class="h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white"></div>
+</div>
+</div>
+<div class="flex flex-1 flex-col justify-center overflow-hidden">
+<div class="flex items-center gap-2">
+<p class="truncate text-base font-bold text-slate-900">Carlos Rodríguez</p>
+<span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-blue-600 ring-1 ring-inset ring-blue-500/20">Admin</span>
+</div>
+<p class="truncate text-sm text-slate-500">carlos.r@claro.com</p>
+</div>
+<button class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-600">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<!-- User Card 2: Scorer (Offline) -->
+<div class="group relative flex items-center gap-4 rounded-2xl bg-white p-3 shadow-sm transition-all hover:shadow-md border border-slate-100/50">
+<div class="relative shrink-0">
+<div class="h-14 w-14 rounded-full bg-gradient-to-br from-orange-100 to-orange-50 p-1">
+<img alt="Foto de perfil de anotadora femenina" class="h-full w-full rounded-full object-cover" data-alt="Portrait of a female scorer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAFZDXaP6VjY2ptuDoymFg1sSsylVVKA3GmAybHarogRT0FXbqLRFQmCr1Wzt8WRSg4kPoutY8PEWM3h8x1VB3-mA-nTBmES5OtpUR5Nz93XDN66AR0QV60k_cVPHXrqW9CD0JyMeHCE7yNUcgPldR-PiKGTYO8D1hh8csUGqScFyai3IQMaZwnsl9AtSpAOOhHYQuoGA7ayPdvqWX8jcUhW2hWV-LY-hjgL7I33YKzHWXvToSUhxZ2amr3L6bd-F1CYldKMyRYvkY5"/>
+</div>
+<div class="absolute bottom-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-white">
+<div class="h-2.5 w-2.5 rounded-full bg-slate-300 ring-2 ring-white"></div>
+</div>
+</div>
+<div class="flex flex-1 flex-col justify-center overflow-hidden">
+<div class="flex items-center gap-2">
+<p class="truncate text-base font-bold text-slate-900">Ana García</p>
+<span class="inline-flex items-center rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-orange-600 ring-1 ring-inset ring-orange-500/20">Anotador</span>
+</div>
+<p class="truncate text-sm text-slate-500">ana.basket@gmail.com</p>
+</div>
+<button class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-600">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<!-- User Card 3: Scorer (Online) -->
+<div class="group relative flex items-center gap-4 rounded-2xl bg-white p-3 shadow-sm transition-all hover:shadow-md border border-slate-100/50">
+<div class="relative shrink-0">
+<div class="h-14 w-14 rounded-full bg-gradient-to-br from-orange-100 to-orange-50 p-1">
+<div class="flex h-full w-full items-center justify-center rounded-full bg-orange-100 text-orange-600 font-bold text-lg">
+                                JD
+                             </div>
+</div>
+<div class="absolute bottom-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-white">
+<div class="h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white"></div>
+</div>
+</div>
+<div class="flex flex-1 flex-col justify-center overflow-hidden">
+<div class="flex items-center gap-2">
+<p class="truncate text-base font-bold text-slate-900">Juan Diego</p>
+<span class="inline-flex items-center rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-orange-600 ring-1 ring-inset ring-orange-500/20">Anotador</span>
+</div>
+<p class="truncate text-sm text-slate-500">jdiego.coach@club.com</p>
+</div>
+<button class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-600">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<!-- Section Header -->
+<div class="mt-4 flex items-center justify-between px-1">
+<h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">Padres y Espectadores</h2>
+</div>
+<!-- User Card 4: Spectator (Online) -->
+<div class="group relative flex items-center gap-4 rounded-2xl bg-white p-3 shadow-sm transition-all hover:shadow-md border border-slate-100/50">
+<div class="relative shrink-0">
+<div class="h-14 w-14 rounded-full bg-slate-100 p-1">
+<img alt="Foto de perfil de espectador masculino" class="h-full w-full rounded-full object-cover grayscale" data-alt="Portrait of a male spectator" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPn2dO2pFfs1j_TWE2ThOvEKlsQfFGBxK4JlQ4ycW7iosDzHiSMSBJo9lEbA8nl5TYuPtXijfbrLNl9yCn38w9n4qFMRR1Q5gXXN1iLk3dkf7wUqwXujOE4mf3gtgaMdUciHFrvF_b_VGmt-oj23jaNcbrgmsDy7-fZs_Hpp3t8eyJ_GLl_zx0e02qgkhnFbBspikcVdVu0YMO-mAxNIGtied_sTrv4rBTBn5zRggyZ8GFbqRlrW_0ypdOfrJOpx9BKYyddTwCXaw5"/>
+</div>
+<div class="absolute bottom-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-white">
+<div class="h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white"></div>
+</div>
+</div>
+<div class="flex flex-1 flex-col justify-center overflow-hidden">
+<div class="flex items-center gap-2">
+<p class="truncate text-base font-bold text-slate-900">Pedro Martinez</p>
+<span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-600 ring-1 ring-inset ring-slate-500/10">Espectador</span>
+</div>
+<p class="truncate text-sm text-slate-500">pmartinez@hotmail.com</p>
+</div>
+<button class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-600">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<!-- User Card 5: Spectator (Offline) -->
+<div class="group relative flex items-center gap-4 rounded-2xl bg-white p-3 shadow-sm transition-all hover:shadow-md border border-slate-100/50 opacity-80">
+<div class="relative shrink-0">
+<div class="h-14 w-14 rounded-full bg-slate-100 p-1">
+<div class="flex h-full w-full items-center justify-center rounded-full bg-slate-200 text-slate-500 font-bold text-lg">
+                                MR
+                            </div>
+</div>
+</div>
+<div class="flex flex-1 flex-col justify-center overflow-hidden">
+<div class="flex items-center gap-2">
+<p class="truncate text-base font-bold text-slate-900">Marta Ruiz</p>
+<span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-600 ring-1 ring-inset ring-slate-500/10">Espectador</span>
+</div>
+<p class="truncate text-sm text-slate-500">marta.ruiz88@gmail.com</p>
+</div>
+<button class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-600">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<!-- User Card 6: Spectator (Offline) -->
+<div class="group relative flex items-center gap-4 rounded-2xl bg-white p-3 shadow-sm transition-all hover:shadow-md border border-slate-100/50 opacity-80">
+<div class="relative shrink-0">
+<div class="h-14 w-14 rounded-full bg-slate-100 p-1">
+<img alt="Foto de perfil de espectadora femenina" class="h-full w-full rounded-full object-cover grayscale" data-alt="Portrait of a female spectator" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBkkWhZ6Y8MzGjNZGR0xLcvY2giIbQJ3L8i2BwYWj6-PJfiSQwNEM5WRT0BCpI137yZ594OyIQ1mPsIBFbyM87ByVYptv4JxcXHhrB8usVcFQhXoVmBD3tM1fFw_KwuVtwnuIl3ZKtEoPXMQF3qiUid-c-yomCauSwp4FO3S7kuPCQKiNFJSzuUia5U1f9YgL-ggL6rD7lZXF88OXB7_ZqfQKgCbqG6GfvGRUkJZafuOZLFYvmX5KOgcUBptIPMffyI5QZAYab4A88i"/>
+</div>
+</div>
+<div class="flex flex-1 flex-col justify-center overflow-hidden">
+<div class="flex items-center gap-2">
+<p class="truncate text-base font-bold text-slate-900">Lucía Fernández</p>
+<span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-600 ring-1 ring-inset ring-slate-500/10">Espectador</span>
+</div>
+<p class="truncate text-sm text-slate-500">lucia.fer@outlook.com</p>
+</div>
+<button class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-600">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<div class="absolute bottom-0 w-full border-t border-slate-200 bg-white">
+<div class="flex items-center justify-between px-6 pb-6 pt-3">
+<a class="group flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">home</span>
+<span class="text-[10px] font-medium">Inicio</span>
+</a>
+<a class="group flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">sports_basketball</span>
+<span class="text-[10px] font-medium">Partidos</span>
+</a>
+<a class="group flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined fill-1 text-[24px]">group</span>
+<span class="text-[10px] font-medium">Usuarios</span>
+</a>
+<a class="group flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">settings</span>
+<span class="text-[10px] font-medium">Ajustes</span>
+</a>
+</div>
+</div>
+</div>
+</body></html>

@@ -27,7 +27,7 @@ export class Login {
 
     errorMsg = '';
     loading = false;
-    activeTab: 'login' | 'register' = 'login';
+    activeTab: 'login' | 'register' | 'forgot' = 'login';
 
     constructor(private auth: AuthService, private router: Router) {
         if (this.auth.isLoggedIn()) {

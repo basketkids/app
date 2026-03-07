@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Live Game View</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#278cf1",
+                        "primary-dark": "#1a6bbd",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "surface-dark": "#1e2936",
+                        "surface-light": "#ffffff",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Lexend', sans-serif;
+        }
+        /* Custom scrollbar for stats table if needed */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display antialiased">
+<!-- Top Navigation / Header -->
+<div class="sticky top-0 z-50 bg-background-light dark:bg-background-dark border-b border-slate-200 dark:border-slate-800">
+<div class="flex items-center p-4 pb-2 justify-between max-w-md mx-auto">
+<button class="text-slate-900 dark:text-white flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-[24px]">arrow_back</span>
+</button>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-10">
+                Live Game
+            </h2>
+<div class="w-2"></div> <!-- Spacer for centering -->
+</div>
+<!-- Scoreboard Card -->
+<div class="px-4 pb-4 max-w-md mx-auto">
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 p-4 relative overflow-hidden">
+<!-- Live Pulse Indicator -->
+<div class="absolute top-3 right-3 flex items-center gap-1.5 bg-red-500/10 dark:bg-red-500/20 px-2 py-0.5 rounded-full border border-red-500/20">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+</span>
+<span class="text-[10px] font-bold text-red-600 dark:text-red-400 uppercase tracking-wider">Live</span>
+</div>
+<!-- Teams & Score -->
+<div class="flex items-center justify-between pt-2">
+<!-- Home Team -->
+<div class="flex flex-col items-center flex-1">
+<div class="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mb-2 text-primary">
+<span class="material-symbols-outlined text-2xl">sports_basketball</span>
+</div>
+<h3 class="text-sm font-semibold text-slate-600 dark:text-slate-400">HOME</h3>
+<p class="text-3xl font-bold text-slate-900 dark:text-white">45</p>
+</div>
+<!-- Clock & Period -->
+<div class="flex flex-col items-center justify-center w-24">
+<div class="text-xs font-medium text-slate-500 dark:text-slate-500 uppercase tracking-widest mb-1">Period</div>
+<div class="bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-md mb-2">
+<span class="text-lg font-bold text-slate-800 dark:text-slate-200">Q3</span>
+</div>
+<p class="text-2xl font-mono font-bold text-primary tracking-tight">04:21</p>
+</div>
+<!-- Guest Team -->
+<div class="flex flex-col items-center flex-1">
+<div class="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center mb-2 text-slate-500 dark:text-slate-400">
+<span class="material-symbols-outlined text-2xl">sports_basketball</span>
+</div>
+<h3 class="text-sm font-semibold text-slate-600 dark:text-slate-400">GUEST</h3>
+<p class="text-3xl font-bold text-slate-900 dark:text-white">32</p>
+</div>
+</div>
+<!-- Possession Arrow -->
+<div class="flex justify-center mt-3">
+<span class="material-symbols-outlined text-primary text-xl">arrow_left_alt</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Content Scroll Area -->
+<main class="flex-1 overflow-y-auto max-w-md mx-auto w-full pb-6">
+<!-- Live Feed Section -->
+<section class="mt-4 px-4">
+<div class="flex items-center justify-between mb-3">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">Live Feed</h3>
+<span class="text-xs text-primary font-medium cursor-pointer hover:underline">View All</span>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm">
+<div class="grid grid-cols-[32px_1fr] gap-x-3">
+<!-- Item 1 -->
+<div class="flex flex-col items-center">
+<div class="bg-green-500/20 text-green-600 dark:text-green-400 w-8 h-8 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+</div>
+<div class="w-0.5 bg-slate-200 dark:bg-slate-700 h-full mt-1"></div>
+</div>
+<div class="pb-4">
+<div class="flex justify-between items-start">
+<p class="text-sm font-semibold text-slate-900 dark:text-white leading-tight">Juan made a 3-pointer!</p>
+<span class="text-xs text-slate-500 dark:text-slate-400 ml-2 whitespace-nowrap">10:42</span>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Assist by #5 Marcus</p>
+</div>
+<!-- Item 2 -->
+<div class="flex flex-col items-center">
+<div class="bg-amber-500/20 text-amber-600 dark:text-amber-400 w-8 h-8 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">pause</span>
+</div>
+<div class="w-0.5 bg-slate-200 dark:bg-slate-700 h-full mt-1"></div>
+</div>
+<div class="pb-4">
+<div class="flex justify-between items-start">
+<p class="text-sm font-semibold text-slate-900 dark:text-white leading-tight">Timeout - Home Team</p>
+<span class="text-xs text-slate-500 dark:text-slate-400 ml-2 whitespace-nowrap">09:15</span>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="flex flex-col items-center">
+<div class="bg-red-500/20 text-red-600 dark:text-red-400 w-8 h-8 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">sports</span>
+</div>
+<!-- Last item line logic usually hidden or different, leaving as is for continuous feel -->
+</div>
+<div class="pb-0">
+<div class="flex justify-between items-start">
+<p class="text-sm font-semibold text-slate-900 dark:text-white leading-tight">Marcus foul (P1)</p>
+<span class="text-xs text-slate-500 dark:text-slate-400 ml-2 whitespace-nowrap">08:30</span>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Guest team bonus</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Home Team Stats Section -->
+<section class="mt-6 px-4">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-3">Home Team Stats</h3>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+<!-- Table Header -->
+<div class="grid grid-cols-[40px_1fr_40px_40px_40px] gap-2 p-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+<div class="text-center">#</div>
+<div>Player</div>
+<div class="text-center">PTS</div>
+<div class="text-center">REB</div>
+<div class="text-center">PF</div>
+</div>
+<!-- Player Row 1 (Highlight) -->
+<div class="grid grid-cols-[40px_1fr_40px_40px_40px] gap-2 p-3 border-b border-slate-200 dark:border-slate-700 items-center hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+<div class="text-center font-mono text-slate-500 dark:text-slate-400">23</div>
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-slate-900 dark:text-white">J. Smith</span>
+<span class="text-[10px] text-green-500 font-medium">ON COURT</span>
+</div>
+<div class="text-center font-bold text-primary">18</div>
+<div class="text-center text-slate-600 dark:text-slate-300">5</div>
+<div class="text-center text-slate-600 dark:text-slate-300">1</div>
+</div>
+<!-- Player Row 2 -->
+<div class="grid grid-cols-[40px_1fr_40px_40px_40px] gap-2 p-3 border-b border-slate-200 dark:border-slate-700 items-center hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+<div class="text-center font-mono text-slate-500 dark:text-slate-400">05</div>
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-slate-900 dark:text-white">M. Johnson</span>
+<span class="text-[10px] text-green-500 font-medium">ON COURT</span>
+</div>
+<div class="text-center font-bold text-slate-900 dark:text-white">12</div>
+<div class="text-center text-slate-600 dark:text-slate-300">2</div>
+<div class="text-center text-red-500 font-medium">3</div> <!-- High foul count warning color -->
+</div>
+<!-- Player Row 3 -->
+<div class="grid grid-cols-[40px_1fr_40px_40px_40px] gap-2 p-3 border-b border-slate-200 dark:border-slate-700 items-center hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+<div class="text-center font-mono text-slate-500 dark:text-slate-400">11</div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-900 dark:text-white">D. Williams</span>
+<span class="text-[10px] text-slate-500">BENCH</span>
+</div>
+<div class="text-center font-bold text-slate-900 dark:text-white">8</div>
+<div class="text-center text-slate-600 dark:text-slate-300">7</div>
+<div class="text-center text-slate-600 dark:text-slate-300">2</div>
+</div>
+<!-- Player Row 4 -->
+<div class="grid grid-cols-[40px_1fr_40px_40px_40px] gap-2 p-3 border-b border-slate-200 dark:border-slate-700 items-center hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+<div class="text-center font-mono text-slate-500 dark:text-slate-400">03</div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-900 dark:text-white">A. Thompson</span>
+<span class="text-[10px] text-slate-500">BENCH</span>
+</div>
+<div class="text-center font-bold text-slate-900 dark:text-white">4</div>
+<div class="text-center text-slate-600 dark:text-slate-300">1</div>
+<div class="text-center text-slate-600 dark:text-slate-300">0</div>
+</div>
+<!-- Player Row 5 -->
+<div class="grid grid-cols-[40px_1fr_40px_40px_40px] gap-2 p-3 items-center hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+<div class="text-center font-mono text-slate-500 dark:text-slate-400">15</div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-900 dark:text-white">K. Lee</span>
+<span class="text-[10px] text-green-500 font-medium">ON COURT</span>
+</div>
+<div class="text-center font-bold text-slate-900 dark:text-white">2</div>
+<div class="text-center text-slate-600 dark:text-slate-300">3</div>
+<div class="text-center text-slate-600 dark:text-slate-300">1</div>
+</div>
+</div>
+</section>
+<!-- Rival Team Summary -->
+<section class="mt-6 px-4 mb-8">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-3">Guest Team Summary</h3>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm">
+<div class="grid grid-cols-2 gap-4">
+<div class="flex flex-col gap-1 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+<p class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Total Fouls</p>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-amber-500">sports</span>
+<span class="text-xl font-bold text-slate-900 dark:text-white">4</span>
+</div>
+</div>
+<div class="flex flex-col gap-1 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+<p class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Timeouts Left</p>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">timer</span>
+<span class="text-xl font-bold text-slate-900 dark:text-white">2</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Action Bar (Optional but useful for parents) -->
+<div class="sticky bottom-0 bg-surface-light dark:bg-surface-dark border-t border-slate-200 dark:border-slate-800 p-3 flex justify-around items-center max-w-md mx-auto w-full">
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined">scoreboard</span>
+<span class="text-[10px] font-medium">Live</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
+<span class="material-symbols-outlined">bar_chart</span>
+<span class="text-[10px] font-medium">Box Score</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
+<span class="material-symbols-outlined">group</span>
+<span class="text-[10px] font-medium">Roster</span>
+</button>
+</div>
+</body></html>

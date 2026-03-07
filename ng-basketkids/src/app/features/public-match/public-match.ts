@@ -2,20 +2,22 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
-import { Scoreboard } from '../../shared/components/scoreboard/scoreboard';
-import { LiveEvents } from '../../shared/components/live-events/live-events';
-import { StatisticsGrid } from '../../shared/components/statistics-grid/statistics-grid';
+
 import { MatchService } from '../../core/services/match.service';
+import { LiveEvents } from '../../shared/components/live-events/live-events';
+import { Scoreboard } from '../../shared/components/scoreboard/scoreboard';
+import { StatisticsGrid } from '../../shared/components/statistics-grid/statistics-grid';
 import { Match } from '../../core/models/match.model';
 
 @Component({
   selector: 'app-public-match',
   templateUrl: './public-match.html',
   styleUrls: ['./public-match.css'],
-  imports: [CommonModule, Scoreboard, LiveEvents, StatisticsGrid]
+  imports: [CommonModule, LiveEvents, Scoreboard, StatisticsGrid]
 })
 export class PublicMatch implements OnInit, OnDestroy {
   match: Match | null = null;
+  activeTab: 'en-vivo' | 'estadisticas' = 'en-vivo';
   private sub: Subscription = new Subscription();
 
   constructor(

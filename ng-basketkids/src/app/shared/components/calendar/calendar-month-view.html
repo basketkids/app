@@ -1,17 +1,37 @@
-<!-- Day of week headers -->
-<div class="month-header-row">
-    <div *ngFor="let h of headers" class="month-col-header">{{ h }}</div>
-</div>
+<div class="w-full">
+    <!-- Day of week headers -->
+    <div class="grid grid-cols-7 gap-1 mb-2">
+        <div *ngFor="let h of headers" class="text-center py-1">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{{ h }}</span>
+        </div>
+    </div>
 
-<!-- Day cells -->
-<div class="month-grid">
-    <div *ngFor="let day of days" class="month-cell" [class.today]="day.isToday"
-        [class.other-month]="!day.inCurrentMonth" [class.has-matches]="day.matches.length > 0">
-        <div class="cell-day-num" [class.today-num]="day.isToday">{{ day.dayNum }}</div>
-        <div *ngFor="let m of day.matches" class="month-match-pill" [class.pill-win]="isWin(m)"
-            [class.pill-loss]="isLoss(m)" (click)="matchClick.emit(m.id)" [title]="matchTitle(m)">
-            <span class="pill-name">vs {{ m.rival_name }}</span>
-            <span *ngIf="isFinished(m)" class="pill-score">{{ m.team_score }}-{{ m.rival_score }}</span>
+    <!-- Day cells -->
+    <div class="grid grid-cols-7 gap-1">
+        <div *ngFor="let day of days"
+            class="flex flex-col min-h-[80px] p-1 border rounded-lg transition-colors overflow-hidden" [ngClass]="{
+                 'border-primary/50 bg-primary/5 shadow-inner': day.isToday,
+                 'border-gray-200 dark:border-white/5 bg-slate-50 dark:bg-surface-dark/30': !day.isToday && day.inCurrentMonth,
+                 'border-transparent bg-transparent opacity-30': !day.inCurrentMonth
+             }">
+
+            <div class="text-right mb-1">
+                <span class="text-xs font-bold w-6 h-6 inline-flex items-center justify-center rounded-full"
+                    [ngClass]="{'bg-primary text-white': day.isToday, 'text-slate-700 dark:text-slate-300': !day.isToday && day.inCurrentMonth, 'text-slate-400 dark:text-slate-600': !day.inCurrentMonth}">
+                    {{ day.dayNum }}
+                </span>
+            </div>
+
+            <div class="flex flex-col gap-1 overflow-y-auto no-scrollbar flex-1">
+                <div *ngFor="let m of day.matches"
+                    class="text-[10px] px-1.5 py-0.5 rounded cursor-pointer truncate font-medium border" [ngClass]="{
+                        'bg-green-500/10 text-green-500 dark:text-green-400 border-green-500/20 hover:bg-green-500/20': isWin(m),
+                        'bg-red-500/10 text-red-500 dark:text-red-400 border-red-500/20 hover:bg-red-500/20': isLoss(m),
+                        'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 border-gray-200 dark:border-white/5 hover:bg-slate-200 dark:hover:bg-white/10': !isWin(m) && !isLoss(m)
+                     }" (click)="matchClick.emit(m.id)" [title]="matchTitle(m)">
+                    <span class="truncate block">vs {{ m.rival_name }}</span>
+                </div>
+            </div>
         </div>
     </div>
 </div>

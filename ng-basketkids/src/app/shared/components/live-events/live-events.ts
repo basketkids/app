@@ -11,6 +11,7 @@ interface DisplayEvent {
 
 @Component({
   selector: 'app-live-events',
+  standalone: true,
   templateUrl: './live-events.html',
   styleUrls: ['./live-events.css'],
   imports: [CommonModule]

@@ -1,98 +1,170 @@
-<div class="container py-3">
-    <h2>Mis Equipos</h2>
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-hidden max-w-md md:max-w-4xl lg:max-w-6xl
+xl:max-w-[1400px] mx-auto border-x border-slate-200 dark:border-white/10 bg-white dark:bg-background-dark">
 
-    <div class="mb-3 d-flex gap-2 flex-wrap">
-        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addTeamModal">
-            Añadir Equipo
-        </button>
-        <a routerLink="/calendario" class="btn btn-primary">
-            <i class="bi bi-calendar-week"></i> Ver Calendario Semanal
-        </a>
-        <a routerLink="/partidos-publicos" class="btn btn-primary text-white">
-            Ver partidos públicos
-        </a>
-    </div>
+    <!-- Header & Action Bar -->
+    <div
+        class="sticky top-0 z-20 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md border-b border-gray-200 dark:border-white/10 pb-2">
+        <div class="flex items-center justify-between px-4 pt-6 pb-2">
+            <h1 class="text-3xl font-bold tracking-tight text-slate-800 dark:text-white">Mis Equipos</h1>
+            <button (click)="showAddTeamModal = true"
+                class="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                <span class="material-symbols-outlined text-[24px]">add</span>
+            </button>
+        </div>
 
-    <!-- Error -->
-    <div *ngIf="errorMsg" class="alert alert-danger">{{ errorMsg }}</div>
-
-    <!-- My Teams -->
-    <div *ngIf="loadingTeams" class="text-center py-4 text-muted">
-        <div class="spinner-border spinner-border-sm me-2"></div>Cargando equipos...
-    </div>
-
-    <ul *ngIf="!loadingTeams" class="modern-list mb-4">
-        <li *ngIf="myTeams.length === 0" class="modern-list-item justify-content-center text-muted">
-            No tienes equipos creados
-        </li>
-        <li *ngFor="let team of myTeams" class="modern-list-item" [routerLink]="['/equipo', team.id]"
-            style="cursor:pointer;">
-            <span class="item-title">{{ team.name }}</span>
-            <div class="d-flex gap-2" (click)="$event.stopPropagation()">
-                <a [routerLink]="['/equipo', team.id]" class="btn btn-sm btn-warning" title="Gestionar">
-                    <i class="bi bi-pencil-fill"></i>
-                </a>
-                <button class="btn btn-sm btn-danger" title="Borrar" data-bs-toggle="modal"
-                    data-bs-target="#confirmDeleteModal" (click)="confirmDelete(team.id)">
-                    <i class="bi bi-trash-fill"></i>
-                </button>
-            </div>
-        </li>
-    </ul>
-
-    <!-- Followed Teams -->
-    <h3 class="mt-4">Equipos que sigo</h3>
-    <ul class="modern-list mb-4">
-        <li *ngIf="followedTeams.length === 0" class="modern-list-item justify-content-center text-muted">
-            No sigues a ningún equipo
-        </li>
-        <li *ngFor="let f of followedTeams" class="modern-list-item" [routerLink]="['/equipo', f.teams.id]"
-            style="cursor:pointer;">
-            <span>{{ f.teams.name }}</span>
-            <a [routerLink]="['/equipo', f.teams.id]" class="btn btn-sm btn-info" (click)="$event.stopPropagation()">
-                <i class="bi bi-eye-fill"></i>
-            </a>
-        </li>
-    </ul>
-</div>
-
-<!-- Modal Añadir Equipo -->
-<div class="modal fade" id="addTeamModal" tabindex="-1" aria-labelledby="addTeamModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form (ngSubmit)="addTeam()">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addTeamModalLabel">Añadir nuevo equipo</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="text" class="form-control" placeholder="Nombre de equipo" [(ngModel)]="newTeamName"
-                        name="newTeamName" required>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary" [disabled]="!newTeamName.trim()">Guardar
-                        equipo</button>
-                </div>
-            </form>
+        <!-- Quick Actions -->
+        <div class="flex gap-2 overflow-x-auto px-4 py-2 no-scrollbar">
+            <button routerLink="/calendario"
+                class="whitespace-nowrap flex items-center gap-1 rounded-full bg-slate-100 dark:bg-surface-dark px-4 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-white/5">
+                <span class="material-symbols-outlined text-[16px]">calendar_month</span> Calendario
+            </button>
+            <button routerLink="/partidos-publicos"
+                class="whitespace-nowrap flex items-center gap-1 rounded-full bg-slate-100 dark:bg-surface-dark px-4 py-1.5 text-xs font-medium text-primary hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-white/5">
+                <span class="material-symbols-outlined text-[16px]">public</span> Partidos Públicos
+            </button>
         </div>
     </div>
-</div>
 
-<!-- Modal Confirmar Borrar -->
-<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="confirmDeleteLabel">Confirmar borrado</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+    <!-- Main Content Areas -->
+    <div class="flex-1 overflow-y-auto pb-24">
+
+        <!-- Error -->
+        <div *ngIf="errorMsg"
+            class="mx-4 my-2 p-3 text-sm text-red-400 bg-red-900/20 border border-red-900/50 rounded-lg">
+            {{ errorMsg }}
+        </div>
+
+        <!-- My Teams Section -->
+        <div class="px-4 py-3 mt-2">
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Equipos que
+                gestiono</h3>
+        </div>
+
+        <div *ngIf="loadingTeams" class="flex justify-center items-center py-8">
+            <span class="material-symbols-outlined animate-spin text-primary text-[32px]">progress_activity</span>
+        </div>
+
+        <div *ngIf="!loadingTeams && myTeams.length === 0"
+            class="px-4 py-8 text-center text-slate-500 dark:text-slate-500 text-sm">
+            No tienes equipos creados. Usa el botón "+" para empezar.
+        </div>
+
+        <div *ngIf="!loadingTeams" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 px-4">
+            <!-- Team Card -->
+            <div *ngFor="let team of myTeams" [routerLink]="['/equipo', team.id]"
+                class="group flex items-center justify-between bg-white dark:bg-surface-dark border border-slate-200 dark:border-white/5 rounded-2xl hover:border-primary/30 dark:hover:border-primary/30 px-4 py-4 transition-colors cursor-pointer shadow-sm">
+                <div class="flex items-center gap-4 min-w-0 flex-1">
+                    <div
+                        class="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-full bg-slate-100 dark:bg-surface-light border border-slate-200 dark:border-white/10 flex items-center justify-center text-primary font-bold text-lg">
+                        {{ team.name.charAt(0).toUpperCase() }}
+                    </div>
+                    <div class="flex flex-col min-w-0">
+                        <p class="text-base font-semibold text-slate-800 dark:text-white leading-tight line-clamp-2">{{
+                            team.name }}</p>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Propietario</p>
+                    </div>
+                </div>
+
+                <!-- Actions (Edit/Delete) -->
+                <div class="flex items-center gap-2">
+                    <button (click)="confirmDelete(team.id, $event)"
+                        class="h-8 w-8 rounded-full flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-900/20 transition-colors"
+                        title="Borrar">
+                        <span class="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                    <span class="material-symbols-outlined text-slate-600">chevron_right</span>
+                </div>
             </div>
-            <div class="modal-body">
-                ¿Estás seguro de que quieres borrar este equipo? Esta acción no se puede deshacer.
+        </div>
+
+
+        <!-- Followed Teams Section -->
+        <div class="px-4 py-3 mt-6">
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Equipos que
+                sigo</h3>
+        </div>
+
+        <div *ngIf="!loadingTeams && followedTeams.length === 0" class="px-4 py-4 text-center text-slate-500 text-sm">
+            No sigues a ningún equipo actualmente.
+        </div>
+
+        <div *ngIf="!loadingTeams" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 px-4">
+            <div *ngFor="let f of followedTeams" [routerLink]="['/equipo', f.teams.id]"
+                class="group flex items-center justify-between bg-white dark:bg-surface-dark border border-slate-200 dark:border-white/5 rounded-2xl hover:border-primary/30 px-4 py-4 transition-colors cursor-pointer shadow-sm">
+                <div class="flex items-center gap-4 min-w-0 flex-1">
+                    <div
+                        class="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold text-sm">
+                        {{ f.teams.name.charAt(0).toUpperCase() }}
+                    </div>
+                    <p class="text-[15px] font-medium text-slate-800 dark:text-white line-clamp-2 min-w-0">{{
+                        f.teams.name }}</p>
+                </div>
+                <span class="material-symbols-outlined text-slate-400 dark:text-slate-600">visibility</span>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-danger" (click)="deleteTeam()">Borrar equipo</button>
+        </div>
+
+    </div>
+
+
+    <!-- Modal: Add Team -->
+    <div *ngIf="showAddTeamModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div
+            class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+            <div
+                class="px-5 py-4 border-b border-gray-100 dark:border-white/5 flex justify-between items-center bg-slate-50 dark:bg-white/5">
+                <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Nuevo Equipo</h3>
+                <button (click)="showAddTeamModal = false"
+                    class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="p-5">
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Nombre del
+                    equipo</label>
+                <input type="text" [(ngModel)]="newTeamName" placeholder="Ej. Los Dragones"
+                    class="w-full bg-slate-50 dark:bg-background-dark border border-gray-300 dark:border-white/10 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
+            </div>
+
+            <div
+                class="px-5 py-4 border-t border-gray-100 dark:border-white/5 flex justify-end gap-3 bg-slate-50 dark:bg-white/5">
+                <button (click)="showAddTeamModal = false"
+                    class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors">Cancelar</button>
+                <button (click)="addTeam()" [disabled]="!newTeamName.trim()"
+                    class="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Modal: Confirm Delete Team -->
+    <div *ngIf="showDeleteTeamModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div
+            class="bg-white dark:bg-surface-dark border border-red-200 dark:border-red-900/50 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center animate-in fade-in zoom-in duration-200">
+
+            <div
+                class="mx-auto w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center mb-4 text-red-500">
+                <span class="material-symbols-outlined text-[32px]">warning</span>
+            </div>
+
+            <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">¿Borrar equipo?</h3>
+            <p class="text-slate-600 dark:text-slate-400 text-sm mb-6">
+                Esta acción es irreversible. Se eliminarán los jugadores y estadísticas asociados.
+            </p>
+
+            <div class="flex flex-col gap-2">
+                <button (click)="deleteTeam()"
+                    class="w-full py-3 rounded-lg font-semibold bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-500 hover:bg-red-500 hover:text-white border border-red-200 dark:border-red-500/20 hover:border-red-500 transition-colors">
+                    Sí, eliminar equipo
+                </button>
+                <button (click)="showDeleteTeamModal = false"
+                    class="w-full py-3 rounded-lg font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 border border-transparent transition-colors">
+                    Cancelar
+                </button>
             </div>
         </div>
     </div>

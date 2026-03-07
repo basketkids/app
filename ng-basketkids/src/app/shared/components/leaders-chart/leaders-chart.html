@@ -1,0 +1,175 @@
+<div class="flex flex-col gap-6">
+
+    <!-- Empty state -->
+    <div *ngIf="statRows.length === 0" class="text-center py-12 text-slate-400 dark:text-slate-600">
+        <span class="material-symbols-outlined text-4xl mb-2 block">bar_chart</span>
+        <p class="text-sm">No hay datos de partidos todavía</p>
+    </div>
+
+    <ng-container *ngIf="statRows.length > 0">
+
+        <!-- MVP Card (Stitch design) -->
+        <section *ngIf="mvp">
+            <div
+                class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-xl shadow-primary/20">
+                <div
+                    class="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-primary via-transparent to-transparent">
+                </div>
+                <div class="relative z-10 flex flex-col p-5">
+                    <div class="flex justify-between items-start mb-4">
+                        <div
+                            class="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-sm">military_tech</span>
+                            MVP · {{ title }}
+                        </div>
+                        <div class="text-slate-400 text-xs font-medium">
+                            {{ mvp.gamesPlayed }} PJ
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-5">
+                        <div class="relative flex-shrink-0">
+                            <div class="h-20 w-20 rounded-full border-4 border-primary p-0.5 bg-slate-800">
+                                <app-avatar [seed]="mvp.playerId" [config]="mvp.avatarConfig"
+                                    [jerseyColor]="jerseyColor" [size]="72"
+                                    class="block rounded-full overflow-hidden"></app-avatar>
+                            </div>
+                            <div
+                                class="absolute -bottom-2 -right-2 bg-primary text-white h-8 w-8 flex items-center justify-center rounded-full border-2 border-slate-900 font-bold text-sm shadow-md">
+                                {{ mvp.dorsal }}
+                            </div>
+                        </div>
+                        <div class="flex flex-col flex-1 min-w-0">
+                            <h2 class="text-xl font-bold leading-tight truncate">{{ mvp.name }}</h2>
+                            <p class="text-primary font-medium text-sm mb-3">Fantasy: {{ fmt(mvp.fantasyPpg) }} pts/pj
+                            </p>
+                            <div class="flex gap-4">
+                                <div class="flex flex-col items-center">
+                                    <span class="text-xl font-bold leading-none">{{ fmt(mvp.ppg) }}</span>
+                                    <span class="text-[10px] text-slate-400 uppercase tracking-wider">PTS</span>
+                                </div>
+                                <div class="w-px bg-white/20 h-8"></div>
+                                <div class="flex flex-col items-center">
+                                    <span class="text-xl font-bold leading-none">{{ fmt(mvp.rpg) }}</span>
+                                    <span class="text-[10px] text-slate-400 uppercase tracking-wider">REB</span>
+                                </div>
+                                <div class="w-px bg-white/20 h-8"></div>
+                                <div class="flex flex-col items-center">
+                                    <span class="text-xl font-bold leading-none">{{ fmt(mvp.apg) }}</span>
+                                    <span class="text-[10px] text-slate-400 uppercase tracking-wider">AST</span>
+                                </div>
+                                <div class="w-px bg-white/20 h-8"></div>
+                                <div class="flex flex-col items-center">
+                                    <span class="text-xl font-bold leading-none">{{ fmt(mvp.vpg) }}</span>
+                                    <span class="text-[10px] text-slate-400 uppercase tracking-wider">VAL</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Season Points Chart -->
+        <section *ngIf="matchScores.length > 0"
+            class="bg-white dark:bg-surface-dark border border-slate-200 dark:border-white/5 rounded-2xl p-5 shadow-sm">
+            <h3 class="text-base font-bold text-slate-800 dark:text-white mb-1 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-lg">show_chart</span>
+                Puntos por partido
+            </h3>
+            <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">Evolución de la anotación esta {{ title |
+                lowercase }}</p>
+
+            <div class="relative" style="height: 160px;">
+                <!-- Y axis labels -->
+                <div
+                    class="absolute left-0 top-0 bottom-4 flex flex-col justify-between text-[10px] text-slate-400 pointer-events-none pr-1 z-10">
+                    <span>{{ chartMax }}</span>
+                    <span>{{ (chartMax / 2) | number:'1.0-0' }}</span>
+                    <span>0</span>
+                </div>
+                <!-- SVG Chart -->
+                <svg class="absolute left-6 right-0 top-0 bottom-4 w-[calc(100%-24px)] h-[calc(100%-16px)] overflow-visible"
+                    [attr.viewBox]="'0 0 ' + chartWidth + ' ' + chartHeight" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="lc-grad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#f49d25" stop-opacity="0.35" />
+                            <stop offset="100%" stop-color="#f49d25" stop-opacity="0" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Grid lines -->
+                    <line [attr.x1]="0" [attr.y1]="chartHeight / 2" [attr.x2]="chartWidth" [attr.y2]="chartHeight / 2"
+                        stroke="currentColor" stroke-width="0.5" stroke-dasharray="4 4"
+                        class="text-slate-200 dark:text-white/10" />
+                    <!-- Area fill -->
+                    <path [attr.d]="chartArea" fill="url(#lc-grad)" />
+                    <!-- Line -->
+                    <path [attr.d]="chartPath" fill="none" stroke="#f49d25" stroke-width="2.5" stroke-linecap="round"
+                        stroke-linejoin="round" vector-effect="non-scaling-stroke" />
+                    <!-- Dots -->
+                    <circle *ngFor="let p of chartPoints" [attr.cx]="p.x" [attr.cy]="p.y" r="3" fill="#f49d25"
+                        stroke="white" stroke-width="1.5" vector-effect="non-scaling-stroke" />
+                </svg>
+                <!-- X axis labels -->
+                <div class="absolute left-6 right-0 bottom-0 flex justify-between text-[10px] text-slate-400">
+                    <span *ngFor="let p of chartPoints">{{ p.date }}</span>
+                </div>
+            </div>
+
+            <!-- Match result pills -->
+            <div class="flex gap-1.5 flex-wrap mt-3 pt-3 border-t border-slate-100 dark:border-white/5">
+                <div *ngFor="let m of matchScores"
+                    class="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium"
+                    [ngClass]="m.ourScore > m.rivalScore ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : m.ourScore < m.rivalScore ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300'">
+                    <span>{{ m.ourScore }}-{{ m.rivalScore }}</span>
+                    <span class="opacity-60 truncate max-w-[60px]">vs {{ m.rivalName }}</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Per-Category Leaders -->
+        <div class="flex flex-col gap-4">
+            <ng-container *ngFor="let cat of categories">
+                <section
+                    class="bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-white/5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <span class="flex items-center justify-center w-8 h-8 rounded-full" [ngClass]="cat.bgColor">
+                                <span class="material-symbols-outlined text-lg" [ngClass]="cat.color">{{ cat.icon
+                                    }}</span>
+                            </span>
+                            {{ cat.label }}
+                            <span class="text-xs font-normal text-slate-400">media/pj</span>
+                        </h3>
+                    </div>
+
+                    <ng-container *ngIf="top3(cat.key) as leaders">
+                        <!-- Top 1: full bar with avatar -->
+                        <div *ngFor="let player of leaders; let i = index" class="mb-3 last:mb-0">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="relative flex-shrink-0">
+                                        <app-avatar [seed]="player.playerId" [config]="player.avatarConfig"
+                                            [jerseyColor]="jerseyColor" [size]="28"
+                                            class="block rounded-full overflow-hidden border border-slate-100 dark:border-white/10"></app-avatar>
+                                        <div class="absolute -top-1 -left-1 w-4 h-4 text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm"
+                                            [ngClass]="rankColor(i)">{{ i + 1 }}</div>
+                                    </div>
+                                    <span class="text-sm font-semibold text-slate-800 dark:text-slate-200"
+                                        [ngClass]="i === 0 ? 'font-bold' : 'font-medium'">{{ player.name }}</span>
+                                </div>
+                                <span class="text-sm font-bold text-slate-900 dark:text-white">{{ fmt(+player[cat.key])
+                                    }}</span>
+                            </div>
+                            <div class="h-1.5 w-full bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
+                                <div class="h-full rounded-full transition-all duration-500" [ngClass]="cat.barColor"
+                                    [style.width.%]="barWidth(player, cat.key, leaders)"
+                                    [style.opacity]="i === 0 ? 1 : i === 1 ? 0.7 : 0.4"></div>
+                            </div>
+                        </div>
+                    </ng-container>
+                </section>
+            </ng-container>
+        </div>
+
+    </ng-container>
+</div>

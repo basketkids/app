@@ -1,32 +1,31 @@
-import { Component, Input, OnInit, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { DicebearUtil } from '../../../core/utils/dicebear.util';
 
 @Component({
   selector: 'app-avatar',
+  standalone: true,
   templateUrl: './avatar.html',
   styleUrls: ['./avatar.css']
 })
-export class Avatar {
+export class Avatar implements OnChanges {
+  @Input() seed: string = 'default-seed';
   @Input() config: Record<string, string | number> | null = null;
   @Input() size: number = 50;
+  @Input() jerseyColor: string = '5199e4';
 
-  @ViewChild('avatarCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
+  avatarUrl: string = '';
 
-  ngAfterViewInit(): void {
-    if (this.config && this.canvasRef) {
-      this.drawAvatar(this.config);
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['seed'] || changes['config'] || changes['jerseyColor']) {
+      this.updateAvatarUrl();
     }
   }
 
-  // Pure drawing logic encapsulated inside the dumb component
-  private drawAvatar(config: Record<string, string | number>): void {
-    const ctx = this.canvasRef.nativeElement.getContext('2d');
-    if (!ctx) return;
-
-    // Abstracting simple drawing: In actual implementation port the complex `drawDiceAvatar` logic
-    ctx.clearRect(0, 0, this.size, this.size);
-    ctx.fillStyle = (config['color'] as string) || '#ccc';
-    ctx.beginPath();
-    ctx.arc(this.size / 2, this.size / 2, this.size / 2, 0, Math.PI * 2);
-    ctx.fill();
+  private updateAvatarUrl(): void {
+    this.avatarUrl = DicebearUtil.getAvatarUrl(
+      this.seed,
+      this.config,
+      this.jerseyColor
+    );
   }
 }

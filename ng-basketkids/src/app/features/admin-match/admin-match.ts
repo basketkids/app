@@ -1,18 +1,19 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
+
+import { MatchService } from '../../core/services/match.service';
+import { Match, EventType } from '../../core/models/match.model';
 import { Scoreboard } from '../../shared/components/scoreboard/scoreboard';
 import { LiveEvents } from '../../shared/components/live-events/live-events';
 import { StatisticsGrid } from '../../shared/components/statistics-grid/statistics-grid';
-import { MatchService } from '../../core/services/match.service';
-import { Match, EventType } from '../../core/models/match.model';
 
 @Component({
   selector: 'app-admin-match',
   templateUrl: './admin-match.html',
   styleUrls: ['./admin-match.css'],
-  imports: [CommonModule, Scoreboard, LiveEvents, StatisticsGrid]
+  imports: [CommonModule, RouterModule, Scoreboard, LiveEvents, StatisticsGrid]
 })
 export class AdminMatch implements OnInit, OnDestroy {
   match: Match | null = null;

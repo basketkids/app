@@ -7,6 +7,7 @@ const WEEKDAY_HEADERS = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
 
 @Component({
     selector: 'app-calendar-month-view',
+    standalone: true,
     imports: [CommonModule],
     templateUrl: './calendar-month-view.html',
     styleUrls: ['./calendar-month-view.css']

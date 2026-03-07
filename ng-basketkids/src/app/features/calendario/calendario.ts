@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { CalendarService, CalendarMatch } from '../../core/services/calendar.service';
 import { AuthService } from '../../core/services/auth.service';
-import { CalendarWeekView, CalendarDay } from '../../shared/components/calendar/calendar-week-view';
+import { CalendarDay, CalendarWeekView } from '../../shared/components/calendar/calendar-week-view';
 import { CalendarMonthView } from '../../shared/components/calendar/calendar-month-view';
 
 type ViewMode = 'week' | 'month';

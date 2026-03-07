@@ -34,8 +34,8 @@ export class MatchRepository {
         // Fetch events, stats, full team roster, and match rosters in parallel
         const [eventsRes, statsRes, playersRes, rostersRes] = await Promise.all([
             this.supabase.instance.from('match_events').select('*, players(name, number)').eq('match_id', id).order('created_at', { ascending: false }),
-            this.supabase.instance.from('match_player_stats').select('*, players(name, number, avatar_config_id)').eq('match_id', id),
-            this.supabase.instance.from('players').select('id, name, number, avatar_config_id').eq('team_id', data['team_id']),
+            this.supabase.instance.from('match_player_stats').select('*, players(name, number, avatar_configs(*))').eq('match_id', id),
+            this.supabase.instance.from('players').select('id, name, number, avatar_configs(*)').eq('team_id', data['team_id']),
             this.supabase.instance.from('match_rosters').select('player_id').eq('match_id', id)
         ]);
 
@@ -71,11 +71,14 @@ export class MatchRepository {
                 let playerData = st.players;
                 if (Array.isArray(playerData)) playerData = playerData[0];
 
+                let ac = playerData?.avatar_configs;
+                if (Array.isArray(ac)) ac = ac[0];
+
                 match.roster[pid] = {
                     id: pid,
                     name: playerData?.name || 'Desconocido',
                     dorsal: playerData?.number || 0,
-                    avatarConfig: playerData?.avatar_config_id || null
+                    avatarConfig: ac || null
                 };
 
                 const points = st.points || 0;
@@ -135,11 +138,14 @@ export class MatchRepository {
         // Populate plantilla from players table
         if (!playersRes.error && playersRes.data) {
             playersRes.data.forEach(p => {
+                let ac = p.avatar_configs;
+                if (Array.isArray(ac)) ac = ac[0];
+
                 match.plantilla[p.id] = {
                     id: p.id,
                     name: p.name,
                     dorsal: p.number,
-                    avatarConfig: p.avatar_config_id || null
+                    avatarConfig: (ac as unknown as Record<string, string | number>) || null
                 };
             });
         }
@@ -403,4 +409,258 @@ export class MatchRepository {
 
         return true;
     }
+
+    /**
+     * Aggregate player stats across ALL finished matches for a team.
+     * Returns per-player totals and game counts (for computing averages in the UI).
+     */
+    async getAggregateStatsByTeam(teamId: string): Promise<AggregatedPlayerStat[]> {
+        // 1. Get all match IDs for the team
+        const { data: matches, error: mErr } = await this.supabase.instance
+            .from(this.TABLE_NAME)
+            .select('id')
+            .eq('team_id', teamId);
+
+        console.log('[getAggregateStatsByTeam] matches:', matches, 'error:', mErr);
+
+        if (mErr || !matches || matches.length === 0) return [];
+
+        const matchIds = matches.map((m: any) => m.id);
+
+        // 2. Get all player stats rows (flat, no join)
+        const { data: rows, error: sErr } = await this.supabase.instance
+            .from('match_player_stats')
+            .select('*')
+            .in('match_id', matchIds);
+
+        console.log('[getAggregateStatsByTeam] stat rows:', rows?.length, 'error:', sErr);
+
+        if (sErr || !rows || rows.length === 0) return [];
+
+        // 3. Get the unique player IDs
+        const playerIds = [...new Set(rows.map((r: any) => r.player_id).filter(Boolean))];
+
+        if (playerIds.length === 0) return [];
+
+        // 4. Fetch player info separately
+        const { data: players, error: pErr } = await this.supabase.instance
+            .from('players')
+            .select('id, name, number, avatar_configs(*)')
+            .in('id', playerIds);
+
+        console.log('[getAggregateStatsByTeam] players:', players?.length, 'error:', pErr);
+
+        const playerMap: Record<string, any> = {};
+        (players || []).forEach((p: any) => {
+            let ac = p.avatar_configs;
+            if (Array.isArray(ac)) ac = ac[0];
+            playerMap[p.id] = { name: p.name, dorsal: parseInt(p.number ?? '0', 10) || 0, avatarConfig: ac || null };
+        });
+
+        // 5. Aggregate per player
+        const map: Record<string, AggregatedPlayerStat> = {};
+        rows.forEach((r: any) => {
+            const pid = r.player_id;
+            if (!pid) return;
+
+            const playerData = playerMap[pid] || { name: 'Desconocido', dorsal: 0, avatarConfig: null };
+
+            if (!map[pid]) {
+                map[pid] = {
+                    playerId: pid,
+                    name: playerData.name,
+                    dorsal: playerData.dorsal,
+                    avatarConfig: playerData.avatarConfig,
+                    gamesPlayed: 0,
+                    totalPoints: 0, totalFouls: 0, totalAssists: 0,
+                    totalRebounds: 0, totalSteals: 0, totalBlocks: 0, totalValoracion: 0
+                };
+            }
+            const p = map[pid];
+            p.gamesPlayed++;
+            p.totalPoints += r.points || 0;
+            p.totalFouls += r.faltas || r.fouls || 0;
+            p.totalAssists += r.asistencias || r.assists || 0;
+            // DB column is "rebounds" (English), legacy may have "rebotes"
+            p.totalRebounds += r.rebounds || r.rebotes || 0;
+            p.totalSteals += r.robos || r.steals || 0;
+            p.totalBlocks += r.tapones || r.blocks || 0;
+            const reb = r.rebounds || r.rebotes || 0;
+            const ast = r.asistencias || r.assists || 0;
+            const stl = r.robos || r.steals || 0;
+            const blk = r.tapones || r.blocks || 0;
+            const flt = r.faltas || r.fouls || 0;
+            const val = (r.points || 0) + reb + ast + stl + blk - flt;
+            p.totalValoracion += val;
+
+        });
+
+        const result = Object.values(map);
+        console.log('[getAggregateStatsByTeam] final aggregated players:', result.length);
+        return result;
+    }
+
+    /** Same aggregation but scoped to a single competition. */
+    async getAggregateStatsByCompetition(competitionId: string): Promise<AggregatedPlayerStat[]> {
+        const { data: matches, error: mErr } = await this.supabase.instance
+            .from(this.TABLE_NAME).select('id').eq('competition_id', competitionId);
+        if (mErr || !matches || matches.length === 0) return [];
+        const matchIds = matches.map((m: any) => m.id);
+        const { data: rows, error: sErr } = await this.supabase.instance
+            .from('match_player_stats').select('*').in('match_id', matchIds);
+        if (sErr || !rows || rows.length === 0) return [];
+        const playerIds = [...new Set(rows.map((r: any) => r.player_id).filter(Boolean))];
+        if (playerIds.length === 0) return [];
+        const { data: players } = await this.supabase.instance
+            .from('players').select('id, name, number, avatar_configs(*)').in('id', playerIds);
+        const playerMap: Record<string, any> = {};
+        (players || []).forEach((p: any) => {
+            let ac = p.avatar_configs;
+            if (Array.isArray(ac)) ac = ac[0];
+            playerMap[p.id] = { name: p.name, dorsal: parseInt(p.number ?? '0', 10) || 0, avatarConfig: ac || null };
+        });
+        const map: Record<string, AggregatedPlayerStat> = {};
+        rows.forEach((r: any) => {
+            const pid = r.player_id;
+            if (!pid) return;
+            const pd = playerMap[pid] || { name: 'Desconocido', dorsal: 0, avatarConfig: null };
+            if (!map[pid]) {
+                map[pid] = { playerId: pid, name: pd.name, dorsal: pd.dorsal, avatarConfig: pd.avatarConfig, gamesPlayed: 0, totalPoints: 0, totalFouls: 0, totalAssists: 0, totalRebounds: 0, totalSteals: 0, totalBlocks: 0, totalValoracion: 0 };
+            }
+            const p = map[pid];
+            p.gamesPlayed++;
+            p.totalPoints += r.points || 0;
+            p.totalFouls += r.faltas || r.fouls || 0;
+            p.totalAssists += r.asistencias || r.assists || 0;
+            p.totalRebounds += r.rebounds || r.rebotes || 0;
+            p.totalSteals += r.robos || r.steals || 0;
+            p.totalBlocks += r.tapones || r.blocks || 0;
+            const reb = r.rebounds || r.rebotes || 0;
+            const ast = r.asistencias || r.assists || 0;
+            const stl = r.robos || r.steals || 0;
+            const blk = r.tapones || r.blocks || 0;
+            const flt = r.faltas || r.fouls || 0;
+            p.totalValoracion += (r.points || 0) + reb + ast + stl + blk - flt;
+        });
+        return Object.values(map);
+    }
+
+    async getMatchScoresByTeam(teamId: string): Promise<MatchScore[]> {
+        const { data, error } = await this.supabase.instance
+            .from(this.TABLE_NAME).select('id, date, team_score, rival_score, rival_name, state, competition_id')
+            .eq('team_id', teamId).eq('state', 'finalizado').order('date', { ascending: true });
+        if (error || !data) return [];
+        return data.map((m: any) => ({
+            matchId: m.id,
+            competitionId: m.competition_id,
+            date: m.date ? new Date(m.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '?',
+            ourScore: m.team_score ?? 0, rivalScore: m.rival_score ?? 0, rivalName: m.rival_name || 'Rival',
+        }));
+    }
+
+    async getMatchScoresByCompetition(competitionId: string): Promise<MatchScore[]> {
+        const { data, error } = await this.supabase.instance
+            .from(this.TABLE_NAME).select('id, date, team_score, rival_score, rival_name, state')
+            .eq('competition_id', competitionId).eq('state', 'finalizado').order('date', { ascending: true });
+        if (error || !data) return [];
+        return data.map((m: any) => ({
+            matchId: m.id,
+            date: m.date ? new Date(m.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '?',
+            ourScore: m.team_score ?? 0, rivalScore: m.rival_score ?? 0, rivalName: m.rival_name || 'Rival',
+        }));
+    }
+
+    async getPlayerMatchLog(playerId: string): Promise<PlayerMatchLog[]> {
+        // 1. Fetch stat rows for this player (no join, use * like getAggregateStatsByTeam)
+        const { data: rows, error: sErr } = await this.supabase.instance
+            .from('match_player_stats')
+            .select('*')
+            .eq('player_id', playerId);
+
+        if (sErr || !rows || rows.length === 0) return [];
+
+        const matchIds = [...new Set(rows.map((r: any) => r.match_id).filter(Boolean))];
+        if (matchIds.length === 0) return [];
+
+        // 2. Fetch match details separately
+        const { data: matches, error: mErr } = await this.supabase.instance
+            .from(this.TABLE_NAME)
+            .select('id, date, team_score, rival_score, rival_name, state, competition_id')
+            .in('id', matchIds)
+            .eq('state', 'finalizado')
+            .order('date', { ascending: true });
+
+        if (mErr || !matches || matches.length === 0) return [];
+
+        const matchMap: Record<string, any> = {};
+        matches.forEach((m: any) => { matchMap[m.id] = m; });
+
+        return rows.map((r: any) => {
+            const m = matchMap[r.match_id];
+            if (!m) return null;
+            const reb = r.rebounds || r.rebotes || 0;
+            const ast = r.asistencias || r.assists || 0;
+            const stl = r.robos || r.steals || 0;
+            const blk = r.tapones || r.blocks || 0;
+            const flt = r.faltas || r.fouls || 0;
+            const pts = r.points || 0;
+            const val = pts + reb + ast + stl + blk - flt;
+            return {
+                matchId: m.id,
+                competitionId: m.competition_id,
+                dateStr: m.date ? new Date(m.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '?',
+                ourScore: m.team_score ?? 0,
+                rivalScore: m.rival_score ?? 0,
+                rivalName: m.rival_name || 'Rival',
+                points: pts,
+                fouls: flt,
+                assists: ast,
+                rebounds: reb,
+                steals: stl,
+                blocks: blk,
+                valoracion: val
+            };
+        }).filter(Boolean) as PlayerMatchLog[];
+    }
+
+}
+
+export interface PlayerMatchLog {
+    matchId: string;
+    competitionId?: string;
+    dateStr: string;
+    ourScore: number;
+    rivalScore: number;
+    rivalName: string;
+    points: number;
+    fouls: number;
+    assists: number;
+    rebounds: number;
+    steals: number;
+    blocks: number;
+    valoracion: number;
+}
+
+export interface AggregatedPlayerStat {
+    playerId: string;
+    name: string;
+    dorsal: number;
+    avatarConfig: any;
+    gamesPlayed: number;
+    totalPoints: number;
+    totalFouls: number;
+    totalAssists: number;
+    totalRebounds: number;
+    totalSteals: number;
+    totalBlocks: number;
+    totalValoracion: number;
+}
+
+export interface MatchScore {
+    matchId: string;
+    competitionId?: string;
+    date: string;
+    ourScore: number;
+    rivalScore: number;
+    rivalName: string;
 }

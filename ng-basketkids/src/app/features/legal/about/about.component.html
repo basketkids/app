@@ -1,0 +1,41 @@
+<div class="container my-5 flex-grow-1 p-4">
+    <h1 class="mb-4 text-2xl font-bold tracking-tight text-slate-800 dark:text-white">Sobre Nosotros</h1>
+    <div class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-2xl shadow-sm">
+        <div class="p-6 text-slate-700 dark:text-slate-300">
+            <p class="text-lg font-medium text-primary mb-4">Bienvenido a BasketKids.</p>
+            <p class="mb-3">
+                BasketKids es una plataforma diseñada para facilitar la gestión de equipos de baloncesto base,
+                permitiendo a entrenadores, jugadores y familias llevar un seguimiento detallado de partidos,
+                estadísticas y calendarios.
+            </p>
+            <p class="mb-3">
+                Nuestra misión es fomentar el deporte y simplificar la organización de competiciones locales,
+                ofreciendo herramientas digitales accesibles y fáciles de usar.
+            </p>
+            <p class="mb-3">
+                Si tienes alguna sugerencia o duda, no dudes en contactarnos.
+            </p>
+            <hr class="my-8 border-gray-200 dark:border-white/10">
+
+            <h2 class="text-xl font-bold text-center text-slate-800 dark:text-white mb-6">Nuestro Equipo</h2>
+
+            <div *ngIf="loading" class="flex justify-center p-8">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+
+            <div *ngIf="!loading && admins.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div *ngFor="let admin of admins"
+                    class="bg-slate-50 dark:bg-background-dark rounded-xl p-6 text-center border border-gray-100 dark:border-white/5">
+                    <img [src]="getAdminAvatar(admin)" [alt]="getAdminName(admin)"
+                        class="w-32 h-32 rounded-full mx-auto mb-4 object-cover bg-white">
+                    <h5 class="font-bold text-slate-800 dark:text-white text-lg">{{ getAdminName(admin) }}</h5>
+                    <p class="text-slate-500 text-sm">Administrador</p>
+                </div>
+            </div>
+
+            <div *ngIf="!loading && admins.length === 0" class="text-center text-slate-500 py-8">
+                No hay información del equipo disponible.
+            </div>
+        </div>
+    </div>
+</div>

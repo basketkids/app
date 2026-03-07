@@ -6,6 +6,7 @@ type MatchState = string;
 
 @Component({
     selector: 'app-match-card',
+    standalone: true,
     imports: [CommonModule],
     templateUrl: './match-card.html',
     styleUrls: ['./match-card.css']

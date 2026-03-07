@@ -1,0 +1,90 @@
+<div class="flex flex-col items-center mb-6">
+    <div class="text-center">
+        <!-- Live Preview using the native Avatar component -->
+        <app-avatar [seed]="seed" [config]="avatarNativeConfig" [size]="150" [jerseyColor]="jerseyColor"
+            class="drop-shadow-sm"></app-avatar>
+        <div class="mt-3 text-sm text-slate-500 dark:text-slate-400">Vista previa de tu avatar</div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Skin Color -->
+    <div>
+        <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">Color de Piel</label>
+        <select
+            class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors cursor-pointer"
+            [(ngModel)]="config.skin_color" (ngModelChange)="onModelChange()">
+            <option *ngFor="let o of options.skinColor" [value]="o.value">{{ o.name }}</option>
+        </select>
+    </div>
+
+    <!-- Top (Pelo/Gorro) -->
+    <div>
+        <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">Look (Pelo / Gorro)</label>
+        <select
+            class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors cursor-pointer"
+            [(ngModel)]="config.top" (ngModelChange)="onModelChange()">
+            <option *ngFor="let o of options.top" [value]="o">{{ o }}</option>
+        </select>
+    </div>
+
+    <!-- Hair Color -->
+    <div>
+        <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">Color de Pelo</label>
+        <select
+            class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors cursor-pointer"
+            [(ngModel)]="config.hair_color" (ngModelChange)="onModelChange()">
+            <option *ngFor="let o of options.hairColor" [value]="o.value">{{ o.name }}</option>
+        </select>
+    </div>
+
+    <!-- Eyes -->
+    <div>
+        <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">Ojos</label>
+        <select
+            class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors cursor-pointer"
+            [(ngModel)]="config.eyes" (ngModelChange)="onModelChange()">
+            <option *ngFor="let o of options.eyes" [value]="o">{{ o }}</option>
+        </select>
+    </div>
+
+    <!-- Eyebrows -->
+    <div>
+        <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">Cejas</label>
+        <select
+            class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors cursor-pointer"
+            [(ngModel)]="config.eyebrows" (ngModelChange)="onModelChange()">
+            <option *ngFor="let o of options.eyebrows" [value]="o">{{ o }}</option>
+        </select>
+    </div>
+
+    <!-- Mouth -->
+    <div>
+        <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">Boca</label>
+        <select
+            class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors cursor-pointer"
+            [(ngModel)]="config.mouth" (ngModelChange)="onModelChange()">
+            <option *ngFor="let o of options.mouth" [value]="o">{{ o }}</option>
+        </select>
+    </div>
+
+    <!-- Facial Hair -->
+    <div>
+        <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">Vello facial</label>
+        <select
+            class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors cursor-pointer"
+            [(ngModel)]="config.facial_hair_type" (ngModelChange)="onModelChange()">
+            <option *ngFor="let o of options.facialHairType" [value]="o">{{ o === 'none' ? 'Ninguno' : o }}</option>
+        </select>
+    </div>
+
+    <!-- Accessories -->
+    <div>
+        <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">Gafas / Accesorios</label>
+        <select
+            class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors cursor-pointer"
+            [(ngModel)]="config.accessories_type" (ngModelChange)="onModelChange()">
+            <option *ngFor="let o of options.accessoriesType" [value]="o">{{ o === 'none' ? 'Ninguno' : o }}</option>
+        </select>
+    </div>
+</div>

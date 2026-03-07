@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mejores Quintetos y Fantasy</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#278cf1",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom styles for the basketball court pattern */
+        .court-bg {
+            background-color: #1a2632;
+            background-image: 
+                radial-gradient(circle at 50% 100%, transparent 18%, #334b63 19%, #334b63 20%, transparent 21%),
+                radial-gradient(circle at 50% 35%, transparent 18%, #334b63 19%, #334b63 20%, transparent 21%),
+                linear-gradient(to right, transparent 49.5%, #334b63 49.5%, #334b63 50.5%, transparent 50.5%),
+                linear-gradient(to bottom, transparent 98%, #334b63 98%);
+            background-size: 100% 50%, 100% 100%, 100% 100%, 100% 100%;
+            background-repeat: no-repeat;
+            position: relative;
+        }
+        
+        .court-paint {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 36%;
+            height: 40%;
+            border: 2px solid #334b63;
+            background-color: rgba(39, 140, 241, 0.05);
+        }
+
+        .court-3pt {
+            position: absolute;
+            top: 10%;
+            left: 5%;
+            right: 5%;
+            bottom: 0;
+            border-top: 2px solid #334b63;
+            border-left: 2px solid #334b63;
+            border-right: 2px solid #334b63;
+            border-top-left-radius: 50% 60%;
+            border-top-right-radius: 50% 60%;
+            height: 90%;
+            pointer-events: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display antialiased overflow-x-hidden">
+<div class="relative flex h-full min-h-screen w-full flex-col bg-background-light dark:bg-background-dark max-w-md mx-auto shadow-2xl overflow-hidden">
+<!-- Header -->
+<div class="flex items-center justify-between p-4 pb-2 z-10 bg-background-light dark:bg-background-dark sticky top-0">
+<button class="text-slate-900 dark:text-slate-100 flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined" style="font-size: 24px;">arrow_back</span>
+</button>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-10">Mejor Quinteto</h2>
+</div>
+<!-- Toggle Switch -->
+<div class="flex px-4 py-3 z-10 bg-background-light dark:bg-background-dark">
+<div class="flex h-10 flex-1 items-center justify-center rounded-lg bg-slate-200 dark:bg-[#233648] p-1">
+<label class="flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-lg px-2 transition-all duration-200 has-[:checked]:bg-white dark:has-[:checked]:bg-background-dark has-[:checked]:shadow-sm has-[:checked]:text-primary text-slate-500 dark:text-[#91adca] text-xs font-medium leading-normal">
+<span class="truncate">Ataque</span>
+<input class="invisible w-0" name="view-type" type="radio" value="Ataque"/>
+</label>
+<label class="flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-lg px-2 transition-all duration-200 has-[:checked]:bg-white dark:has-[:checked]:bg-background-dark has-[:checked]:shadow-sm has-[:checked]:text-primary text-slate-500 dark:text-[#91adca] text-xs font-medium leading-normal">
+<span class="truncate">Defensa</span>
+<input class="invisible w-0" name="view-type" type="radio" value="Defensa"/>
+</label>
+<label class="flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-lg px-2 transition-all duration-200 has-[:checked]:bg-white dark:has-[:checked]:bg-background-dark has-[:checked]:shadow-sm has-[:checked]:text-primary text-slate-500 dark:text-[#91adca] text-xs font-medium leading-normal">
+<span class="truncate">Fantasy</span>
+<input checked="" class="invisible w-0" name="view-type" type="radio" value="Fantasy"/>
+</label>
+</div>
+</div>
+<!-- Court Visualization -->
+<div class="px-4 pb-2 relative">
+<div class="court-bg w-full aspect-[4/3] rounded-xl border border-slate-700/50 shadow-inner relative overflow-hidden">
+<div class="court-3pt"></div>
+<div class="court-paint"></div>
+<!-- Center Decoration -->
+<div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-8 border-t-2 border-l-2 border-r-2 border-[#334b63] rounded-t-full bg-transparent"></div>
+<!-- Players on Court -->
+<!-- Point Guard (Top Center) -->
+<div class="absolute top-[15%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 z-10">
+<div class="relative group">
+<div class="w-12 h-12 rounded-full ring-2 ring-primary overflow-hidden bg-slate-800">
+<img alt="Male portrait" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCourrYlGG0PzYyFn1rTAWZTn6WCLMWNACzOyZG22BRPSVTKpytK2aceoARxFG1XRBWjy_1qyMkL-Cso8kWG8aUtmC0cOMHtsm-3eXs6hHM2FqlRnjFUFx95V0352iQEvVfUdckOGUy8Wb6Vr4ixsKtjzW-ayZxCRtvHOwefyuCK2mhzz_7qw57XXraSShrmXa5pbfx6PbUS2mmp23e9WEv2OEGK3VFk7ZJN0hPT2yoIXIQy7AiIEeewoud4EAdzX5z_u7CX0eS_4CF"/>
+</div>
+<div class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-lg border border-background-dark">
+                            42.5
+                        </div>
+</div>
+<span class="text-[10px] font-medium text-slate-300 bg-background-dark/80 px-1.5 rounded mt-1">L. Doncic</span>
+</div>
+<!-- Shooting Guard (Top Right) -->
+<div class="absolute top-[30%] right-[15%] flex flex-col items-center gap-1 z-10">
+<div class="relative group">
+<div class="w-10 h-10 rounded-full ring-2 ring-primary/60 overflow-hidden bg-slate-800">
+<img alt="Man smiling" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBOlFM47mO0oV5r3wrecnajFlq3Bql3nYqbKrZOt2J8IXkfSXUqc9zjQrTRiDiOG6nGX_UjhcqsRm_lHG7XkxRcUWJFfwQOeYCwIGan0wmHouWGsxCmL_ZzWSBZxDKHXIXn0vbYHHqXjSQevnVAdK0gYvkDRIJhIf2wj27ZXd79XU6QXLZePkU0j7IfKnNHmopKv3xQ-99U6o9JD3kkHatPkoaQKlNV5kNCmtpgrQgqpBU8_QIQkpJZJ0Jc0CS9cqxrpMFy8bqVUmyQ"/>
+</div>
+<div class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-slate-700 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg border border-background-dark">
+                            38.2
+                        </div>
+</div>
+<span class="text-[9px] font-medium text-slate-400 bg-background-dark/80 px-1.5 rounded mt-1">D. Booker</span>
+</div>
+<!-- Small Forward (Top Left) -->
+<div class="absolute top-[30%] left-[15%] flex flex-col items-center gap-1 z-10">
+<div class="relative group">
+<div class="w-10 h-10 rounded-full ring-2 ring-primary/60 overflow-hidden bg-slate-800">
+<img alt="Black man portrait" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCIS8gl9A0l3In2gN_9V32JcTwVisMmY7h8vL0oQ3z5RAYIK5Lf-hk-BFgAFOjPn_-iPSvhkwKBpBYAqiYSm8Ng542Y_h4TkerivvdWF1knsxEzMBBuFSgqFWeXeiVq3ksejJYRESMgVp3aDITsUzMWU9ENOsMYk7eL5BOPj9s9pwRyLnyr9OqpgS1D5AZCpXAJXwezbOONVV1qt8szVjGBv9wo7Cc1rsartZNIh78_lE2XK-WrggwzBFXLEna9F7iDdEc1K96BVyHA"/>
+</div>
+<div class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-slate-700 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg border border-background-dark">
+                            36.8
+                        </div>
+</div>
+<span class="text-[9px] font-medium text-slate-400 bg-background-dark/80 px-1.5 rounded mt-1">L. James</span>
+</div>
+<!-- Power Forward (Bottom Left) -->
+<div class="absolute bottom-[20%] left-[25%] flex flex-col items-center gap-1 z-10">
+<div class="relative group">
+<div class="w-10 h-10 rounded-full ring-2 ring-primary/60 overflow-hidden bg-slate-800">
+<img alt="Smiling guy" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmRZyPua3WR560eEB0QgkAguWSnhYqMGTqUNJmGijszOCLgK2v3lrnMdyq4dRge0mVQ2_4gGRFl5Iz9FfdRMan1ItCt9XtHlXbS5X0BQ1rySl5IAFqOYQCh5GaWXMMlzAAYx8kuqQYjuQkfa5RYeUsFYg58Vhrfw35VZsJY_1ZjaANffer3Nj846cZwS2slV46BuSXfqX6jow5ltFZkdEthQmnM-M9q3RFOpaGj5y004zsMdErvOCsc8U3IIzYfzTBbacqMahmFxfv"/>
+</div>
+<div class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-slate-700 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg border border-background-dark">
+                            34.1
+                        </div>
+</div>
+<span class="text-[9px] font-medium text-slate-400 bg-background-dark/80 px-1.5 rounded mt-1">G. Antetokounmpo</span>
+</div>
+<!-- Center (Bottom Right) -->
+<div class="absolute bottom-[20%] right-[25%] flex flex-col items-center gap-1 z-10">
+<div class="relative group">
+<div class="w-10 h-10 rounded-full ring-2 ring-primary/60 overflow-hidden bg-slate-800">
+<img alt="Serious man" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBo66PLKXXG_-y1NwsqoJZvAZMlJSZ4cSrNpuF7G6D215jgI1iNKrUKLSaKQDQk57z-JkLm1O8AOBUYSrG1d_tBsaSESbrWQjeWa6iZG_oQY8eioXeYiJPU7afszxx4m0qvIZOLBRwRXwRxrqKDiVVQTipPW1zlhOhsCX6HPI7gkow61NyNMWmj_IHTCKtDOICuU6xHQIYe7wJ3oIoezZeKtXn-8RlxhQZla96zz8G1E-9f4sQf8EjsuUhVZIxqdC1IMg7F1XIz8ohi"/>
+</div>
+<div class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-slate-700 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg border border-background-dark">
+                            39.4
+                        </div>
+</div>
+<span class="text-[9px] font-medium text-slate-400 bg-background-dark/80 px-1.5 rounded mt-1">N. Jokic</span>
+</div>
+</div>
+<div class="flex justify-between items-center mt-2 px-1">
+<span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Cancha</span>
+<div class="flex items-center gap-2 text-[10px] text-slate-400">
+<span class="w-2 h-2 rounded-full bg-primary"></span> MVP
+                    <span class="w-2 h-2 rounded-full bg-slate-600"></span> Top 5
+                </div>
+</div>
+</div>
+<!-- Scrollable List Area -->
+<div class="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark mt-2 rounded-t-2xl border-t border-slate-200 dark:border-slate-800/50 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)]">
+<div class="sticky top-0 z-10 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur px-4 py-3 flex justify-between items-end border-b border-slate-200 dark:border-slate-800/50">
+<h3 class="text-slate-800 dark:text-white text-base font-bold leading-tight">Resto de la Plantilla</h3>
+<div class="text-[10px] uppercase font-bold text-slate-400 flex gap-4 pr-2">
+<span class="w-8 text-right">PTS</span>
+<span class="w-8 text-right text-primary">VAL</span>
+</div>
+</div>
+<div class="flex flex-col pb-20">
+<!-- Player Item 1 -->
+<div class="flex items-center gap-3 p-4 border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800/30 transition-colors">
+<div class="relative shrink-0">
+<div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+<img alt="Man with glasses" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDR8J9wJdCioq3mRgZBycfQk96DwXxK3C9Rm7PR0Q9VloglhW2R3alBdgnYFMWmX7rZ0joFDBfLtIXeeB9m-3qdH5WUcKB_ErVwuYMgjwQrObLhVtpLhu1gPcd7x6kx-eM7asIc16hD2U96PB0scHvhHqwv3RIi2L8uykd49_JwzlVsQ22CWisim0mmn--jHSOEe_30MGQpBBQlEoMpYHgvYwy1dxAY71WIQtDK2qzu2yld0ABX4C3OZcQEcwbWvlq1y_uQMEnav_F6"/>
+</div>
+<span class="absolute -bottom-1 -right-1 bg-slate-800 text-[8px] text-white px-1 py-0.5 rounded border border-slate-600">B</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-slate-900 dark:text-slate-100 text-sm font-medium truncate">Stephen Curry</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs truncate">Golden State • Base</p>
+</div>
+<div class="flex gap-4 text-sm font-display">
+<span class="w-8 text-right text-slate-500 dark:text-slate-300 font-medium">32</span>
+<span class="w-8 text-right text-primary font-bold">31.5</span>
+</div>
+</div>
+<!-- Player Item 2 -->
+<div class="flex items-center gap-3 p-4 border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800/30 transition-colors">
+<div class="relative shrink-0">
+<div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+<img alt="Man portrait" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDodYnPXM0-8pIewS7lsFrjKnAihEmiArpvz6TSranwo09OkhLogfhQu4tToBL5SohaaxhfE7_ZMFDkCZDtMnqXZIawtzwbt9Fh39qSHpvP6C93kY7MSgudR14h4P_9CbnNPE4mQCT4HUnuQnUmcIEc5M2oELxD7wfWkjg-D4hPG83D6s3Zsuls3pSejrMh4D83KeOWL00yAdVK_2Rch-q_j5nLZyFVuuQDff1NXVxGIFCdPFltWVjqgX9kTLLG5XjCmoJiEPbIaxaY"/>
+</div>
+<span class="absolute -bottom-1 -right-1 bg-slate-800 text-[8px] text-white px-1 py-0.5 rounded border border-slate-600">A</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-slate-900 dark:text-slate-100 text-sm font-medium truncate">Kevin Durant</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs truncate">Phoenix • Alero</p>
+</div>
+<div class="flex gap-4 text-sm font-display">
+<span class="w-8 text-right text-slate-500 dark:text-slate-300 font-medium">29</span>
+<span class="w-8 text-right text-primary font-bold">28.4</span>
+</div>
+</div>
+<!-- Player Item 3 -->
+<div class="flex items-center gap-3 p-4 border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800/30 transition-colors">
+<div class="relative shrink-0">
+<div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+<img alt="User avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwBM4JWJAWppE010U6XzplqsjZI3MOZEQbSo_4gX21qQBu9L_dHIs4Z8EdgdGl9KzzW468YSg8nZdL5C-_x6t8tVEgk2vRrNvSN_3TrClJY4DXgYsaikm_KEDFnr4p5jLwuYRN9CtbE7nSLcldKFdtnkGNZOpukwOBRI56aB9-TBCX9R1IXQFYfa20kL6uqPGI4fUCcelcvHJBJ0c1r2qZvWeYKUgfYINlmbwf0goKOcHxha4ZUMuKs9xAUTbAYHEmGQsVX2ZiL09y"/>
+</div>
+<span class="absolute -bottom-1 -right-1 bg-slate-800 text-[8px] text-white px-1 py-0.5 rounded border border-slate-600">P</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-slate-900 dark:text-slate-100 text-sm font-medium truncate">Joel Embiid</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs truncate">Philadelphia • Pivot</p>
+</div>
+<div class="flex gap-4 text-sm font-display">
+<span class="w-8 text-right text-slate-500 dark:text-slate-300 font-medium">28</span>
+<span class="w-8 text-right text-primary font-bold">27.9</span>
+</div>
+</div>
+<!-- Player Item 4 -->
+<div class="flex items-center gap-3 p-4 border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800/30 transition-colors">
+<div class="relative shrink-0">
+<div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+<img alt="Man with beard" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHJsA8KA_GokHn48bO0RmRIEBvgJCNH7uDYqtvU0RYGKiEZNgT2_I5-1SpIK3n3HTx_dmlXtA_m1QuAr-zAY2f9SSwUZiCGIOBEc80E7w2LYUV0dbdVLRmxtyb2jDQ4cBqg4iVKDiRZtOOqmpvijW1vkeYx-VXqItVXbj0uuS2Qu1nEw3i31PlkYj2To3xiZ-vgofwOXXMphlJtMLCKjSvla1OUo87kxV0DZ2Dt9D2d313Dv62fnn3mKlUvMWO9vBkWZ6IoaZ7_bxb"/>
+</div>
+<span class="absolute -bottom-1 -right-1 bg-slate-800 text-[8px] text-white px-1 py-0.5 rounded border border-slate-600">E</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-slate-900 dark:text-slate-100 text-sm font-medium truncate">Jayson Tatum</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs truncate">Boston • Escolta</p>
+</div>
+<div class="flex gap-4 text-sm font-display">
+<span class="w-8 text-right text-slate-500 dark:text-slate-300 font-medium">26</span>
+<span class="w-8 text-right text-primary font-bold">25.2</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Nav Bar -->
+<div class="flex gap-2 border-t border-[#233648] bg-[#192634] px-4 pb-6 pt-2 absolute bottom-0 w-full z-20">
+<a class="just flex flex-1 flex-col items-center justify-end gap-1 text-[#91adca] hover:text-white transition-colors" href="#">
+<div class="flex h-6 items-center justify-center">
+<span class="material-symbols-outlined" style="font-size: 24px;">home</span>
+</div>
+<p class="text-xs font-medium leading-normal tracking-[0.015em]">Inicio</p>
+</a>
+<a class="just flex flex-1 flex-col items-center justify-end gap-1 text-[#91adca] hover:text-white transition-colors" href="#">
+<div class="flex h-6 items-center justify-center">
+<span class="material-symbols-outlined" style="font-size: 24px;">sports_basketball</span>
+</div>
+<p class="text-xs font-medium leading-normal tracking-[0.015em]">Partidos</p>
+</a>
+<a class="just flex flex-1 flex-col items-center justify-end gap-1 rounded-full text-white" href="#">
+<div class="flex h-6 items-center justify-center">
+<span class="material-symbols-outlined text-primary" style="font-size: 24px; font-variation-settings: 'FILL' 1;">emoji_events</span>
+</div>
+<p class="text-primary text-xs font-medium leading-normal tracking-[0.015em]">Quintetos</p>
+</a>
+<a class="just flex flex-1 flex-col items-center justify-end gap-1 text-[#91adca] hover:text-white transition-colors" href="#">
+<div class="flex h-6 items-center justify-center">
+<span class="material-symbols-outlined" style="font-size: 24px;">person</span>
+</div>
+<p class="text-xs font-medium leading-normal tracking-[0.015em]">Perfil</p>
+</a>
+</div>
+</div>
+</body></html>

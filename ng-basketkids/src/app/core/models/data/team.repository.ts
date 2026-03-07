@@ -42,17 +42,22 @@ export class TeamRepository {
     async getTeamRoster(teamId: string): Promise<PlayerRosterData[]> {
         const { data, error } = await this.supabase.instance
             .from('players') // assuming 'players' table
-            .select('*')
+            .select('*, avatar_configs(*)')
             .eq('team_id', teamId);
 
         if (error || !data) return [];
 
-        return data.map(p => ({
-            id: p.id,
-            name: p.name,
-            dorsal: p.dorsal,
-            avatarConfig: p.avatar_config || null
-        }));
+        return data.map(p => {
+            let ac = p.avatar_configs;
+            if (Array.isArray(ac)) ac = ac[0];
+
+            return {
+                id: p.id,
+                name: p.name,
+                dorsal: p.dorsal,
+                avatarConfig: ac || null
+            };
+        });
     }
 
     async getTeamsByUser(userId: string): Promise<Team[]> {

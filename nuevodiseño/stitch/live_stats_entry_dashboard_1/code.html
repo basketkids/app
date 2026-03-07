@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Live Stats Entry Dashboard</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#278cf1",
+                        "primary-dark": "#1a6ac4",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "surface-dark": "#192634",
+                        "surface-darker": "#141e29",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar hiding for clean UI */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 flex flex-col min-h-screen selection:bg-primary selection:text-white overflow-hidden">
+<!-- Top Status Bar -->
+<header class="flex-none bg-surface-darker dark:bg-surface-dark border-b border-slate-700/30 px-4 py-3 z-20 shadow-sm relative">
+<div class="flex items-center justify-between mb-3">
+<button class="flex items-center text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined !text-[24px]">arrow_back</span>
+</button>
+<div class="flex flex-col items-center">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+<span class="text-xs font-medium text-emerald-500 uppercase tracking-wider">Syncing Live</span>
+</div>
+</div>
+<button class="flex items-center text-primary font-medium text-sm">
+<span class="material-symbols-outlined !text-[20px] mr-1">settings</span>
+                Options
+            </button>
+</div>
+<div class="flex items-center justify-between gap-4">
+<!-- Home Score -->
+<div class="flex-1 text-center">
+<p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-0.5">Raptors (Us)</p>
+<p class="text-3xl font-bold text-white">42</p>
+</div>
+<!-- Game Clock -->
+<div class="flex-none flex flex-col items-center justify-center bg-background-dark rounded-lg px-4 py-2 border border-slate-700/50 min-w-[100px]">
+<span class="text-xs text-primary font-bold mb-1">PERIOD 2</span>
+<span class="text-2xl font-mono font-bold tracking-tight text-white leading-none">04:23</span>
+</div>
+<!-- Guest Score -->
+<div class="flex-1 text-center">
+<p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-0.5">Eagles</p>
+<p class="text-3xl font-bold text-slate-300">38</p>
+</div>
+</div>
+</header>
+<!-- Main Content: Active Players List -->
+<main class="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-32 no-scrollbar scroll-smooth space-y-4">
+<div class="flex justify-between items-center px-1">
+<h3 class="text-slate-300 font-bold text-sm uppercase tracking-wide">On Court (5)</h3>
+<button class="text-primary text-xs font-semibold uppercase tracking-wider flex items-center gap-1 bg-primary/10 px-2 py-1 rounded">
+<span class="material-symbols-outlined !text-[16px]">swap_horiz</span>
+                Substitutions
+            </button>
+</div>
+<!-- Player Card 1 -->
+<article class="bg-surface-dark rounded-xl p-3 border border-slate-700/40 shadow-lg">
+<div class="flex items-center gap-3 mb-3">
+<div class="relative w-12 h-12 flex-none">
+<div class="w-full h-full rounded-full bg-cover bg-center border-2 border-primary" data-alt="Portrait of basketball player looking focused" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA5J-7ir30RkW9NlIXnNZLaxLAyHhjIG4EaA6I6jJIxf3k4f2CdxFtExcuyAgQ_JBPupnKQJzZMsf4pqluIshNdKFr_YRBlsLhgh326GE0BILssdBttq82caabVs8NTC82UREZkjig-Haa36U_vrh5JhTFFTM6GRGuNMXxM5TVkJaztEfaOcW6O3uYXlJoYJcMcX2p_0B7pTcddwlb5c9vktxXk4FqTGURjlA4ozp9PEejmV0MnXgUxiCoqlYnpPokxLfsjemkp3JTg');"></div>
+<div class="absolute -bottom-1 -right-1 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded border border-surface-dark">#12</div>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="text-white font-bold text-base truncate">Jordan M.</h4>
+<p class="text-slate-400 text-xs truncate">12 Pts • 2 Reb • 1 Ast • 2 Fls</p>
+</div>
+<button class="text-slate-500 hover:text-white p-1">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<!-- Quick Actions Grid -->
+<div class="grid grid-cols-4 gap-2">
+<!-- Scoring Group (Primary) -->
+<button class="col-span-1 h-10 bg-primary hover:bg-primary-dark active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center text-white font-bold text-sm shadow-md shadow-primary/20">
+                    +1
+                </button>
+<button class="col-span-1 h-10 bg-primary hover:bg-primary-dark active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center text-white font-bold text-sm shadow-md shadow-primary/20">
+                    +2
+                </button>
+<button class="col-span-1 h-10 bg-primary hover:bg-primary-dark active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center text-white font-bold text-sm shadow-md shadow-primary/20">
+                    +3
+                </button>
+<button class="col-span-1 h-10 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center font-bold text-xs">
+                    Miss
+                </button>
+<!-- Stats Group (Secondary) -->
+<button class="col-span-1 h-9 bg-slate-700 hover:bg-slate-600 active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center text-slate-200 font-medium text-xs">
+                    REB
+                </button>
+<button class="col-span-1 h-9 bg-slate-700 hover:bg-slate-600 active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center text-slate-200 font-medium text-xs">
+                    AST
+                </button>
+<button class="col-span-1 h-9 bg-slate-700 hover:bg-slate-600 active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center text-slate-200 font-medium text-xs">
+                    STL
+                </button>
+<button class="col-span-1 h-9 bg-slate-700 hover:bg-slate-600 active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center text-slate-200 font-medium text-xs">
+                    BLK
+                </button>
+<!-- Negative/Foul (Full Width bottom) -->
+<button class="col-span-4 h-8 mt-1 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 active:scale-95 transition-all rounded-lg flex items-center justify-center font-bold text-xs gap-2">
+<span class="material-symbols-outlined !text-[16px]">sports</span> FOUL (P2)
+                </button>
+</div>
+</article>
+<!-- Player Card 2 -->
+<article class="bg-surface-dark rounded-xl p-3 border border-slate-700/40 shadow-lg">
+<div class="flex items-center gap-3 mb-3">
+<div class="relative w-12 h-12 flex-none">
+<div class="w-full h-full rounded-full bg-cover bg-center border-2 border-primary" data-alt="Portrait of young athlete" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCRDLd1XsXbsa70isVavF6AUQykC3VxnQKO0zcGDt6g9jpAXiE5Le5pb2hMtbdpS5kn3I1qAPnXFOYTJkGmsZjFeFUH2c3tWHZtjcmNEbFvb_Xh4ToEWr4kmIAxauXtfrKHMkagpgFIp38H56ulRiUll55EJWalHzSs9sT7h3MtpH-RskNqPp3b-o7WsgSpbdOnuulCuMupWJ4_tMfIOYTw93VfocSjF5S4lnlGniS6R8tK7OsZvq2it4I1JrjXJQ4dWEgiFQUlpfSQ');"></div>
+<div class="absolute -bottom-1 -right-1 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded border border-surface-dark">#04</div>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="text-white font-bold text-base truncate">Alex R.</h4>
+<p class="text-slate-400 text-xs truncate">8 Pts • 5 Reb • 3 Ast • 1 Fls</p>
+</div>
+<button class="text-slate-500 hover:text-white p-1">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="grid grid-cols-4 gap-2">
+<button class="col-span-1 h-10 bg-primary hover:bg-primary-dark active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center text-white font-bold text-sm shadow-md shadow-primary/20">+1</button>
+<button class="col-span-1 h-10 bg-primary hover:bg-primary-dark active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center text-white font-bold text-sm shadow-md shadow-primary/20">+2</button>
+<button class="col-span-1 h-10 bg-primary hover:bg-primary-dark active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center text-white font-bold text-sm shadow-md shadow-primary/20">+3</button>
+<button class="col-span-1 h-10 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center font-bold text-xs">Miss</button>
+<button class="col-span-1 h-9 bg-slate-700 hover:bg-slate-600 active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center text-slate-200 font-medium text-xs">REB</button>
+<button class="col-span-1 h-9 bg-slate-700 hover:bg-slate-600 active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center text-slate-200 font-medium text-xs">AST</button>
+<button class="col-span-1 h-9 bg-slate-700 hover:bg-slate-600 active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center text-slate-200 font-medium text-xs">STL</button>
+<button class="col-span-1 h-9 bg-slate-700 hover:bg-slate-600 active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center text-slate-200 font-medium text-xs">BLK</button>
+<button class="col-span-4 h-8 mt-1 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 active:scale-95 transition-all rounded-lg flex items-center justify-center font-bold text-xs gap-2">
+<span class="material-symbols-outlined !text-[16px]">sports</span> FOUL (P1)
+                </button>
+</div>
+</article>
+<!-- Player Card 3 -->
+<article class="bg-surface-dark rounded-xl p-3 border border-slate-700/40 shadow-lg opacity-90">
+<div class="flex items-center gap-3 mb-3">
+<div class="relative w-12 h-12 flex-none">
+<div class="w-full h-full rounded-full bg-cover bg-center border-2 border-primary" data-alt="Portrait of determined player" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDXmRzEDI3HJyJEOvHvnRiIf870SLaQU4YRGqRXQP9OT7gQFafdPFClvb97kmteFtig5QtX4VdnkgIngr8944IPD_KCuM7RNeq5YnQ6sbiaBZYN3SRpdfZrhqTeFXKUS1LhBki4jav8LDsj16jUComhevZSF9on5QQJy5KzkiKdQ4Ak5B1bJZxSZNMw_E2t8Xy831l84buKRTZkE9RWfVtEvFv4E8mm2uI9-naL2nskF-02i0kvwBK0rJr0oJCrJENe9lK0DhKL0t6e');"></div>
+<div class="absolute -bottom-1 -right-1 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded border border-surface-dark">#23</div>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="text-white font-bold text-base truncate">Marcus T.</h4>
+<p class="text-slate-400 text-xs truncate">15 Pts • 8 Reb • 0 Ast • 3 Fls</p>
+</div>
+<button class="text-slate-500 hover:text-white p-1">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="grid grid-cols-4 gap-2">
+<button class="col-span-1 h-10 bg-primary hover:bg-primary-dark active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center text-white font-bold text-sm shadow-md shadow-primary/20">+1</button>
+<button class="col-span-1 h-10 bg-primary hover:bg-primary-dark active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center text-white font-bold text-sm shadow-md shadow-primary/20">+2</button>
+<button class="col-span-1 h-10 bg-primary hover:bg-primary-dark active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center text-white font-bold text-sm shadow-md shadow-primary/20">+3</button>
+<button class="col-span-1 h-10 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center font-bold text-xs">Miss</button>
+<button class="col-span-1 h-9 bg-slate-700 hover:bg-slate-600 active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center text-slate-200 font-medium text-xs">REB</button>
+<button class="col-span-1 h-9 bg-slate-700 hover:bg-slate-600 active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center text-slate-200 font-medium text-xs">AST</button>
+<button class="col-span-1 h-9 bg-slate-700 hover:bg-slate-600 active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center text-slate-200 font-medium text-xs">STL</button>
+<button class="col-span-1 h-9 bg-slate-700 hover:bg-slate-600 active:scale-95 transition-all rounded-lg flex flex-col items-center justify-center text-slate-200 font-medium text-xs">BLK</button>
+<button class="col-span-4 h-8 mt-1 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 active:scale-95 transition-all rounded-lg flex items-center justify-center font-bold text-xs gap-2">
+<span class="material-symbols-outlined !text-[16px]">sports</span> FOUL (P3)
+                </button>
+</div>
+</article>
+<!-- Player Card 4 (Just header for visual continuity) -->
+<article class="bg-surface-dark rounded-xl p-3 border border-slate-700/40 shadow-lg opacity-75">
+<div class="flex items-center gap-3 mb-2">
+<div class="relative w-12 h-12 flex-none">
+<div class="w-full h-full rounded-full bg-cover bg-center border-2 border-primary" data-alt="Portrait of basketball player in uniform" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAcDcfVvJNlspX0cqYmAJMCRnf-n4sAd0PcxfWF_kOa3mqg11EXloT-g6pCWWEQkWvTnr9_S8aRpB40LYWDe2bEWI7L7BYfamO-L9CAxCVEVB1gzjeToZbND63V8W9MT0LHP1LMZBARy2cySx4t02B2vB6LDsZu1KhCX_gn-WGaxHV2pio2ytB46CMByqERfs2DudExqkKURhRHKOZdm3IyHnBV8BiDWNGqHDbvjbVikYHu4KwixXpY3Xs19qWQPjZtSUK4Yaic9Njd');"></div>
+<div class="absolute -bottom-1 -right-1 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded border border-surface-dark">#07</div>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="text-white font-bold text-base truncate">Devin C.</h4>
+<p class="text-slate-400 text-xs truncate">4 Pts • 1 Reb • 5 Ast • 0 Fls</p>
+</div>
+<button class="text-slate-500 hover:text-white p-1">
+<span class="material-symbols-outlined">expand_more</span>
+</button>
+</div>
+</article>
+</main>
+<!-- Undo Toast Notification (Hidden by default, shown for demo) -->
+<div class="fixed bottom-36 left-1/2 -translate-x-1/2 z-50 animate-[slideIn_0.3s_ease-out]">
+<div class="bg-slate-800 text-white px-4 py-3 rounded-lg shadow-xl border border-slate-700 flex items-center gap-4 min-w-[300px]">
+<div class="flex items-center gap-2">
+<div class="bg-green-500/20 text-green-400 p-1 rounded-full">
+<span class="material-symbols-outlined !text-[18px]">check</span>
+</div>
+<span class="text-sm font-medium">Recorded: +2 Pts (Jordan M.)</span>
+</div>
+<button class="text-primary font-bold text-sm ml-auto hover:text-primary-dark">UNDO</button>
+</div>
+</div>
+<!-- Sticky Rival Footer -->
+<footer class="fixed bottom-0 left-0 w-full bg-[#0d141c] border-t border-slate-800 z-30 pb-safe">
+<div class="flex flex-col h-full">
+<!-- Rival Control Bar -->
+<div class="flex items-center justify-between px-4 py-3">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 font-bold border border-slate-600">
+                        OPP
+                    </div>
+<div>
+<p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Opponent</p>
+<p class="text-white font-bold text-sm">Eagles</p>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<!-- Team Fouls -->
+<div class="flex flex-col items-center">
+<span class="text-[10px] text-slate-500 font-bold uppercase mb-1">Team Fouls</span>
+<div class="flex items-center gap-1 bg-slate-800/50 rounded-lg p-1 border border-slate-700">
+<span class="text-white font-mono font-bold text-lg px-2">4</span>
+<button class="w-8 h-8 flex items-center justify-center bg-slate-700 hover:bg-slate-600 rounded text-white active:bg-slate-500 transition-colors">
+<span class="material-symbols-outlined !text-[18px]">add</span>
+</button>
+</div>
+</div>
+<!-- Rival Score -->
+<div class="flex flex-col items-center">
+<span class="text-[10px] text-slate-500 font-bold uppercase mb-1">Score</span>
+<div class="flex items-center gap-1 bg-slate-800/50 rounded-lg p-1 border border-slate-700">
+<button class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white active:bg-slate-700 rounded transition-colors">
+<span class="material-symbols-outlined !text-[18px]">remove</span>
+</button>
+<span class="text-white font-mono font-bold text-xl min-w-[1.5em] text-center">38</span>
+<button class="w-10 h-8 flex items-center justify-center bg-slate-700 hover:bg-slate-600 rounded text-white active:bg-slate-500 transition-colors">
+<span class="material-symbols-outlined !text-[18px]">add</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Safe area spacing for iOS home indicator -->
+<div class="h-1 w-full bg-[#0d141c]"></div>
+</div>
+</footer>
+<script>
+        // Simple script to handle safe area padding if needed
+        const root = document.documentElement;
+        root.style.setProperty('--safe-area-inset-bottom', 'env(safe-area-inset-bottom)');
+    </script>
+</body></html>

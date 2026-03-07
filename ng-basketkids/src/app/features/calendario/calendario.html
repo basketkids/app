@@ -1,68 +1,93 @@
-<div class="container py-3">
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-hidden max-w-md md:max-w-4xl lg:max-w-6xl
+xl:max-w-[1400px] mx-auto border-x border-gray-200 dark:border-white/10 bg-white dark:bg-background-dark">
 
     <!-- Header -->
-    <div class="row align-items-center mb-3">
-        <div class="col">
-            <h2 class="mb-0">Calendario</h2>
-            <p class="text-muted mb-0 small">
-                {{ totalThisPeriod }} {{ totalThisPeriod === 1 ? 'partido' : 'partidos' }}
-                {{ viewMode === 'week' ? 'en los próximos 7 días' : 'este mes' }}
-            </p>
+    <div
+        class="sticky top-0 z-20 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md border-b border-gray-200 dark:border-white/10 pb-4">
+        <div class="flex items-center justify-between px-4 pt-6 pb-2">
+            <h1 class="text-3xl font-bold tracking-tight text-slate-800 dark:text-white">Calendario</h1>
         </div>
-        <div class="col-auto">
-            <div class="btn-group" role="group">
-                <button class="btn btn-sm" [class.btn-primary]="viewMode === 'week'"
-                    [class.btn-outline-primary]="viewMode !== 'week'" (click)="setView('week')">
-                    <i class="bi bi-calendar-week me-1"></i>Semana
-                </button>
-                <button class="btn btn-sm" [class.btn-primary]="viewMode === 'month'"
-                    [class.btn-outline-primary]="viewMode !== 'month'" (click)="setView('month')">
-                    <i class="bi bi-calendar3 me-1"></i>Mes
-                </button>
-            </div>
+        <div class="px-4 text-sm text-slate-500 dark:text-slate-400">
+            {{ totalThisPeriod }} {{ totalThisPeriod === 1 ? 'partido' : 'partidos' }}
+            {{ viewMode === 'week' ? 'en los próximos 7 días' : 'este mes' }}
         </div>
     </div>
 
-    <!-- Navigation bar -->
-    <div class="card mb-3 shadow-sm">
-        <div class="card-body py-2">
-            <div class="d-flex align-items-center justify-content-between gap-2">
-                <button class="btn btn-outline-primary btn-sm" (click)="prevPeriod()">
-                    <i class="bi bi-chevron-left"></i> Anterior
+    <!-- Main Content -->
+    <div class="flex-1 overflow-y-auto pb-24 space-y-4">
+
+        <!-- Controls Layout -->
+        <div class="px-4 pt-4 flex flex-col gap-4">
+
+            <!-- View Toggle -->
+            <div
+                class="flex bg-slate-100 dark:bg-surface-dark border border-slate-200 dark:border-white/10 rounded-xl p-1 w-full max-w-[200px]">
+                <button
+                    [ngClass]="{'bg-primary text-white shadow-sm': viewMode === 'week', 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white': viewMode !== 'week'}"
+                    (click)="setView('week')"
+                    class="flex-1 flex items-center justify-center gap-1 py-1.5 text-sm font-medium rounded-lg transition-all">
+                    <span class="material-symbols-outlined text-[18px]">calendar_view_week</span> Semana
                 </button>
-                <h5 class="mb-0 fw-semibold text-center">{{ periodLabel }}</h5>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-outline-secondary btn-sm" (click)="goToday()">
-                        <i class="bi bi-calendar-check"></i> Hoy
-                    </button>
-                    <button class="btn btn-outline-primary btn-sm" (click)="nextPeriod()">
-                        Siguiente <i class="bi bi-chevron-right"></i>
-                    </button>
+                <button
+                    [ngClass]="{'bg-primary text-white shadow-sm': viewMode === 'month', 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white': viewMode !== 'month'}"
+                    (click)="setView('month')"
+                    class="flex-1 flex items-center justify-center gap-1 py-1.5 text-sm font-medium rounded-lg transition-all">
+                    <span class="material-symbols-outlined text-[18px]">calendar_month</span> Mes
+                </button>
+            </div>
+
+            <!-- Period Navigation -->
+            <div
+                class="flex items-center justify-between bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-xl p-2 shadow-sm">
+                <button (click)="prevPeriod()"
+                    class="h-10 w-10 flex items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-800 dark:hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">chevron_left</span>
+                </button>
+
+                <div class="flex flex-col items-center flex-1">
+                    <span class="text-sm font-semibold text-slate-800 dark:text-white tracking-wide uppercase">{{
+                        periodLabel }}</span>
+                    <button (click)="goToday()"
+                        class="text-xs font-medium text-primary hover:text-orange-400 transition-colors mt-0.5">Volver a
+                        Hoy</button>
                 </div>
+
+                <button (click)="nextPeriod()"
+                    class="h-10 w-10 flex items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-800 dark:hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">chevron_right</span>
+                </button>
             </div>
         </div>
+
+
+        <div *ngIf="loading" class="flex flex-col justify-center items-center py-12 text-slate-500 dark:text-slate-400">
+            <span class="material-symbols-outlined animate-spin text-primary text-[32px] mb-2">progress_activity</span>
+            <span class="text-sm">Cargando partidos...</span>
+        </div>
+
+        <div *ngIf="errorMsg"
+            class="mx-4 p-3 text-sm text-red-500 bg-red-50 border border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-900/50 rounded-lg">
+            {{ errorMsg }}
+        </div>
+
+        <!-- Calendar Views -->
+        <div class="px-4" *ngIf="!loading">
+            <!-- Empty state -->
+            <div *ngIf="totalThisPeriod === 0"
+                class="flex flex-col items-center justify-center py-16 text-slate-500 dark:text-slate-500 bg-slate-50 dark:bg-surface-dark/50 rounded-2xl border border-slate-200 dark:border-white/5 border-dashed">
+                <span class="material-symbols-outlined text-4xl mb-3 opacity-50">event_busy</span>
+                <span class="text-sm font-medium">No hay partidos en este período</span>
+            </div>
+
+            <!-- Subcomponents -->
+            <app-calendar-week-view *ngIf="viewMode === 'week' && totalThisPeriod > 0" [days]="calDays"
+                (matchClick)="goToMatch($event)">
+            </app-calendar-week-view>
+
+            <app-calendar-month-view *ngIf="viewMode === 'month' && totalThisPeriod > 0" [days]="calDays"
+                (matchClick)="goToMatch($event)">
+            </app-calendar-month-view>
+        </div>
+
     </div>
-
-    <!-- Loading -->
-    <div *ngIf="loading" class="text-center py-5 text-muted">
-        <div class="spinner-border text-primary mb-2" role="status"></div>
-        <p>Cargando partidos...</p>
-    </div>
-
-    <div *ngIf="errorMsg" class="alert alert-danger">{{ errorMsg }}</div>
-
-    <!-- Week view sub-component -->
-    <app-calendar-week-view *ngIf="!loading && viewMode === 'week'" [days]="calDays" (matchClick)="goToMatch($event)">
-    </app-calendar-week-view>
-
-    <!-- Month view sub-component -->
-    <app-calendar-month-view *ngIf="!loading && viewMode === 'month'" [days]="calDays" (matchClick)="goToMatch($event)">
-    </app-calendar-month-view>
-
-    <!-- Empty state -->
-    <div *ngIf="!loading && totalThisPeriod === 0" class="text-center text-muted py-5">
-        <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
-        No hay partidos en este período
-    </div>
-
 </div>

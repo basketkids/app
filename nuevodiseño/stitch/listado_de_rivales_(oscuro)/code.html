@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Listado de Rivales</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#278cf1",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased overflow-x-hidden">
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-hidden max-w-md mx-auto border-x border-slate-200 dark:border-slate-800">
+<!-- Header & Search Sticky Area -->
+<div class="sticky top-0 z-20 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 pb-2">
+<!-- Top Action Bar -->
+<div class="flex items-center justify-between px-4 pt-12 pb-2">
+<h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Rivales</h1>
+<button class="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-[24px]">add</span>
+</button>
+</div>
+<!-- Search Bar -->
+<div class="px-4 py-2">
+<div class="relative flex w-full items-center">
+<div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-500 dark:text-slate-400">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="block w-full rounded-lg border-0 py-2.5 pl-10 pr-3 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary dark:bg-slate-800 dark:text-white dark:ring-slate-700 dark:placeholder:text-slate-500 sm:text-sm sm:leading-6 bg-slate-100" placeholder="Buscar equipo, ciudad..." type="text"/>
+</div>
+</div>
+<!-- Filter Tabs (Optional for context) -->
+<div class="flex gap-2 overflow-x-auto px-4 py-2 no-scrollbar">
+<button class="whitespace-nowrap rounded-full bg-primary px-4 py-1.5 text-xs font-medium text-white shadow-sm shadow-primary/30">Todos</button>
+<button class="whitespace-nowrap rounded-full bg-slate-200 dark:bg-slate-800 px-4 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">Favoritos</button>
+<button class="whitespace-nowrap rounded-full bg-slate-200 dark:bg-slate-800 px-4 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">Recientes</button>
+</div>
+</div>
+<!-- Main Content List -->
+<div class="flex-1 overflow-y-auto pb-24"> <!-- Padding bottom for Navbar -->
+<!-- List Header Section -->
+<div class="px-4 py-3">
+<h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Equipos Recientes</h3>
+</div>
+<!-- Rival Item 1 -->
+<div class="group flex items-center justify-between border-b border-slate-200 dark:border-slate-800/50 bg-background-light dark:bg-background-dark hover:bg-slate-100 dark:hover:bg-slate-800/50 px-4 py-4 transition-colors cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-full bg-slate-800 shadow-sm border border-slate-700">
+<img alt="Basketball generic logo" class="h-full w-full object-cover opacity-80" data-alt="Orange basketball on court" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAi0YxzQL_ZANmOGmMR857QEiRr2zENL_AyIEbj8y_JYroNeFGE-vf0BB8QEuZwvbxRqCW7Hr8pvqC6GR8J4KM_f5kAcsOJSp3ML8h3GQO9i_SsJ-VaC7w6kmUAVYvwMT6ZTBxXNjp2jgp_Ryo4b4EKPQV6Vx_65Bc6U2X5wU6DOMXXCg_P6R9oKHbQ7Cc_gq8y27E6ExEVEZB_E2A5hePGlF5BzoM3bOVsgN8I_NNqIVbOSDCtJu36xrb8Ypq1-WgyqNtU0eVVq-4N"/>
+</div>
+<div class="flex flex-col">
+<p class="text-base font-semibold text-slate-900 dark:text-white leading-tight">Club Baloncesto Madrid</p>
+<p class="text-sm text-slate-500 dark:text-slate-400">Madrid</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="inline-flex items-center rounded-md bg-green-500/10 px-2 py-1 text-xs font-bold text-green-500 ring-1 ring-inset ring-green-500/20">10V - 2D</span>
+</div>
+</div>
+<!-- Rival Item 2 -->
+<div class="group flex items-center justify-between border-b border-slate-200 dark:border-slate-800/50 bg-background-light dark:bg-background-dark hover:bg-slate-100 dark:hover:bg-slate-800/50 px-4 py-4 transition-colors cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-full bg-orange-900/20 shadow-sm border border-slate-700 flex items-center justify-center text-orange-500 font-bold text-lg">
+                        VB
+                    </div>
+<div class="flex flex-col">
+<p class="text-base font-semibold text-slate-900 dark:text-white leading-tight">Valencia Basket Amateur</p>
+<p class="text-sm text-slate-500 dark:text-slate-400">Valencia</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="inline-flex items-center rounded-md bg-slate-500/10 px-2 py-1 text-xs font-bold text-slate-500 dark:text-slate-400 ring-1 ring-inset ring-slate-500/20">4V - 5D</span>
+</div>
+</div>
+<!-- Divider/Section -->
+<div class="px-4 py-3 mt-2">
+<h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Todos los equipos</h3>
+</div>
+<!-- Rival Item 3 -->
+<div class="group flex items-center justify-between border-b border-slate-200 dark:border-slate-800/50 bg-background-light dark:bg-background-dark hover:bg-slate-100 dark:hover:bg-slate-800/50 px-4 py-4 transition-colors cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-full bg-slate-800 shadow-sm border border-slate-700">
+<img alt="Abstract sport background" class="h-full w-full object-cover opacity-80" data-alt="Blue abstract geometric pattern" src="https://lh3.googleusercontent.com/aida-public/AB6AXuByTfec8-qOCtc1QBUWG6gl7TODeWuuzUGYRkbtxoeJRhcFVElZwgj4zRhnlaKdT1W_qR5wm_wnHn6-6jy3xPGytqAYvC2PZy2py_iTmB9v1JSrBlF5Dv7KduNUQTjqRUaj0eVBKADYdvRNn4Zo-n0cWzTytKwbMKos04FAjSssuxXBA_LbfsIpzo2jd_kERiuQa4_lzIG3ImVVuO9EVbtoS3O4YTQRYQ9EdAxK8cvSF0jky5t6I_bMtRxGSg7Pw0rSV_FCrOBATe2G"/>
+</div>
+<div class="flex flex-col">
+<p class="text-base font-semibold text-slate-900 dark:text-white leading-tight">Dragones de Zaragoza</p>
+<p class="text-sm text-slate-500 dark:text-slate-400">Zaragoza</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="inline-flex items-center rounded-md bg-red-500/10 px-2 py-1 text-xs font-bold text-red-500 ring-1 ring-inset ring-red-500/20">0V - 1D</span>
+</div>
+</div>
+<!-- Rival Item 4 -->
+<div class="group flex items-center justify-between border-b border-slate-200 dark:border-slate-800/50 bg-background-light dark:bg-background-dark hover:bg-slate-100 dark:hover:bg-slate-800/50 px-4 py-4 transition-colors cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-full bg-blue-900/20 shadow-sm border border-slate-700 flex items-center justify-center text-blue-500 font-bold text-lg">
+                        CB
+                    </div>
+<div class="flex flex-col">
+<p class="text-base font-semibold text-slate-900 dark:text-white leading-tight">Club Baloncesto Sevilla</p>
+<p class="text-sm text-slate-500 dark:text-slate-400">Sevilla</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="inline-flex items-center rounded-md bg-green-500/10 px-2 py-1 text-xs font-bold text-green-500 ring-1 ring-inset ring-green-500/20">2V - 0D</span>
+</div>
+</div>
+<!-- Rival Item 5 -->
+<div class="group flex items-center justify-between border-b border-slate-200 dark:border-slate-800/50 bg-background-light dark:bg-background-dark hover:bg-slate-100 dark:hover:bg-slate-800/50 px-4 py-4 transition-colors cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-full bg-slate-800 shadow-sm border border-slate-700">
+<img alt="Gym floor texture" class="h-full w-full object-cover opacity-80" data-alt="Wooden gym floor planks" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvkKpS7SUg_-Y5R1JYd1nIR2tnueDkmIY5UNOYnKZRsfiHTtSGCX5Vz1RK53mmtCOLqgPoamL3asOOM5qSQCv2UHj1jEunNEmeaqVFUv4Of8QDOkDuFLnz6EY6nXO3_dDC3Hcuk9Mv9M8kOgS_v_xqe2bVgBoHE7cXS9XyzPVeKaSz76jYtkFkZ1W1zrQDsdXjo1Dzk5P1aiuaqX0d1EFX2QMduqR-VtbJZUuU8tLkaiFa4edj7k8ucBR-VCfo6WvSmS6kO6JUH0yB"/>
+</div>
+<div class="flex flex-col">
+<p class="text-base font-semibold text-slate-900 dark:text-white leading-tight">Estudiantes Barcelona</p>
+<p class="text-sm text-slate-500 dark:text-slate-400">Barcelona</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="inline-flex items-center rounded-md bg-slate-500/10 px-2 py-1 text-xs font-bold text-slate-500 dark:text-slate-400 ring-1 ring-inset ring-slate-500/20">0V - 0D</span>
+</div>
+</div>
+<!-- Rival Item 6 -->
+<div class="group flex items-center justify-between border-b border-slate-200 dark:border-slate-800/50 bg-background-light dark:bg-background-dark hover:bg-slate-100 dark:hover:bg-slate-800/50 px-4 py-4 transition-colors cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-full bg-purple-900/20 shadow-sm border border-slate-700 flex items-center justify-center text-purple-500 font-bold text-lg">
+                        M
+                    </div>
+<div class="flex flex-col">
+<p class="text-base font-semibold text-slate-900 dark:text-white leading-tight">Málaga City Hoops</p>
+<p class="text-sm text-slate-500 dark:text-slate-400">Málaga</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="inline-flex items-center rounded-md bg-green-500/10 px-2 py-1 text-xs font-bold text-green-500 ring-1 ring-inset ring-green-500/20">3V - 1D</span>
+</div>
+</div>
+</div>
+<!-- Bottom Navigation Bar -->
+<div class="absolute bottom-0 w-full z-30 border-t border-slate-200 dark:border-slate-800 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur px-4 pb-6 pt-2">
+<div class="flex items-center justify-around">
+<!-- Home -->
+<a class="flex flex-col items-center justify-end gap-1 text-slate-400 hover:text-primary transition-colors group" href="#">
+<div class="flex h-6 items-center justify-center group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[24px]">home</span>
+</div>
+<p class="text-xs font-medium leading-normal tracking-wide">Inicio</p>
+</a>
+<!-- Matches -->
+<a class="flex flex-col items-center justify-end gap-1 text-slate-400 hover:text-primary transition-colors group" href="#">
+<div class="flex h-6 items-center justify-center group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[24px]">calendar_month</span>
+</div>
+<p class="text-xs font-medium leading-normal tracking-wide">Partidos</p>
+</a>
+<!-- Rivals (Active) -->
+<a class="flex flex-col items-center justify-end gap-1 text-primary" href="#">
+<div class="flex h-6 items-center justify-center">
+<span class="material-symbols-outlined text-[24px] font-variation-settings-'FILL'1">groups</span>
+</div>
+<p class="text-xs font-medium leading-normal tracking-wide">Rivales</p>
+</a>
+<!-- Settings -->
+<a class="flex flex-col items-center justify-end gap-1 text-slate-400 hover:text-primary transition-colors group" href="#">
+<div class="flex h-6 items-center justify-center group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+</div>
+<p class="text-xs font-medium leading-normal tracking-wide">Ajustes</p>
+</a>
+</div>
+</div>
+</div>
+</body></html>

@@ -14,6 +14,7 @@ export interface CalendarDay {
 
 @Component({
     selector: 'app-calendar-week-view',
+    standalone: true,
     imports: [CommonModule, MatchCard],
     templateUrl: './calendar-week-view.html',
     styleUrls: ['./calendar-week-view.css']

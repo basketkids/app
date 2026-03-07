@@ -1,0 +1,81 @@
+<header
+    class="flex flex-none items-center justify-between px-4 py-3 bg-white dark:bg-surface-dark border-b border-gray-200 dark:border-white/10 w-full z-50 relative shadow-sm">
+    <div class="flex items-center gap-2">
+        <a routerLink="/home"
+            class="text-xl font-bold tracking-tight flex items-center gap-2 text-slate-800 dark:text-white no-underline">
+            <span class="material-symbols-outlined text-primary text-2xl">sports_basketball</span>
+            <span class="hidden sm:inline">Basket<span class="text-primary">Kids</span></span>
+        </a>
+    </div>
+
+    <div class="flex items-center gap-4">
+        <ng-container *ngIf="!auth.isLoggedIn()">
+            <a routerLink="/login"
+                class="text-slate-500 dark:text-gray-400 hover:text-slate-800 dark:hover:text-white transition-colors flex items-center">
+                <span class="material-symbols-outlined text-[24px]">login</span>
+            </a>
+        </ng-container>
+
+        <ng-container *ngIf="auth.isLoggedIn()">
+            <div class="flex items-center gap-3">
+                <!-- Theme Toggle -->
+                <button (click)="themeService.toggleTheme()"
+                    class="text-slate-500 dark:text-gray-400 hover:text-slate-800 dark:hover:text-white transition-colors flex items-center p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-white/5 active:scale-95">
+                    <span class="material-symbols-outlined text-[22px]">
+                        {{ themeService.currentTheme() === 'dark' ? 'light_mode' : 'dark_mode' }}
+                    </span>
+                </button>
+
+                <!-- Dropdown Trigger -->
+                <div class="relative">
+                    <button (click)="toggleMenu($event)"
+                        class="flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-white/5 p-1 pr-3 rounded-full transition-colors focus:outline-none">
+
+                        <div class="w-8 h-8 rounded-full overflow-hidden border-2 border-transparent bg-white">
+                            <img *ngIf="userAvatar" [src]="userAvatar" alt="Avatar" class="w-full h-full object-cover">
+                            <div *ngIf="!userAvatar"
+                                class="w-full h-full bg-gray-700 flex items-center justify-center text-gray-300">
+                                <span class="material-symbols-outlined text-[20px]">person</span>
+                            </div>
+                        </div>
+
+                        <span class="hidden md:inline text-sm font-medium text-slate-800 dark:text-gray-200">
+                            {{ userDisplayName }}
+                        </span>
+
+                        <span class="material-symbols-outlined text-slate-400 text-[20px] transition-transform"
+                            [class.rotate-180]="isMenuOpen">
+                            expand_more
+                        </span>
+                    </button>
+
+                    <!-- Dropdown Menu -->
+                    <div *ngIf="isMenuOpen"
+                        class="absolute right-0 top-[120%] mt-2 w-48 rounded-xl bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 shadow-lg py-2 z-[60] overflow-hidden origin-top-right">
+
+                        <a routerLink="/perfil" (click)="closeMenu()"
+                            class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                            <span class="material-symbols-outlined text-[20px]">person</span>
+                            Perfil
+                        </a>
+
+                        <!-- Solo si es admin -->
+                        <a *ngIf="isAdmin" routerLink="/admin" (click)="closeMenu()"
+                            class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                            <span class="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+                            Administrador
+                        </a>
+
+                        <div class="h-px bg-gray-100 dark:bg-white/10 my-1"></div>
+
+                        <button (click)="logout()"
+                            class="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
+                            <span class="material-symbols-outlined text-[20px]">logout</span>
+                            Cerrar Sesión
+                        </button>
+                    </div>
+                </div><!-- /.relative dropdown -->
+            </div><!-- /.flex.items-center.gap-3 -->
+        </ng-container>
+    </div>
+</header>

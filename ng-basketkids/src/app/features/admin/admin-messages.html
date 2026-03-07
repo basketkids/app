@@ -1,0 +1,92 @@
+<div class="p-4 max-w-5xl mx-auto pb-20"><!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-primary text-3xl">mail</span>
+            <h1 class="text-2xl font-bold text-slate-800 dark:text-white">Mensajes de Contacto</h1>
+        </div>
+        <a routerLink="/admin"
+            class="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-slate-600 dark:text-gray-300 text-sm hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+            <span class="material-symbols-outlined text-[18px]">arrow_back</span> Volver
+        </a>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="flex gap-2 mb-4">
+        <button (click)="setFilter('inbox')"
+            [ngClass]="filter === 'inbox' ? 'bg-primary text-white shadow-sm' : 'bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 text-slate-600 dark:text-gray-300'"
+            class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors">
+            <span class="material-symbols-outlined text-[18px]">inbox</span> Buzón
+        </button>
+        <button (click)="setFilter('archived')"
+            [ngClass]="filter === 'archived' ? 'bg-primary text-white shadow-sm' : 'bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 text-slate-600 dark:text-gray-300'"
+            class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors">
+            <span class="material-symbols-outlined text-[18px]">archive</span> Archivados
+        </button>
+    </div>
+
+    <!-- Card -->
+    <div
+        class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-2xl shadow-sm overflow-hidden">
+        <div *ngIf="loading" class="flex justify-center p-12">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+
+        <div *ngIf="!loading" class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-50 dark:bg-white/5">
+                    <tr>
+                        <th class="text-left font-semibold text-slate-500 px-5 py-3 hidden md:table-cell">Fecha</th>
+                        <th class="text-left font-semibold text-slate-500 px-5 py-3">Nombre</th>
+                        <th class="text-left font-semibold text-slate-500 px-5 py-3 hidden lg:table-cell">Email</th>
+                        <th class="text-left font-semibold text-slate-500 px-5 py-3">Mensaje</th>
+                        <th class="text-right font-semibold text-slate-500 px-5 py-3">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let msg of page"
+                        class="border-t border-gray-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                        [class.font-semibold]="!msg.read && !msg.archived">
+                        <td class="px-5 py-3 text-slate-400 text-xs hidden md:table-cell">{{ formatDate(msg.created_at)
+                            }}</td>
+                        <td class="px-5 py-3 text-slate-800 dark:text-white">{{ msg.name }}</td>
+                        <td class="px-5 py-3 hidden lg:table-cell">
+                            <a [href]="'mailto:' + msg.email" class="text-primary hover:underline">{{ msg.email }}</a>
+                        </td>
+                        <td class="px-5 py-3 text-slate-600 dark:text-slate-300 max-w-xs">
+                            <p class="truncate">{{ msg.message }}</p>
+                        </td>
+                        <td class="px-5 py-3">
+                            <div class="flex gap-1.5 justify-end">
+                                <button *ngIf="!msg.read" (click)="markRead(msg)" title="Marcar como leído"
+                                    class="p-1.5 rounded-lg border border-green-200 text-green-500 hover:bg-green-50 dark:hover:bg-green-500/10 transition-colors">
+                                    <span class="material-symbols-outlined text-[16px]">check</span>
+                                </button>
+                                <button *ngIf="filter === 'inbox'" (click)="archive(msg)" title="Archivar"
+                                    class="p-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                                    <span class="material-symbols-outlined text-[16px]">archive</span>
+                                </button>
+                                <button *ngIf="filter === 'archived'" (click)="unarchive(msg)" title="Recuperar"
+                                    class="p-1.5 rounded-lg border border-primary text-primary hover:bg-primary/5 transition-colors">
+                                    <span class="material-symbols-outlined text-[16px]">unarchive</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr *ngIf="page.length === 0">
+                        <td colspan="5" class="text-center py-10 text-slate-400">No hay mensajes en {{ filter ===
+                            'inbox' ? 'el buzón' : 'archivados' }}.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div *ngIf="totalPages > 1" class="flex justify-center gap-3 py-4 border-t border-gray-100 dark:border-white/5">
+            <button (click)="currentPage = currentPage - 1" [disabled]="currentPage === 1"
+                class="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-sm disabled:opacity-40">Anterior</button>
+            <span class="px-3 py-1.5 text-sm text-slate-500">Pág. {{ currentPage }} / {{ totalPages }}</span>
+            <button (click)="currentPage = currentPage + 1" [disabled]="currentPage === totalPages"
+                class="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-sm disabled:opacity-40">Siguiente</button>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>StatsBasket - Inicio de Sesión</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f27f0d",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#121212", /* Deep dark gray */
+                        "surface-dark": "#1E1E1E", /* Slightly lighter for cards/inputs */
+                        "border-dark": "#333333",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem", 
+                        "lg": "0.5rem", 
+                        "xl": "0.75rem", 
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col items-center justify-center p-4">
+<!-- Main Container -->
+<div class="w-full max-w-md bg-transparent flex flex-col gap-6">
+<!-- Header / Logo Section -->
+<div class="flex flex-col items-center justify-center pt-8 pb-4">
+<div class="relative w-24 h-24 mb-4 rounded-full bg-gradient-to-tr from-orange-600 to-primary flex items-center justify-center shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-white text-[48px]">sports_basketball</span>
+<!-- Subtle glow effect -->
+<div class="absolute inset-0 rounded-full border border-white/10"></div>
+</div>
+<h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">StatsBasket</h1>
+<p class="text-slate-500 dark:text-slate-400 mt-1 text-sm font-normal">Tu juego, tus números.</p>
+</div>
+<!-- Login Form -->
+<div class="w-full space-y-5">
+<h2 class="text-xl font-semibold text-slate-900 dark:text-white text-center">Bienvenido de nuevo</h2>
+<form class="space-y-4" onsubmit="event.preventDefault()">
+<!-- Email Input -->
+<div class="space-y-1.5">
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300" for="email">Correo electrónico</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-slate-400 text-[20px]">mail</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-3 rounded-lg border-0 bg-white dark:bg-surface-dark text-slate-900 dark:text-white shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-border-dark placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 transition-all" id="email" placeholder="ejemplo@correo.com" type="email"/>
+</div>
+</div>
+<!-- Password Input -->
+<div class="space-y-1.5">
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300" for="password">Contraseña</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-slate-400 text-[20px]">lock</span>
+</div>
+<input class="block w-full pl-10 pr-10 py-3 rounded-lg border-0 bg-white dark:bg-surface-dark text-slate-900 dark:text-white shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-border-dark placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 transition-all" id="password" placeholder="••••••••" type="password"/>
+<button class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-slate-400 hover:text-slate-300" type="button">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</div>
+</div>
+<!-- Forgot Password -->
+<div class="flex items-center justify-end">
+<a class="text-sm font-medium text-primary hover:text-orange-400 transition-colors" href="#">¿Olvidaste tu contraseña?</a>
+</div>
+<!-- Submit Button -->
+<button class="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-primary hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-[#121212] transition-colors" type="submit">
+                    Iniciar Sesión
+                </button>
+</form>
+<!-- Divider -->
+<div class="relative py-2">
+<div class="absolute inset-0 flex items-center">
+<div class="w-full border-t border-slate-300 dark:border-border-dark"></div>
+</div>
+<div class="relative flex justify-center text-sm">
+<span class="px-2 bg-background-light dark:bg-background-dark text-slate-500">O continuar con</span>
+</div>
+</div>
+<!-- Social Logins -->
+<div class="grid grid-cols-2 gap-3">
+<button class="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-lg border border-slate-300 dark:border-border-dark bg-white dark:bg-surface-dark hover:bg-slate-50 dark:hover:bg-[#2A2A2A] transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500" type="button">
+<svg aria-hidden="true" class="h-5 w-5" viewbox="0 0 24 24">
+<path d="M12.0003 20.45c4.6667 0 8.45-3.7833 8.45-8.45 0-4.6667-3.7833-8.45-8.45-8.45-4.6667 0-8.45 3.7833-8.45 8.45 0 4.6667 3.7833 8.45 8.45 8.45z" fill="#fff" fill-opacity="0" stroke="none"></path>
+<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
+<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
+<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"></path>
+<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path>
+</svg>
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Google</span>
+</button>
+<button class="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-lg border border-slate-300 dark:border-border-dark bg-white dark:bg-surface-dark hover:bg-slate-50 dark:hover:bg-[#2A2A2A] transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500" type="button">
+<svg class="h-5 w-5 text-slate-900 dark:text-white" fill="currentColor" viewbox="0 0 24 24">
+<path d="M13.135 6.05675C13.8824 5.23438 14.4326 4.04369 14.2885 2.85718C13.2988 2.90906 12.0121 3.59375 11.3129 4.47562C10.6698 5.27531 10.0898 6.50562 10.2648 7.64306C11.3621 7.74094 12.5113 7.01625 13.135 6.05675ZM17.4475 15.6881C16.8203 16.7025 15.7538 18.2916 14.5424 18.3375C13.3853 18.3619 13.0135 17.5856 11.5991 17.5856C10.1802 17.5856 9.77125 18.3356 8.66719 18.3844C7.50906 18.435 6.2625 16.6341 5.48531 15.3909C3.89969 12.8794 5.09344 9.07406 8.01656 8.94937C9.17625 8.92219 10.0266 9.80906 10.74 9.80906C11.4178 9.80906 12.4416 8.87531 13.7841 8.91187C14.3409 8.9325 15.9103 9.1725 16.9181 10.7784C16.8375 10.8356 15.0113 12.0113 15.0506 14.3325C15.0872 17.0625 17.3888 18.0675 17.4475 15.6881Z"></path>
+</svg>
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Apple</span>
+</button>
+</div>
+</div>
+<!-- Footer / Sign Up -->
+<div class="mt-4 text-center">
+<p class="text-sm text-slate-500 dark:text-slate-400">
+                ¿No tienes una cuenta? 
+                <a class="font-semibold text-primary hover:text-orange-400 transition-colors ml-1" href="#">Regístrate aquí</a>
+</p>
+</div>
+<!-- Decorative background element for basketball feel (Abstract) -->
+<div class="absolute -bottom-20 -right-20 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none -z-10"></div>
+<div class="absolute top-10 -left-10 w-48 h-48 bg-primary/5 rounded-full blur-[60px] pointer-events-none -z-10"></div>
+</div>
+</body></html>

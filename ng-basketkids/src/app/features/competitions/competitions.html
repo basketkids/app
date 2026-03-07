@@ -1,132 +1,299 @@
-<div class="container py-3">
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-hidden max-w-md md:max-w-4xl lg:max-w-6xl
+xl:max-w-[1400px] mx-auto border-x border-slate-200 dark:border-white/10 bg-surface-light dark:bg-background-dark">
 
-    <div *ngIf="loading" class="text-center py-5 text-muted">
-        <div class="spinner-border me-2"></div>Cargando competición...
+    <div *ngIf="loading" class="flex flex-1 justify-center items-center py-8">
+        <span class="material-symbols-outlined animate-spin text-primary text-[32px]">progress_activity</span>
     </div>
 
     <ng-container *ngIf="!loading">
-        <h2 id="competitionName">{{ competition?.name }}</h2>
+        <!-- Header -->
+        <div
+            class="sticky top-0 z-20 bg-surface-light/95 dark:bg-background-dark/95 backdrop-blur-md border-b border-slate-200 dark:border-white/10 pb-0">
+            <div class="flex items-center gap-3 px-4 pt-6 pb-4">
+                <!-- Back button to team -->
+                <button [routerLink]="['/equipo', teamId]"
+                    class="h-8 w-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-surface-dark hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-white transition-colors">
+                    <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+                </button>
+                <h1 class="text-2xl font-bold tracking-tight text-slate-800 dark:text-white truncate max-w-[250px]">{{
+                    competition?.name }}
+                </h1>
+            </div>
 
-        <div *ngIf="errorMsg" class="alert alert-danger">{{ errorMsg }}</div>
+            <!-- Tabs -->
+            <div class="flex overflow-x-auto no-scrollbar border-b border-slate-200 dark:border-white/5 px-2">
+                <button (click)="activeTab = 'partidos'"
+                    [ngClass]="{'border-primary text-primary': activeTab === 'partidos', 'border-transparent text-slate-500 dark:text-slate-400': activeTab !== 'partidos'}"
+                    class="whitespace-nowrap flex-1 py-3 px-1 border-b-2 font-medium text-sm text-center transition-colors">
+                    Partidos
+                </button>
+                <button (click)="activeTab = 'rivales'"
+                    [ngClass]="{'border-primary text-primary': activeTab === 'rivales', 'border-transparent text-slate-500 dark:text-slate-400': activeTab !== 'rivales'}"
+                    class="whitespace-nowrap flex-1 py-3 px-1 border-b-2 font-medium text-sm text-center transition-colors">
+                    Rivales
+                </button>
+                <button (click)="activeTab = 'destacados'"
+                    [ngClass]="{'border-primary text-primary': activeTab === 'destacados', 'border-transparent text-slate-500 dark:text-slate-400': activeTab !== 'destacados'}"
+                    class="whitespace-nowrap flex-1 py-3 px-1 border-b-2 font-medium text-sm text-center transition-colors">
+                    Destacados
+                </button>
+                <button (click)="activeTab = 'evolucion'"
+                    [ngClass]="{'border-primary text-primary': activeTab === 'evolucion', 'border-transparent text-slate-500 dark:text-slate-400': activeTab !== 'evolucion'}"
+                    class="whitespace-nowrap flex-1 py-3 px-1 border-b-2 font-medium text-sm text-center transition-colors">
+                    Evolución
+                </button>
+            </div>
+        </div>
 
-        <!-- Tabs -->
-        <nav class="mb-4">
-            <ul class="nav nav-tabs">
-                <li class="nav-item">
-                    <a class="nav-link" [class.active]="activeTab === 'partidos'" href="#"
-                        (click)="$event.preventDefault(); activeTab = 'partidos'">Partidos</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" [class.active]="activeTab === 'rivales'" href="#"
-                        (click)="$event.preventDefault(); activeTab = 'rivales'">Rivales</a>
-                </li>
-            </ul>
-        </nav>
+        <!-- Main Content Area -->
+        <div class="flex-1 overflow-y-auto pb-24 space-y-4">
 
-        <!-- Partidos Section -->
-        <section *ngIf="activeTab === 'partidos'">
-            <div class="d-flex gap-2 mb-3 flex-wrap">
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPartidoModal">
-                    Añadir Partido
+            <div *ngIf="errorMsg"
+                class="mx-4 my-4 p-3 text-sm text-red-400 bg-red-900/20 border border-red-900/50 rounded-lg">
+                {{ errorMsg }}
+            </div>
+
+            <!-- DESTACADOS Tab -->
+            <section *ngIf="activeTab === 'destacados'" class="animate-in fade-in duration-300 px-4 py-3">
+                <app-leaders-chart [statRows]="statRows" [matchScores]="matchScores"
+                    [title]="competition?.name || 'Competición'">
+                </app-leaders-chart>
+            </section>
+
+            <!-- EVOLUCIÓN Tab -->
+            <section *ngIf="activeTab === 'evolucion'"
+                class="animate-in fade-in duration-300 px-4 py-3 flex flex-col gap-6">
+                <app-evolution-chart [matchScores]="matchScores"
+                    [title]="'Puntos - ' + (competition?.name || 'Competición')"></app-evolution-chart>
+                <app-evolution-chart [matchScores]="matchScores" type="diff"
+                    [title]="'Diferencia - ' + (competition?.name || 'Competición')"></app-evolution-chart>
+            </section>
+
+            <!-- PARTIDOS Tab -->
+            <section *ngIf="activeTab === 'partidos'" class="animate-in fade-in duration-300">
+                <div class="px-4 py-3 flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Calendario ({{
+                        matches.length }})</span>
+                    <button (click)="showAddMatchModal = true"
+                        class="text-xs font-medium text-primary hover:text-orange-400 flex items-center gap-1 transition-colors">
+                        <span class="material-symbols-outlined text-[16px]">add</span> Añadir
+                    </button>
+                </div>
+
+                <div *ngIf="matches.length === 0" class="text-center py-8 text-slate-500 text-sm">
+                    No hay partidos programados en esta competición.
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+                    <div *ngFor="let m of matches" (click)="goToMatch(m.id)"
+                        class="group flex items-center justify-between bg-surface-dark border border-white/5 hover:border-primary/30 rounded-2xl px-4 py-4 transition-colors cursor-pointer shadow-sm">
+                        <div class="flex items-center gap-4">
+                            <div class="relative h-12 w-12 flex-shrink-0 flex items-center justify-center rounded-full bg-surface-light border border-white/10 shadow-sm"
+                                [ngClass]="m.isLocal ? 'text-primary' : 'text-slate-400'">
+                                <span class="material-symbols-outlined text-[24px]">{{ m.isLocal ? 'home' :
+                                    'directions_bus' }}</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <p class="text-base font-semibold text-white leading-tight">
+                                    <span class="text-slate-400 font-normal text-sm mr-1">vs</span>
+                                    {{ m.isLocal ? m.visitorTeamName : m.localTeamName }}
+                                </p>
+                                <p class="text-[13px] text-slate-400 flex items-center gap-1 mt-0.5">
+                                    <span class="material-symbols-outlined text-[14px]">calendar_today</span> {{
+                                    formatDate(m.date || '') }}
+                                </p>
+                                <p *ngIf="m.venue"
+                                    class="text-[12px] text-slate-500 flex items-center gap-1 mt-0.5 truncate max-w-[180px]">
+                                    <span class="material-symbols-outlined text-[12px]">location_on</span> {{ m.venue }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col items-end justify-between h-full gap-2">
+                            <span *ngIf="m.state === 'finalizado'"
+                                class="inline-flex items-center rounded-md px-2 py-1 text-sm font-bold ring-1 ring-inset"
+                                [ngClass]="m.scoreLocal > m.scoreVisitor ? 'bg-green-500/10 text-green-500 ring-green-500/20' : (m.scoreLocal < m.scoreVisitor ? 'bg-red-500/10 text-red-500 ring-red-500/20' : 'bg-slate-500/10 text-slate-400 ring-slate-500/20')">
+                                {{ m.scoreLocal }} - {{ m.scoreVisitor }}
+                            </span>
+                            <span *ngIf="m.state !== 'finalizado'"
+                                class="inline-flex items-center rounded-md bg-slate-500/10 px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wide ring-1 ring-inset ring-slate-500/20">
+                                Pendiente
+                            </span>
+                            <button (click)="confirmDeleteMatch(m.id, $event)"
+                                class="h-8 w-8 rounded-full flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-900/20 transition-colors"
+                                title="Borrar partido">
+                                <span class="material-symbols-outlined text-[18px]">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RIVALES Tab -->
+            <section *ngIf="activeTab === 'rivales'" class="animate-in fade-in duration-300">
+                <div class="px-4 py-3 flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Equipos ({{
+                        rivals.length }})</span>
+                    <button (click)="showAddRivalModal = true"
+                        class="text-xs font-medium text-primary hover:text-orange-400 flex items-center gap-1 transition-colors">
+                        <span class="material-symbols-outlined text-[16px]">add</span> Añadir
+                    </button>
+                </div>
+
+                <div *ngIf="rivals.length === 0" class="text-center py-8 text-slate-500 text-sm">
+                    No hay rivales registrados.
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div *ngFor="let r of rivals"
+                        class="group flex items-center justify-between bg-surface-dark border border-white/5 hover:border-primary/30 rounded-2xl px-4 py-3 transition-colors shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="relative h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-full bg-slate-800 border border-slate-700 shadow-sm text-slate-300 font-bold text-sm">
+                                {{ r.name.charAt(0).toUpperCase() }}
+                            </div>
+                            <p class="text-[15px] font-semibold text-white">{{ r.name }}</p>
+                        </div>
+
+                        <button (click)="confirmDeleteRival(r.id)"
+                            class="h-8 w-8 rounded-full flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-900/20 transition-colors"
+                            title="Borrar rival">
+                            <span class="material-symbols-outlined text-[18px]">delete</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </ng-container>
+
+    <!-- Modal: Add Match -->
+    <div *ngIf="showAddMatchModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+        <div
+            class="bg-surface-dark border border-white/10 rounded-2xl shadow-xl w-full max-w-sm my-auto overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+            <div class="px-5 py-4 border-b border-white/5 flex justify-between items-center bg-white/5">
+                <h3 class="text-lg font-semibold text-white">Añadir Partido</h3>
+                <button (click)="showAddMatchModal = false" class="text-slate-400 hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
 
-            <ul class="modern-list">
-                <li *ngIf="matches.length === 0" class="modern-list-item justify-content-center text-muted">
-                    No hay partidos en esta competición
-                </li>
-                <li *ngFor="let m of matches" class="modern-list-item" (click)="goToMatch(m.id)" style="cursor:pointer">
-                    <div>
-                        <div class="item-title">
-                            <i class="bi" [class.bi-house-fill]="m.isLocal" [class.bi-bus-front]="!m.isLocal"></i>
-                            vs {{ m.isLocal ? m.visitorTeamName : m.localTeamName }}
-                            <span class="badge ms-2"
-                                [class.bg-success]="m.state === 'finalizado' && m.scoreLocal > m.scoreVisitor"
-                                [class.bg-danger]="m.state === 'finalizado' && m.scoreLocal < m.scoreVisitor"
-                                [class.bg-secondary]="m.state !== 'finalizado'">
-                                {{ m.state === 'finalizado' ? (m.scoreLocal + '-' + m.scoreVisitor) : 'Pendiente' }}
-                            </span>
-                        </div>
-                        <div class="item-subtitle">
-                            <i class="bi bi-calendar3 me-1"></i>{{ formatDate(m.date || '') }}
-                            <span *ngIf="m.venue" class="ms-2"><i class="bi bi-geo-alt me-1"></i>{{ m.venue
-                                }}</span>
-                        </div>
-                    </div>
-                    <button class="btn btn-sm btn-danger" (click)="$event.stopPropagation(); deleteMatch(m.id)"
-                        title="Borrar">
-                        <i class="bi bi-trash-fill"></i>
-                    </button>
-                </li>
-            </ul>
-        </section>
+            <div class="p-5 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Fecha y Hora</label>
+                    <input type="datetime-local" [(ngModel)]="newMatch.date"
+                        class="w-full bg-background-dark border border-white/10 rounded-lg px-3 py-2 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-colors [color-scheme:dark]">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Rival</label>
+                    <select [(ngModel)]="newMatch.rival_name"
+                        class="w-full bg-background-dark border border-white/10 rounded-lg px-3 py-2.5 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-colors appearance-none">
+                        <option value="">Selecciona rival</option>
+                        <option *ngFor="let r of rivals" [value]="r.name">{{ r.name }}</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Condición</label>
+                    <select [(ngModel)]="newMatch.is_local"
+                        class="w-full bg-background-dark border border-white/10 rounded-lg px-3 py-2.5 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-colors appearance-none">
+                        <option [ngValue]="true">Local (Jugamos en casa)</option>
+                        <option [ngValue]="false">Visitante (Jugamos fuera)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Pabellón / Dirección</label>
+                    <input type="text" [(ngModel)]="newMatch.venue" placeholder="Ej. Polideportivo Municipal"
+                        class="w-full bg-background-dark border border-white/10 rounded-lg px-3 py-2.5 text-white placeholder-slate-500 focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
+                </div>
+            </div>
 
-        <!-- Rivales Section -->
-        <section *ngIf="activeTab === 'rivales'">
-            <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addRivalModal">
-                Añadir Rival
-            </button>
-            <ul class="modern-list">
-                <li *ngIf="rivals.length === 0" class="modern-list-item justify-content-center text-muted">
-                    No hay rivales añadidos
-                </li>
-                <li *ngFor="let r of rivals" class="modern-list-item">
-                    <span>{{ r.name }}</span>
-                    <button class="btn btn-sm btn-danger" (click)="deleteRival(r.id)">
-                        <i class="bi bi-trash-fill"></i>
-                    </button>
-                </li>
-            </ul>
-        </section>
-    </ng-container>
-</div>
-
-<!-- Modal Añadir Rival -->
-<div class="modal fade" id="addRivalModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <form class="modal-content" (ngSubmit)="addRival()">
-            <div class="modal-header">
-                <h5 class="modal-title">Añadir Rival</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="px-5 py-4 border-t border-white/5 flex justify-end gap-3 bg-white/5">
+                <button (click)="showAddMatchModal = false"
+                    class="px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-white/10 transition-colors">Cancelar</button>
+                <button (click)="addMatch()"
+                    [disabled]="!newMatch.date || !newMatch.rival_name || !newMatch.venue.trim()"
+                    class="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    Guardar
+                </button>
             </div>
-            <div class="modal-body">
-                <input class="form-control" placeholder="Nombre rival" [(ngModel)]="newRivalName" name="rivalName"
-                    required>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="submit" class="btn btn-primary">Guardar rival</button>
-            </div>
-        </form>
+        </div>
     </div>
-</div>
 
-<!-- Modal Añadir Partido -->
-<div class="modal fade" id="addPartidoModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <form class="modal-content" (ngSubmit)="addMatch()">
-            <div class="modal-header">
-                <h5 class="modal-title">Añadir Partido</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <!-- Modal: Confirm Delete Match -->
+    <div *ngIf="showDeleteMatchModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div
+            class="bg-surface-dark border border-red-900/50 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center animate-in fade-in zoom-in duration-200">
+            <div
+                class="mx-auto w-16 h-16 rounded-full bg-red-900/20 flex items-center justify-center mb-4 text-red-500">
+                <span class="material-symbols-outlined text-[32px]">warning</span>
             </div>
-            <div class="modal-body">
-                <input type="datetime-local" class="form-control mb-3" [(ngModel)]="newMatch.date" name="matchDate"
-                    required>
-                <select class="form-select mb-3" [(ngModel)]="newMatch.rival_name" name="matchRival" required>
-                    <option value="">Selecciona rival</option>
-                    <option *ngFor="let r of rivals" [value]="r.name">{{ r.name }}</option>
-                </select>
-                <select class="form-select mb-3" [(ngModel)]="newMatch.is_local" name="matchLocal">
-                    <option [ngValue]="true">Local</option>
-                    <option [ngValue]="false">Visitante</option>
-                </select>
-                <input type="text" class="form-control" placeholder="Dirección del pabellón"
-                    [(ngModel)]="newMatch.venue" name="matchLocation" required>
+            <h3 class="text-xl font-bold text-white mb-2">¿Borrar partido?</h3>
+            <p class="text-slate-400 text-sm mb-6">Esta acción no se puede deshacer y borrará todas las estadísticas
+                asociadas al partido de todos los jugadores.</p>
+            <div class="flex flex-col gap-2">
+                <button (click)="deleteMatch()"
+                    class="w-full py-3 rounded-lg font-semibold bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20 hover:border-red-500 transition-colors">
+                    Sí, eliminar
+                </button>
+                <button (click)="showDeleteMatchModal = false"
+                    class="w-full py-3 rounded-lg font-medium text-slate-300 hover:bg-white/5 border border-transparent transition-colors">
+                    Cancelar
+                </button>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="submit" class="btn btn-primary">Guardar partido</button>
+        </div>
+    </div>
+
+    <!-- Modal: Add Rival -->
+    <div *ngIf="showAddRivalModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div
+            class="bg-surface-dark border border-white/10 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+            <div class="px-5 py-4 border-b border-white/5 flex justify-between items-center bg-white/5">
+                <h3 class="text-lg font-semibold text-white">Añadir Rival</h3>
+                <button (click)="showAddRivalModal = false" class="text-slate-400 hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
             </div>
-        </form>
+            <div class="p-5">
+                <label class="block text-sm font-medium text-slate-300 mb-2">Nombre del rival</label>
+                <input type="text" [(ngModel)]="newRivalName" placeholder="Ej. Real Madrid"
+                    class="w-full bg-background-dark border border-white/10 rounded-lg px-3 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
+            </div>
+            <div class="px-5 py-4 border-t border-white/5 flex justify-end gap-3 bg-white/5">
+                <button (click)="showAddRivalModal = false"
+                    class="px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-white/10 transition-colors">Cancelar</button>
+                <button (click)="addRival()" [disabled]="!newRivalName.trim()"
+                    class="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Confirm Delete Rival -->
+    <div *ngIf="showDeleteRivalModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div
+            class="bg-surface-dark border border-red-900/50 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center animate-in fade-in zoom-in duration-200">
+            <div
+                class="mx-auto w-16 h-16 rounded-full bg-red-900/20 flex items-center justify-center mb-4 text-red-500">
+                <span class="material-symbols-outlined text-[32px]">warning</span>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">¿Borrar rival?</h3>
+            <p class="text-slate-400 text-sm mb-6">Esta acción borrará el equipo rival. Los partidos jugados contra
+                ellos
+                mantendrán el nombre como texto.</p>
+            <div class="flex flex-col gap-2">
+                <button (click)="deleteRival()"
+                    class="w-full py-3 rounded-lg font-semibold bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20 hover:border-red-500 transition-colors">
+                    Sí, eliminar
+                </button>
+                <button (click)="showDeleteRivalModal = false"
+                    class="w-full py-3 rounded-lg font-medium text-slate-300 hover:bg-white/5 border border-transparent transition-colors">
+                    Cancelar
+                </button>
+            </div>
+        </div>
     </div>
 </div>

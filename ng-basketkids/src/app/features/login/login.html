@@ -1,118 +1,245 @@
-<div class="bg-light d-flex align-items-center justify-content-center" style="min-height: 100vh;">
-    <div class="card shadow-lg" style="width: 100%; max-width: 400px;">
-        <div class="card-body p-4">
-            <div class="text-center mb-4">
-                <h3 class="fw-bold text-primary">BasketKids</h3>
-                <p class="text-muted">Bienvenido de nuevo</p>
+<div
+    class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col items-center justify-center p-4 relative z-0">
+
+    <div class="w-full max-w-md bg-transparent flex flex-col gap-6 z-10 w-full">
+        <!-- Header / Logo Section -->
+        <div class="flex flex-col items-center justify-center pt-8 pb-4">
+            <div
+                class="relative w-24 h-24 mb-4 rounded-full bg-gradient-to-tr from-orange-600 to-primary flex items-center justify-center shadow-lg shadow-primary/20">
+                <span class="material-symbols-outlined text-white text-[48px]">sports_basketball</span>
+                <div class="absolute inset-0 rounded-full border border-white/10"></div>
+            </div>
+            <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">BasketKids</h1>
+            <p class="text-slate-500 dark:text-slate-400 mt-1 text-sm font-normal">Tu juego, tus números.</p>
+        </div>
+
+        <!-- Login Pane -->
+        <div *ngIf="activeTab === 'login'" class="w-full space-y-5">
+            <h2 class="text-xl font-semibold text-slate-900 dark:text-white text-center">Bienvenido de nuevo</h2>
+            <form (ngSubmit)="onLogin()" #loginForm="ngForm" class="space-y-4">
+                <!-- Error / Info Message -->
+                <div *ngIf="errorMsg"
+                    class="p-3 text-sm text-red-500 bg-red-100 dark:bg-red-900/30 rounded-lg text-center">
+                    {{ errorMsg }}
+                </div>
+
+                <!-- Email Input -->
+                <div class="space-y-1.5">
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300" for="loginEmail">Correo
+                        electrónico</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="material-symbols-outlined text-slate-400 text-[20px]">mail</span>
+                        </div>
+                        <input type="email" id="loginEmail" [(ngModel)]="loginEmail" name="loginEmail" required
+                            class="block w-full pl-10 pr-3 py-3 rounded-lg border-0 bg-white dark:bg-surface-dark text-slate-900 dark:text-white shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-border-dark placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 transition-all"
+                            placeholder="ejemplo@correo.com" />
+                    </div>
+                </div>
+
+                <!-- Password Input -->
+                <div class="space-y-1.5">
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300"
+                        for="loginPassword">Contraseña</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="material-symbols-outlined text-slate-400 text-[20px]">lock</span>
+                        </div>
+                        <input type="password" id="loginPassword" [(ngModel)]="loginPassword" name="loginPassword"
+                            required
+                            class="block w-full pl-10 pr-10 py-3 rounded-lg border-0 bg-white dark:bg-surface-dark text-slate-900 dark:text-white shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-border-dark placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 transition-all"
+                            placeholder="••••••••" />
+                    </div>
+                </div>
+
+                <!-- Forgot Password Link -->
+                <div class="flex items-center justify-end">
+                    <button type="button" (click)="activeTab = 'forgot'"
+                        class="text-sm font-medium text-primary hover:text-orange-400 transition-colors">¿Olvidaste tu
+                        contraseña?</button>
+                </div>
+
+                <button type="submit" [disabled]="loading || !loginForm.valid"
+                    class="w-full flex justify-center items-center gap-2 py-3.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-primary hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-[#121212] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span *ngIf="loading"
+                        class="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
+                    Iniciar Sesión
+                </button>
+            </form>
+
+            <!-- Footer / Sign Up -->
+            <div class="mt-4 text-center">
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                    ¿No tienes una cuenta?
+                    <button type="button" (click)="activeTab = 'register'; errorMsg = ''"
+                        class="font-semibold text-primary hover:text-orange-400 transition-colors ml-1">Regístrate
+                        aquí</button>
+                </p>
+            </div>
+        </div>
+
+
+        <!-- Register Pane -->
+        <div *ngIf="activeTab === 'register'" class="w-full space-y-5">
+            <h2 class="text-xl font-semibold text-slate-900 dark:text-white text-center">Crear una cuenta nueva</h2>
+            <form (ngSubmit)="onRegister()" #registerForm="ngForm" class="space-y-4">
+                <!-- Error / Info Message -->
+                <div *ngIf="errorMsg"
+                    class="p-3 text-sm text-red-500 bg-red-100 dark:bg-red-900/30 rounded-lg text-center">
+                    {{ errorMsg }}
+                </div>
+
+                <!-- Email Input -->
+                <div class="space-y-1.5">
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300"
+                        for="registerEmail">Correo electrónico</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="material-symbols-outlined text-slate-400 text-[20px]">mail</span>
+                        </div>
+                        <input type="email" id="registerEmail" [(ngModel)]="registerEmail" name="registerEmail" required
+                            class="block w-full pl-10 pr-3 py-3 rounded-lg border-0 bg-white dark:bg-surface-dark text-slate-900 dark:text-white shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-border-dark placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 transition-all"
+                            placeholder="ejemplo@correo.com" />
+                    </div>
+                </div>
+
+                <!-- Password Input -->
+                <div class="space-y-1.5">
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300"
+                        for="registerPassword">Contraseña</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="material-symbols-outlined text-slate-400 text-[20px]">lock</span>
+                        </div>
+                        <input type="password" id="registerPassword" [(ngModel)]="registerPassword"
+                            name="registerPassword" required minlength="6"
+                            class="block w-full pl-10 pr-10 py-3 rounded-lg border-0 bg-white dark:bg-surface-dark text-slate-900 dark:text-white shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-border-dark placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 transition-all"
+                            placeholder="••••••••" />
+                    </div>
+                </div>
+
+                <!-- Confirm Password Input -->
+                <div class="space-y-1.5">
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300"
+                        for="registerConfirm">Confirmar Contraseña</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="material-symbols-outlined text-slate-400 text-[20px]">lock</span>
+                        </div>
+                        <input type="password" id="registerConfirm" [(ngModel)]="registerConfirmPassword"
+                            name="registerConfirm" required minlength="6"
+                            class="block w-full pl-10 pr-10 py-3 rounded-lg border-0 bg-white dark:bg-surface-dark text-slate-900 dark:text-white shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-border-dark placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 transition-all"
+                            placeholder="••••••••" />
+                    </div>
+                </div>
+
+                <button type="submit" [disabled]="loading || !registerForm.valid"
+                    class="w-full flex justify-center items-center gap-2 py-3.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-600 focus:ring-offset-[#121212] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span *ngIf="loading"
+                        class="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
+                    Registrarse
+                </button>
+            </form>
+
+            <!-- Footer / Login -->
+            <div class="mt-4 text-center">
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                    ¿Ya tienes cuenta?
+                    <button type="button" (click)="activeTab = 'login'; errorMsg = ''"
+                        class="font-semibold text-primary hover:text-orange-400 transition-colors ml-1">Inicia sesión
+                        aquí</button>
+                </p>
+            </div>
+        </div>
+
+
+        <!-- Forgot Password Pane -->
+        <div *ngIf="activeTab === 'forgot'" class="w-full space-y-5">
+            <h2 class="text-xl font-semibold text-slate-900 dark:text-white text-center">Restablecer Contraseña</h2>
+            <p class="text-sm text-center text-slate-500 dark:text-slate-400">Introduce tu correo electrónico y te
+                enviaremos un enlace.</p>
+            <form (ngSubmit)="onResetPassword()" #resetForm="ngForm" class="space-y-4">
+                <!-- Error / Info Message -->
+                <div *ngIf="resetMessage" class="p-3 text-sm rounded-lg text-center"
+                    [ngClass]="resetMessageType === 'success' ? 'text-green-500 bg-green-100 dark:bg-green-900/30' : 'text-red-500 bg-red-100 dark:bg-red-900/30'">
+                    {{ resetMessage }}
+                </div>
+
+                <!-- Email Input -->
+                <div class="space-y-1.5">
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300"
+                        for="resetEmail">Email</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="material-symbols-outlined text-slate-400 text-[20px]">mail</span>
+                        </div>
+                        <input type="email" id="resetEmail" [(ngModel)]="resetEmail" name="resetEmail" required
+                            class="block w-full pl-10 pr-3 py-3 rounded-lg border-0 bg-white dark:bg-surface-dark text-slate-900 dark:text-white shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-border-dark placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 transition-all"
+                            placeholder="ejemplo@correo.com" />
+                    </div>
+                </div>
+
+                <button type="submit" [disabled]="!resetForm.valid || loading"
+                    class="w-full flex justify-center items-center gap-2 py-3.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-primary hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-[#121212] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span *ngIf="loading"
+                        class="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
+                    Enviar enlace
+                </button>
+            </form>
+
+            <!-- Footer / Back to Login -->
+            <div class="mt-4 text-center">
+                <button type="button" (click)="activeTab = 'login'; resetMessage = ''"
+                    class="text-sm font-semibold text-primary hover:text-orange-400 transition-colors ml-1 inline-flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                    Volver al inicio de sesión
+                </button>
+            </div>
+        </div>
+
+
+        <div *ngIf="activeTab !== 'forgot'">
+            <!-- Divider -->
+            <div class="relative py-2 mt-4">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-slate-300 dark:border-border-dark"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-2 bg-background-light dark:bg-background-dark text-slate-500">O continuar con</span>
+                </div>
             </div>
 
-            <!-- Tabs -->
-            <ul class="nav nav-pills nav-fill mb-3" role="tablist">
-                <li class="nav-item">
-                    <button class="nav-link" [class.active]="activeTab === 'login'" (click)="activeTab = 'login'"
-                        type="button">Iniciar Sesión</button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link" [class.active]="activeTab === 'register'" (click)="activeTab = 'register'"
-                        type="button">Registrarse</button>
-                </li>
-            </ul>
-
-            <!-- Login Pane -->
-            <div *ngIf="activeTab === 'login'">
-                <form (ngSubmit)="onLogin()" #loginForm="ngForm">
-                    <div class="mb-3">
-                        <label for="loginEmail" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="loginEmail" [(ngModel)]="loginEmail"
-                            name="loginEmail" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="loginPassword" class="form-label">Contraseña</label>
-                        <input type="password" class="form-control" id="loginPassword" [(ngModel)]="loginPassword"
-                            name="loginPassword" required>
-                    </div>
-                    <div class="d-grid mb-3">
-                        <button type="submit" class="btn btn-primary" [disabled]="loading || !loginForm.valid">
-                            <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
-                            Entrar
-                        </button>
-                    </div>
-                    <div class="text-center">
-                        <a href="#" class="text-decoration-none" data-bs-toggle="modal"
-                            data-bs-target="#forgotPasswordModal">¿Olvidaste tu contraseña?</a>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Register Pane -->
-            <div *ngIf="activeTab === 'register'">
-                <form (ngSubmit)="onRegister()" #registerForm="ngForm">
-                    <div class="mb-3">
-                        <label for="registerEmail" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="registerEmail" [(ngModel)]="registerEmail"
-                            name="registerEmail" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="registerPassword" class="form-label">Contraseña</label>
-                        <input type="password" class="form-control" id="registerPassword" [(ngModel)]="registerPassword"
-                            name="registerPassword" required minlength="6">
-                    </div>
-                    <div class="mb-3">
-                        <label for="registerConfirm" class="form-label">Confirmar Contraseña</label>
-                        <input type="password" class="form-control" id="registerConfirm"
-                            [(ngModel)]="registerConfirmPassword" name="registerConfirm" required minlength="6">
-                    </div>
-                    <div class="d-grid mb-3">
-                        <button type="submit" class="btn btn-success" [disabled]="loading || !registerForm.valid">
-                            <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
-                            Registrarse
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Error / Info Message -->
-            <div *ngIf="errorMsg" class="alert alert-danger mt-2 py-2 small">{{ errorMsg }}</div>
-
-            <!-- Google Login -->
-            <div class="text-center my-3">
-                <span class="text-muted">o continúa con</span>
-            </div>
-            <div class="d-grid">
-                <button id="googleLoginBtn" class="btn btn-outline-danger" (click)="onGoogleLogin()" type="button">
-                    <i class="bi bi-google me-2"></i>Google
+            <!-- Google Logins -->
+            <div class="mt-4">
+                <button type="button" (click)="onGoogleLogin()"
+                    class="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-lg border border-slate-300 dark:border-border-dark bg-white dark:bg-surface-dark hover:bg-slate-50 dark:hover:bg-[#2A2A2A] transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500">
+                    <svg aria-hidden="true" class="h-5 w-5" viewBox="0 0 24 24">
+                        <path
+                            d="M12.0003 20.45c4.6667 0 8.45-3.7833 8.45-8.45 0-4.6667-3.7833-8.45-8.45-8.45-4.6667 0-8.45 3.7833-8.45 8.45 0 4.6667 3.7833 8.45 8.45 8.45z"
+                            fill="#fff" fill-opacity="0" stroke="none"></path>
+                        <path
+                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                            fill="#4285F4"></path>
+                        <path
+                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                            fill="#34A853"></path>
+                        <path
+                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                            fill="#FBBC05"></path>
+                        <path
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                            fill="#EA4335"></path>
+                    </svg>
+                    <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Google</span>
                 </button>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Forgot Password Modal -->
-<div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-labelledby="forgotPasswordModalLabel"
-    aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="forgotPasswordModalLabel">Restablecer Contraseña</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body">
-                <p>Introduce tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.</p>
-                <form (ngSubmit)="onResetPassword()" #resetForm="ngForm">
-                    <div class="mb-3">
-                        <label for="resetEmail" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="resetEmail" [(ngModel)]="resetEmail"
-                            name="resetEmail" required>
-                    </div>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary" [disabled]="!resetForm.valid">Enviar
-                            enlace</button>
-                    </div>
-                </form>
-                <div *ngIf="resetMessage" class="alert mt-3 py-2 small" [class]="'alert-' + resetMessageType">
-                    {{ resetMessage }}
-                </div>
-            </div>
-        </div>
+    <!-- Decorative background element for basketball feel (Abstract) -->
+    <div
+        class="absolute -bottom-20 -right-20 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none -z-10">
+    </div>
+    <div class="absolute top-10 -left-10 w-48 h-48 bg-primary/5 rounded-full blur-[60px] pointer-events-none -z-10">
     </div>
 </div>
