@@ -1,0 +1,75 @@
+<div class="space-y-6">
+    <!-- Partials Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div *ngFor="let p of partials"
+            class="bg-white dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-xl p-3 flex flex-col items-center shadow-sm">
+            <span class="text-[10px] uppercase font-black text-slate-400 mb-1">{{ p.quarter }}º Cuarto</span>
+            <div class="flex items-center gap-2">
+                <span class="text-lg font-black text-slate-800 dark:text-white">{{ p.local }}</span>
+                <span class="text-slate-300">-</span>
+                <span class="text-lg font-black text-slate-500">{{ p.visitor }}</span>
+            </div>
+            <div class="mt-1 w-full h-1 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden flex">
+                <div class="h-full bg-primary"
+                    [style.width.%]="p.local > 0 || p.visitor > 0 ? (p.local / (p.local + p.visitor) * 100) : 50"></div>
+                <div class="h-full bg-slate-400 dark:bg-slate-600"
+                    [style.width.%]="p.local > 0 || p.visitor > 0 ? (p.visitor / (p.local + p.visitor) * 100) : 50">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progression Chart -->
+    <div
+        class="bg-white dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl p-6 shadow-sm overflow-hidden">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xs font-black uppercase tracking-widest text-slate-500">Progresión del Partido</h3>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-1.5">
+                    <div class="w-2 h-2 rounded-full bg-primary"></div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase">Local</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <div class="w-2 h-2 rounded-full bg-slate-400"></div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase">Visitante</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="relative w-full aspect-[21/9]">
+            <svg [attr.viewBox]="'0 0 ' + chartWidth + ' ' + chartHeight" class="w-full h-full overflow-visible">
+                <!-- Grid Lines -->
+                <line *ngFor="let i of [0, 0.25, 0.5, 0.75, 1]" [attr.x1]="0" [attr.y1]="i * chartHeight"
+                    [attr.x2]="chartWidth" [attr.y2]="i * chartHeight" class="stroke-slate-100 dark:stroke-white/5"
+                    stroke-dasharray="4,4" />
+
+                <!-- Vertical Lines (Quarters) -->
+                <line *ngFor="let i of [1,2,3,4]" [attr.x1]="(i * 600 / maxTime) * chartWidth" [attr.y1]="0"
+                    [attr.x2]="(i * 600 / maxTime) * chartWidth" [attr.y2]="chartHeight"
+                    class="stroke-slate-100 dark:stroke-white/5" stroke-width="2" />
+
+                <!-- Area Gradient -->
+                <defs>
+                    <linearGradient id="prog-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" [attr.stop-color]="localColor" stop-opacity="0.2" />
+                        <stop offset="100%" [attr.stop-color]="localColor" stop-opacity="0" />
+                    </linearGradient>
+                </defs>
+
+                <path [attr.d]="localArea" fill="url(#prog-grad)" />
+
+                <!-- Lines -->
+                <path [attr.d]="visitorPath" fill="none" class="stroke-slate-400 dark:stroke-slate-600" stroke-width="2"
+                    stroke-linejoin="round" />
+                <path [attr.d]="localPath" fill="none" class="stroke-primary" stroke-width="4" stroke-linejoin="round"
+                    stroke-linecap="round" />
+
+                <!-- Axis Labels -->
+                <text [attr.x]="-5" [attr.y]="chartHeight" class="fill-slate-400 text-[10px] font-bold"
+                    text-anchor="end">0</text>
+                <text [attr.x]="-5" [attr.y]="0" class="fill-slate-400 text-[10px] font-bold" text-anchor="end">{{
+                    maxScore }}</text>
+            </svg>
+        </div>
+    </div>
+</div>

@@ -1,19 +1,97 @@
-<div class="list-group list-group-flush small" style="max-height: 400px; overflow-y: auto;">
-    <div *ngIf="displayEvents.length === 0" class="p-3 text-muted fst-italic text-center">
-        No hay eventos todavía.
+<div
+    class="flex flex-col h-full bg-slate-50/50 dark:bg-background-dark/50 rounded-xl overflow-hidden border border-gray-200 dark:border-white/5 shadow-sm">
+    <!-- Quarter Tabs -->
+    <div
+        class="flex items-center px-1 py-1 border-b border-gray-200 dark:border-white/5 bg-white dark:bg-surface-dark overflow-x-auto no-scrollbar">
+        <button *ngFor="let q of quarters" (click)="setQuarter(q)"
+            class="px-4 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all whitespace-nowrap"
+            [ngClass]="activeQuarter === q ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'">
+            {{ q === 0 ? 'Todos' : q + 'º Q' }}
+        </button>
     </div>
 
-    <div *ngFor="let item of displayEvents"
-        class="list-group-item py-2 d-flex align-items-center justify-content-between">
-        <div>
-            <span class="badge {{ item.badgeClass }} me-2 text-uppercase">{{ item.event.type }}</span>
-            <span class="fw-bold">{{ item.playerName }}</span>
-            <small class="text-muted ms-1" *ngIf="item.event.quantity">
-                (+{{ item.event.quantity }})
-            </small>
+    <!-- Events List -->
+    <div class="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-white/5">
+        <div *ngIf="displayEvents.length === 0"
+            class="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-slate-500">
+            <span class="material-symbols-outlined text-4xl mb-2 opacity-30">history</span>
+            <span class="text-xs font-medium italic">No hay jugadas en este periodo</span>
         </div>
-        <div class="text-muted" style="font-size: 0.85em;">
-            Q{{ item.event.quarter }}
+
+        <div *ngFor="let item of displayEvents"
+            class="group transition-colors p-2 flex flex-col gap-1 animate-in fade-in slide-in-from-bottom-2 duration-300">
+
+            <!-- Alignment Wrapper -->
+            <div class="flex w-full"
+                [ngClass]="item.event.type === EventTypes.TIMEOUT ? 'justify-center' : (item.isRival ? 'justify-end' : 'justify-start')">
+
+                <!-- Timeout Card -->
+                <div *ngIf="item.event.type === EventTypes.TIMEOUT"
+                    class="px-4 py-2 rounded-full border border-primary/20 bg-primary/5 dark:bg-primary/10 flex items-center gap-2 shadow-sm">
+                    <span class="material-symbols-outlined text-primary text-[16px]">timer</span>
+                    <span class="text-[10px] font-black uppercase tracking-widest text-primary">
+                        Tiempo Muerto {{ item.isRival ? 'Rival' : 'Local' }}
+                    </span>
+                    <span class="text-[9px] font-bold text-slate-400">Q{{ item.event.quarter }} - {{
+                        item.event.secondsRemaining }}s</span>
+                    <button *ngIf="adminMode" (click)="deleteEvent(item.event.id)"
+                        class="ml-2 h-6 w-6 flex items-center justify-center rounded-full hover:bg-red-50 dark:hover:bg-red-500/10 text-slate-300 hover:text-red-500 transition-colors">
+                        <span class="material-symbols-outlined text-[14px]">delete</span>
+                    </button>
+                </div>
+
+                <!-- Regular Event Card -->
+                <div *ngIf="item.event.type !== EventTypes.TIMEOUT" class="flex max-w-[85%] items-end gap-2"
+                    [ngClass]="item.isRival ? 'flex-row-reverse text-right' : 'flex-row text-left'">
+
+                    <!-- Avatar -->
+                    <div class="relative shrink-0">
+                        <app-avatar [playerId]="item.event.playerId" [size]="40" [isRival]="item.isRival"
+                            class="block w-10 h-10 rounded-full overflow-hidden border-2 shadow-sm transition-transform group-hover:scale-105"
+                            [ngClass]="item.isRival ? 'border-red-500/30' : 'border-primary/30'">
+                        </app-avatar>
+                        <!-- Type Icon Mini -->
+                        <div class="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 rounded-full flex items-center justify-center shadow-sm border-2 border-white dark:border-slate-800"
+                            [ngClass]="item.badgeClass">
+                            <span class="material-symbols-outlined text-[10px] text-white">{{
+                                getEventIcon(item.event.type)
+                                }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="flex flex-col min-w-0 bg-white dark:bg-surface-dark px-3 py-2 rounded-2xl shadow-sm border border-slate-100 dark:border-white/5"
+                        [ngClass]="item.isRival ? 'rounded-tr-none border-r-red-500/20' : 'rounded-tl-none border-l-primary/20'">
+                        <div class="flex items-center gap-1.5"
+                            [ngClass]="item.isRival ? 'justify-end' : 'justify-start'">
+                            <span class="text-xs font-bold truncate"
+                                [ngClass]="item.isRival ? 'text-red-600 dark:text-red-400 order-2' : 'text-slate-800 dark:text-slate-200 order-1'">{{
+                                item.playerName }}</span>
+                            <span *ngIf="item.event.quantity"
+                                class="text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-sm"
+                                [ngClass]="item.isRival ? 'bg-red-500 text-white order-1' : 'bg-primary text-white order-2'">
+                                +{{ item.event.quantity }}
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-2 mt-0.5"
+                            [ngClass]="item.isRival ? 'justify-end' : 'justify-start'">
+                            <span
+                                class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                {{ item.event.type }}
+                            </span>
+                            <span class="w-1 h-1 rounded-full bg-slate-200 dark:bg-slate-700"></span>
+                            <span class="text-[9px] font-bold text-slate-400">Q{{ item.event.quarter }} · {{
+                                item.event.secondsRemaining }}s</span>
+                        </div>
+                    </div>
+
+                    <!-- Delete Trigger (Visible on touch/hover) -->
+                    <button *ngIf="adminMode" (click)="deleteEvent(item.event.id)"
+                        class="p-1.5 rounded-full text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100 h-8 w-8 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>

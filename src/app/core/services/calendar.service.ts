@@ -52,11 +52,21 @@ export class CalendarService {
     }
 
     async getPublicMatches(): Promise<CalendarMatch[]> {
-        // Fallback or simple logic to fetch global matches if required.
-        // Needs a specialized view or we fetch all matches with limits via repo if exposed.
-        // For simplicity now, we mock or return empty if not formally implemented yet in repo.
-        console.warn('getPublicMatches not fully migrated to repo logic yet');
-        return [];
+        const matches = await this.matchRepo.getAllMatches();
+
+        return matches.map(m => {
+            return {
+                ...m,
+                team_name: (m as any).teams?.name || 'Desconocido',
+                team_id: m.teamId || '',
+                competition_id: m.competitionId || '',
+                rival_name: m.isLocal ? m.visitorTeamName : m.localTeamName,
+                location: m.venue || '',
+                is_local: m.isLocal,
+                team_score: m.isLocal ? m.scoreLocal : m.scoreVisitor,
+                rival_score: m.isLocal ? m.scoreVisitor : m.scoreLocal
+            } as unknown as CalendarMatch;
+        });
     }
 
     /** Returns today at 00:00 */

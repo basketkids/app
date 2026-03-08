@@ -12,7 +12,8 @@ xl:max-w-[1400px] mx-auto border-x border-white/10 bg-background-dark">
             <div class="px-2 pb-2">
                 <app-scoreboard [localScore]="match.scoreLocal" [visitorScore]="match.scoreVisitor"
                     [localName]="match.localTeamName" [visitorName]="match.visitorTeamName"
-                    [quarter]="match.currentQuarter" [timerState]="match.timerState">
+                    [quarter]="match.currentQuarter" [timerState]="match.timerState" [localFouls]="localFouls"
+                    [visitorFouls]="visitorFouls">
                 </app-scoreboard>
             </div>
 
@@ -30,22 +31,88 @@ xl:max-w-[1400px] mx-auto border-x border-white/10 bg-background-dark">
             </div>
 
             <!-- Tabs -->
-            <div class="flex overflow-x-auto no-scrollbar border-t border-white/5 px-2 bg-background-dark/50">
-                <button (click)="activeTab = 'en-vivo'"
-                    [ngClass]="{'border-primary text-primary': activeTab === 'en-vivo', 'border-transparent text-slate-400': activeTab !== 'en-vivo'}"
-                    class="whitespace-nowrap flex-1 py-3 px-1 border-b-2 font-medium text-sm text-center transition-colors">
-                    En Vivo
-                </button>
-                <button (click)="activeTab = 'estadisticas'"
-                    [ngClass]="{'border-primary text-primary': activeTab === 'estadisticas', 'border-transparent text-slate-400': activeTab !== 'estadisticas'}"
-                    class="whitespace-nowrap flex-1 py-3 px-1 border-b-2 font-medium text-sm text-center transition-colors">
-                    Estadísticas
-                </button>
+            <div class="flex overflow-x-auto no-scrollbar border-t border-white/5 px-2 bg-background-dark/50"
+                *ngIf="publicitySettings.events || publicitySettings.stats || publicitySettings.chronicle || publicitySettings.mvp || publicitySettings.leaders">
+                <div class="flex overflow-x-auto no-scrollbar border-b border-white/5 px-2">
+                    <button (click)="activeTab = 'estadisticas'"
+                        [ngClass]="{'border-primary text-primary': activeTab === 'estadisticas', 'border-transparent text-slate-500': activeTab !== 'estadisticas'}"
+                        class="whitespace-nowrap px-4 py-3 border-b-2 font-bold text-xs uppercase tracking-wider transition-colors">
+                        Estadísticas
+                    </button>
+                    <button (click)="activeTab = 'en-vivo'"
+                        [ngClass]="{'border-primary text-primary': activeTab === 'en-vivo', 'border-transparent text-slate-500': activeTab !== 'en-vivo'}"
+                        class="whitespace-nowrap px-4 py-3 border-b-2 font-bold text-xs uppercase tracking-wider transition-colors">
+                        En Vivo
+                    </button>
+                    <button (click)="activeTab = 'analisis'"
+                        [ngClass]="{'border-primary text-primary': activeTab === 'analisis', 'border-transparent text-slate-500': activeTab !== 'analisis'}"
+                        class="whitespace-nowrap px-4 py-3 border-b-2 font-bold text-xs uppercase tracking-wider transition-colors">
+                        Análisis
+                    </button>
+                    <button *ngIf="publicitySettings.mvp || publicitySettings.leaders" (click)="activeTab = 'resumen'"
+                        [ngClass]="{'border-primary text-primary': activeTab === 'resumen', 'border-transparent text-slate-500': activeTab !== 'resumen'}"
+                        class="whitespace-nowrap px-4 py-3 border-b-2 font-bold text-xs uppercase tracking-wider transition-colors">
+                        Resumen
+                    </button>
+                    <button *ngIf="publicitySettings.chronicle" (click)="activeTab = 'cronica'"
+                        [ngClass]="{'border-primary text-primary': activeTab === 'cronica', 'border-transparent text-slate-500': activeTab !== 'cronica'}"
+                        class="whitespace-nowrap px-4 py-3 border-b-2 font-bold text-xs uppercase tracking-wider transition-colors">
+                        Crónica
+                    </button>
+                </div>
             </div>
         </div>
 
         <!-- Main Content Area -->
         <div class="flex-1 overflow-y-auto pb-24 flex flex-col pt-2 bg-background-dark">
+
+            <!-- TAB: Resumen (MVP + Líderes) -->
+            <div *ngIf="activeTab === 'resumen'" class="flex-1 p-3 animate-in fade-in duration-300">
+                <!-- MVP Card -->
+                <div *ngIf="publicitySettings.mvp && mvp"
+                    class="bg-gradient-to-br from-amber-500/10 to-transparent border border-amber-500/20 rounded-2xl p-5 mb-4 relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 text-amber-500/10 scale-150 rotate-12">
+                        <span class="material-symbols-outlined text-[100px]">star</span>
+                    </div>
+                    <div class="flex items-center gap-4 relative z-10">
+                        <div class="shrink-0 ring-4 ring-amber-500/20 rounded-full">
+                            <app-avatar [seed]="mvp.playerId" [size]="72"></app-avatar>
+                        </div>
+                        <div class="flex-1">
+                            <span
+                                class="px-2 py-0.5 bg-amber-500 text-white text-[9px] font-black uppercase tracking-widest rounded-full mb-1 inline-block">MVP
+                                del Partido</span>
+                            <h2 class="text-xl font-bold text-white leading-tight">#{{ mvp.dorsal }} {{ mvp.name }}</h2>
+                            <div class="flex items-baseline gap-1 mt-0.5">
+                                <span class="text-2xl font-black text-amber-400">{{ mvp.value }}</span>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Val</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leaders -->
+                <div *ngIf="publicitySettings.leaders && leaders.length > 0">
+                    <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-1">Líderes
+                        Estadísticos</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div *ngFor="let leader of leaders"
+                            class="bg-surface-dark border border-white/5 rounded-xl p-3 flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-lg flex items-center justify-center bg-white/5">
+                                <span class="material-symbols-outlined text-primary text-[18px]">{{ leader.icon
+                                    }}</span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{{
+                                    leader.category }}</p>
+                                <p class="text-xs font-bold text-white truncate">#{{ leader.dorsal }} {{
+                                    leader.name.split(' ')[0] }}</p>
+                                <p class="text-base font-black text-primary leading-none mt-0.5">{{ leader.value }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- TAB: En Vivo (Play by Play) -->
             <div *ngIf="activeTab === 'en-vivo'" class="flex-1 p-3 animate-in fade-in duration-300">
@@ -53,12 +120,69 @@ xl:max-w-[1400px] mx-auto border-x border-white/10 bg-background-dark">
             </div>
 
             <!-- TAB: Estadísticas (Box Score) -->
-            <div *ngIf="activeTab === 'estadisticas'" class="flex-1 p-3 animate-in fade-in duration-300">
+            <div *ngIf="activeTab === 'estadisticas' && publicitySettings.stats"
+                class="flex-1 p-3 animate-in fade-in duration-300">
                 <div class="bg-surface-dark border border-white/10 rounded-xl overflow-hidden shadow-sm">
                     <div class="bg-white/5 px-3 py-2 border-b border-white/5">
                         <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Box Score</h3>
                     </div>
-                    <app-statistics-grid [stats]="match.stats" [roster]="match.roster"></app-statistics-grid>
+                    <app-statistics-grid [stats]="match.stats" [roster]="combinedRoster"
+                        [showFantasy]="publicitySettings.fantasy"></app-statistics-grid>
+                </div>
+            </div>
+
+            <!-- TAB: Crónica -->
+            <div *ngIf="activeTab === 'cronica' && publicitySettings.chronicle"
+                class="flex-1 p-3 animate-in fade-in duration-300">
+                <div class="bg-surface-dark border border-white/10 rounded-2xl p-6 shadow-sm">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">auto_awesome</span>
+                        Crónica del Partido
+                    </h3>
+                    <div class="prose prose-invert max-w-none text-slate-300 leading-relaxed whitespace-pre-wrap">
+                        {{ match.chronicle }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Análisis -->
+            <div *ngIf="activeTab === 'analisis'"
+                class="flex-1 p-3 animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-8">
+                <app-match-progression [progression]="progression" [partials]="partials"></app-match-progression>
+
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="material-symbols-outlined text-primary">strategy</span>
+                        <h3 class="text-sm font-black uppercase tracking-widest text-slate-300">Mejores Quintetos
+                            Ofensivos</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <app-lineup-board *ngFor="let l of bestLineups; let i = index" [players]="l.players" [stats]="l"
+                            [title]="(i+1) + '.º Quinteto (+/-)'" [jerseyColor]="match.teamJerseyColor || '5199e4'">
+                        </app-lineup-board>
+                        <div *ngIf="bestLineups.length === 0"
+                            class="col-span-full py-12 text-center text-slate-500 border border-dashed border-white/10 rounded-2xl">
+                            <p class="text-xs">No hay quintetos con balance positivo aún.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="material-symbols-outlined text-emerald-400">shield</span>
+                        <h3 class="text-sm font-black uppercase tracking-widest text-slate-300">Mejores Quintetos
+                            Defensivos</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <app-lineup-board *ngFor="let l of bestDefensiveLineups; let i = index" [players]="l.players"
+                            [stats]="l" [title]="(i+1) + '.º Quinteto (Defensa)'"
+                            [jerseyColor]="match.teamJerseyColor || '5199e4'">
+                        </app-lineup-board>
+                        <div *ngIf="bestDefensiveLineups.length === 0"
+                            class="col-span-full py-12 text-center text-slate-500 border border-dashed border-white/10 rounded-2xl">
+                            <p class="text-xs">No hay datos defensivos suficientes.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 

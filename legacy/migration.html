@@ -39,6 +39,20 @@
                     <input class="form-check-input" type="checkbox" id="checkDryRun">
                     <label class="form-check-label" for="checkDryRun">Simulacro (No escribir en Supabase)</label>
                 </div>
+                <div class="form-check mt-1">
+                    <input class="form-check-input" type="checkbox" id="checkMapByEmail" checked>
+                    <label class="form-check-label" for="checkMapByEmail">Vincular usuarios por correo (Firebase ->
+                        Supabase)</label>
+                    <small class="text-muted d-block">Busca el correo en los perfiles de Supabase para asignar la
+                        propiedad.</small>
+                </div>
+
+                <div class="mt-4 pt-3 border-top">
+                    <button id="btnDeleteAll" class="btn btn-outline-danger btn-sm">Borrar Datos Actuales
+                        (Peligro)</button>
+                    <small class="text-muted d-block mt-1">Limpia equipos, jugadores, competiciones y partidos antes de
+                        re-importar.</small>
+                </div>
             </div>
         </div>
 
@@ -82,6 +96,22 @@
 
         btnStartJson.onclick = async () => {
             const dryRun = document.getElementById('checkDryRun').checked;
+            const mapByEmail = document.getElementById('checkMapByEmail').checked;
+
+            const emailToSbId = new Map();
+
+            if (mapByEmail && !dryRun) {
+                log("Cargando perfiles de Supabase para vincular por email...");
+                const { data: profiles, error: pError } = await sb.from('profiles').select('id, email');
+                if (pError) {
+                    log("Error cargando perfiles: " + pError.message, "error");
+                    return;
+                }
+                profiles.forEach(p => {
+                    if (p.email) emailToSbId.set(p.email.toLowerCase(), p.id);
+                });
+                log(`Mapeo listo: ${emailToSbId.size} correos encontrados.`);
+            }
             const file = jsonFileInput.files[0];
             if (!file) return;
 
@@ -126,8 +156,19 @@
                             ...userData
                         };
 
-                        log(`Migrando usuario ${count + 1}/${uids.length}: ${uid}`);
-                        await migrateUserRecursive(userObj, dryRun);
+                        let targetOwnerId = uid; // Default to Firebase UID
+                        if (mapByEmail && userObj.email) {
+                            const sbId = emailToSbId.get(userObj.email.toLowerCase());
+                            if (sbId) {
+                                targetOwnerId = sbId;
+                                log(`[Mapping] Vinculado ${userObj.email} -> ${sbId}`, "success");
+                            } else {
+                                log(`[Mapping] No se encontró perfil en SB para ${userObj.email}. Usando ID original.`, "info");
+                            }
+                        }
+
+                        log(`Migrando usuario ${count + 1}/${uids.length}: ${uid} (Propietario final: ${targetOwnerId})`);
+                        await migrateUserRecursive(userObj, targetOwnerId, dryRun);
                         count++;
                     }
 
@@ -149,9 +190,54 @@
             reader.readAsText(file);
         };
 
-        async function migrateUserRecursive(userObj, dryRun) {
-            // 1. Profile
-            await migrateProfile(userObj, dryRun);
+        // DELETE ALL LOGIC
+        const btnDeleteAll = document.getElementById('btnDeleteAll');
+        btnDeleteAll.onclick = async () => {
+            const confirmed = confirm("¿ESTÁS SEGURO? Se borrarán TODOS los equipos, jugadores, competiciones y partidos de la base de datos.");
+            if (!confirmed) return;
+
+            const secondConfirm = confirm("¿De verdad? Esta acción no se puede deshacer.");
+            if (!secondConfirm) return;
+
+            btnDeleteAll.disabled = true;
+            log("Iniciando borrado masivo...");
+
+            try {
+                // Delete in order to respect dependencies
+                const tables = [
+                    'match_events',
+                    'match_player_stats',
+                    'match_rosters',
+                    'matches',
+                    'rivals',
+                    'competitions',
+                    'players',
+                    'teams',
+                    'contact_messages'
+                ];
+
+                for (const table of tables) {
+                    log(`Borrando tabla: ${table}...`);
+                    // Supabase delete requires a filter
+                    const filterColumn = (table === 'match_rosters') ? 'match_id' : 'id';
+                    const { error } = await sb.from(table).delete().neq(filterColumn, '00000000-0000-0000-0000-000000000000');
+                    if (error) {
+                        log(`Error en ${table}: ${error.message}`, 'error');
+                    } else {
+                        log(`Tabla ${table} vaciada.`, 'success');
+                    }
+                }
+                log("¡Base de datos lista para una nueva importación!", 'success');
+            } catch (err) {
+                log("Error durante el borrado: " + err.message, 'error');
+            } finally {
+                btnDeleteAll.disabled = false;
+            }
+        };
+
+        async function migrateUserRecursive(userObj, targetOwnerId, dryRun) {
+            // 1. Profile - Use the targetOwnerId for the profile upsert as well
+            await migrateProfile(userObj, targetOwnerId, dryRun);
 
             // 2. Teams
             if (userObj.equipos) {
@@ -159,7 +245,7 @@
                 const teamIds = Object.keys(teams);
                 for (const teamId of teamIds) {
                     const teamData = teams[teamId];
-                    await migrateTeam(userObj.uid, teamId, teamData, dryRun);
+                    await migrateTeam(targetOwnerId, teamId, teamData, dryRun);
                 }
             }
         }
@@ -207,8 +293,8 @@
             return data.id;
         }
 
-        async function migrateProfile(user, dryRun) {
-            log(`Migrando perfil... ${user.uid}`);
+        async function migrateProfile(user, targetId, dryRun) {
+            log(`Migrando perfil... ${targetId}`);
 
             let isAdmin = false;
             // Handle different admin flag locations
@@ -225,7 +311,7 @@
             // Try determine where avatar config is
             const avatarParams = user.avatarConfig || user.profile?.avatarConfig || user.avatar;
             if (avatarParams) {
-                avatarConfigId = await migrateAvatarConfig(avatarParams, dryRun, `User ${user.uid}`);
+                avatarConfigId = await migrateAvatarConfig(avatarParams, dryRun, `User ${targetId}`);
             }
 
             if (dryRun) {
@@ -234,7 +320,7 @@
             }
 
             const { error } = await sb.from('profiles').upsert({
-                id: user.uid,
+                id: targetId,
                 email: user.email || null,
                 display_name: user.displayName || user.profile?.displayName || 'Usuario',
                 photo_url: user.photoURL || user.profile?.photoURL || null,
@@ -480,7 +566,7 @@
             }
 
             if (!dryRun) {
-                const { data, error } = await sb.from('matches').insert({
+                const { data, error } = await sb.from('matches').upsert({
                     competition_id: sbCompId,
                     team_id: sbTeamId,
                     rival_id: rivalId,
@@ -493,8 +579,21 @@
                     team_score: m.puntosEquipo || 0,
                     rival_score: m.puntosRival || 0,
                     chronicle: m.cronica || null,
-                    live_state: m
-                }).select().single();
+                    current_period: m.parteActual || m.currentQuarter || 1,
+                    live_state: {
+                        ...m,
+                        currentQuarter: m.parteActual || m.currentQuarter || 1,
+                        jugadoresEnPista: (() => {
+                            const pOnCourt = m.jugadoresEnPista || {};
+                            const mapped = {};
+                            Object.keys(pOnCourt).forEach(fid => {
+                                const uuid = globalPlayerMap.get(fid) || fid;
+                                mapped[uuid] = true;
+                            });
+                            return mapped;
+                        })()
+                    }
+                }, { onConflict: 'id' }).select().single();
 
                 if (error) {
                     log(`Error partido ${mId}: ${error.message}`, 'error');
@@ -547,7 +646,7 @@
                     robos: s.robos || 0,
                     tapones: s.tapones || 0,
                     faltas: s.faltas || 0,
-                    valoracion: 0
+                    valoracion: (s.puntos || 0) + (s.rebotes || 0) + (s.asistencias || 0) + (s.robos || 0) + (s.tapones || 0) - (s.faltas || 0)
                 });
 
                 rostersPayload.push({
@@ -557,12 +656,12 @@
             }
 
             if (statsPayload.length > 0) {
-                const { error: statsError } = await sb.from('match_player_stats').insert(statsPayload);
+                const { error: statsError } = await sb.from('match_player_stats').upsert(statsPayload, { onConflict: 'match_id,player_id' });
                 if (statsError) log(`Error stats partido: ${statsError.message}`, 'error');
             }
 
             if (rostersPayload.length > 0) {
-                const { error: rosterError } = await sb.from('match_rosters').insert(rostersPayload);
+                const { error: rosterError } = await sb.from('match_rosters').upsert(rostersPayload, { onConflict: 'match_id,player_id' });
                 if (rosterError) log(`Error convocados partido: ${rosterError.message}`, 'error');
             }
         }
@@ -588,11 +687,16 @@
                     quarter: ev.cuarto || 1,
                     timestamp: ev.tiempoSegundos || 0,
                     value: ev.cantidad || (ev.valor || 0),
-                    properties: ev
+                    properties: {
+                        ...ev,
+                        jugadoresEnPista: (ev.jugadoresEnPista || []).map(fid => globalPlayerMap.get(fid) || fid)
+                    }
                 });
             }
 
             if (eventsPayload.length > 0) {
+                // For events we use insert as they usually don't have natural keys easily available 
+                // in the payload without generating UUIDs from properties hash.
                 const { error } = await sb.from('match_events').insert(eventsPayload);
                 if (error) log(`Error insertando eventos partido: ${error.message}`, 'error');
             }

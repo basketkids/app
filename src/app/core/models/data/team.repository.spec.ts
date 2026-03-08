@@ -110,8 +110,8 @@ describe('TeamRepository Unit Tests', () => {
     describe('getTeamRoster', () => {
         it('should map db players including those without avatar config', async () => {
             const mockPlayers = [
-                { id: 'p1', name: 'Player 1', dorsal: 1, avatar_config: 'avt-1' },
-                { id: 'p2', name: 'Player 2', dorsal: 2, avatar_config: null }
+                { id: 'p1', name: 'Player 1', dorsal: 1, avatar_configs: [{ id: 'avt-1' }] },
+                { id: 'p2', name: 'Player 2', dorsal: 2, avatar_configs: null }
             ];
             mockEq.mockResolvedValueOnce({ data: mockPlayers, error: null });
 
@@ -119,7 +119,7 @@ describe('TeamRepository Unit Tests', () => {
 
             expect(mockFrom).toHaveBeenCalledWith('players');
             expect(roster.length).toBe(2);
-            expect(roster[0].avatarConfig).toBe('avt-1');
+            expect(roster[0].avatarConfig).toEqual({ id: 'avt-1' });
             expect(roster[1].avatarConfig).toBeNull();
         });
     });

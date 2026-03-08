@@ -35,4 +35,15 @@ export class ProfileService {
             this.profileSubject.next(null);
         }
     }
+
+    /**
+     * Updates the local profile state without persisting to DB.
+     * Useful for real-time UI updates (e.g. previewing avatar in header).
+     */
+    updateLocalProfile(partial: Partial<UserProfile>): void {
+        const current = this.profileSubject.getValue();
+        if (current) {
+            this.profileSubject.next({ ...current, ...partial });
+        }
+    }
 }

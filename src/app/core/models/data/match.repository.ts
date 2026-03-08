@@ -19,7 +19,7 @@ export class MatchRepository {
     async getMatchById(id: string): Promise<Match | null> {
         const { data, error } = await this.supabase.instance
             .from(this.TABLE_NAME)
-            .select('id, date, is_local, location, state, team_id, rival_id, rival_name, team_score, rival_score, chronicle, live_state, teams(name)')
+            .select('id, date, is_local, location, state, team_id, rival_id, rival_name, team_score, rival_score, chronicle, live_state, teams(name, color)')
             .eq('id', id)
             .single();
 
@@ -83,8 +83,8 @@ export class MatchRepository {
 
                 const points = st.points || 0;
                 const fouls = st.faltas || 0;
-                const assists = st.asistencias || 0;
-                const rebounds = st.rebotes || 0;
+                const assists = st.asistencias || st.assists || 0;
+                const rebounds = st.rebounds || st.rebotes || 0;
                 const steals = st.robos || 0;
                 const blocks = st.tapones || 0;
 
@@ -98,6 +98,12 @@ export class MatchRepository {
                     rebounds,
                     steals,
                     blocks,
+                    t1m: st.t1m ?? 0,
+                    t1i: st.t1i ?? 0,
+                    t2m: st.t2m ?? 0,
+                    t2i: st.t2i ?? 0,
+                    t3m: st.t3m ?? 0,
+                    t3i: st.t3i ?? 0,
                     valoracion,
                     plusMinus: st.mas_menos ?? 0 // If not in DB, we'll calculate it from events below
                 };
@@ -204,6 +210,7 @@ export class MatchRepository {
         let teamData = row['teams'];
         if (Array.isArray(teamData)) teamData = teamData[0];
         const teamName: string = (teamData?.name ?? row['team_name'] ?? 'Mi Equipo') as string;
+        const teamColor: string | null = teamData?.color ?? null;
         const rivalName: string = (row['rival_name'] ?? 'Rival') as string;
 
         const state: MatchState = this.mapLegacyState(row['state']);
@@ -222,15 +229,16 @@ export class MatchRepository {
             isLocal,
             scoreLocal: isLocal ? (row['team_score'] ?? 0) : (row['rival_score'] ?? 0),
             scoreVisitor: isLocal ? (row['rival_score'] ?? 0) : (row['team_score'] ?? 0),
-            currentQuarter: row['live_state']?.currentQuarter ?? 1,
+            currentQuarter: row['live_state']?.currentQuarter ?? row['live_state']?.parteActual ?? row['current_period'] ?? 1,
             timerState,
             events: row['events'] ?? {},
             stats: row['stats'] ?? {},
             roster: row['roster'] ?? {},
             plantilla: {},
             convocados: {},
-            playersOnCourt: {},
-            chronicle: row['chronicle'] ?? null
+            playersOnCourt: row['live_state']?.jugadoresEnPista || {},
+            chronicle: row['chronicle'] ?? null,
+            teamJerseyColor: teamColor
         };
     }
 
@@ -250,6 +258,20 @@ export class MatchRepository {
 
         if (error) {
             console.error('[MatchRepository] appendMatchEvent error:', error);
+            return false;
+        }
+        return true;
+    }
+
+    async deleteMatchEvent(matchId: string, eventId: string): Promise<boolean> {
+        const { error } = await this.supabase.instance
+            .from('match_events')
+            .delete()
+            .eq('id', eventId)
+            .eq('match_id', matchId);
+
+        if (error) {
+            console.error('[MatchRepository] deleteMatchEvent error:', error);
             return false;
         }
         return true;
@@ -336,7 +358,7 @@ export class MatchRepository {
     async getMatchesByTeam(teamId: string): Promise<Match[]> {
         const { data, error } = await this.supabase.instance
             .from(this.TABLE_NAME)
-            .select('id, date, is_local, location, state, team_id, rival_id, rival_name, team_score, rival_score, chronicle, live_state, teams(name)')
+            .select('id, date, is_local, location, state, team_id, rival_id, rival_name, team_score, rival_score, chronicle, live_state, teams(name, color)')
             .eq('team_id', teamId)
             .order('date', { ascending: true });
 
@@ -349,7 +371,7 @@ export class MatchRepository {
 
         const { data, error } = await this.supabase.instance
             .from(this.TABLE_NAME)
-            .select('id, date, is_local, location, state, team_id, rival_id, rival_name, team_score, rival_score, chronicle, live_state, teams(name)')
+            .select('id, date, is_local, location, state, team_id, rival_id, rival_name, team_score, rival_score, chronicle, live_state, teams(name, color)')
             .in('team_id', teamIds)
             .order('date', { ascending: true });
 
@@ -360,7 +382,7 @@ export class MatchRepository {
     async getMatchesByCompetition(compId: string): Promise<Match[]> {
         const { data, error } = await this.supabase.instance
             .from(this.TABLE_NAME)
-            .select('id, date, is_local, location, state, team_id, rival_id, rival_name, team_score, rival_score, chronicle, live_state, teams(name)')
+            .select('id, date, is_local, location, state, team_id, rival_id, rival_name, team_score, rival_score, chronicle, live_state, teams(name, color)')
             .eq('competition_id', compId)
             .order('date', { ascending: true });
 
@@ -371,7 +393,7 @@ export class MatchRepository {
     async getMatchesByDateRange(startDate: string, endDate: string): Promise<Match[]> {
         const { data, error } = await this.supabase.instance
             .from(this.TABLE_NAME)
-            .select('id, date, is_local, location, state, team_id, rival_id, rival_name, team_score, rival_score, chronicle, live_state, teams(name)')
+            .select('id, date, is_local, location, state, team_id, rival_id, rival_name, team_score, rival_score, chronicle, live_state, teams(name, color)')
             .gte('date', startDate)
             .lte('date', endDate)
             .order('date', { ascending: true });
@@ -385,7 +407,7 @@ export class MatchRepository {
         const { data, error } = await this.supabase.instance
             .from(this.TABLE_NAME)
             .insert([matchPayload])
-            .select('id, date, is_local, location, state, team_id, rival_id, rival_name, team_score, rival_score, chronicle, live_state, teams(name)')
+            .select('id, date, is_local, location, state, team_id, rival_id, rival_name, team_score, rival_score, chronicle, live_state, teams(name, color)')
             .single();
 
         if (error || !data) {
@@ -394,6 +416,16 @@ export class MatchRepository {
         }
 
         return this.rowToMatch(data);
+    }
+
+    async getAllMatches(): Promise<Match[]> {
+        const { data, error } = await this.supabase.instance
+            .from(this.TABLE_NAME)
+            .select('id, date, is_local, location, state, team_id, rival_id, rival_name, team_score, rival_score, chronicle, live_state, teams(name, color)')
+            .order('date', { ascending: false });
+
+        if (error || !data) return [];
+        return data.map(d => this.rowToMatch(d));
     }
 
     async deleteMatch(matchId: string): Promise<boolean> {

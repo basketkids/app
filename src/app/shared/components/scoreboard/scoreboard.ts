@@ -16,6 +16,8 @@ export class Scoreboard {
   @Input() visitorName: string = 'Visitante';
   @Input() quarter: number = 1;
   @Input() timerState: MatchTimerState = { active: false, remainingSeconds: 600 };
+  @Input() localFouls: number = 0;
+  @Input() visitorFouls: number = 0;
 
   get formattedTime(): string {
     const seconds = this.timerState?.remainingSeconds ?? 600;

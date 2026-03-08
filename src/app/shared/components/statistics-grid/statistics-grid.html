@@ -1,80 +1,120 @@
-<div class="overflow-x-auto w-full rounded-b-xl">
+<div class="overflow-x-auto w-full rounded-b-xl border-x border-slate-100 dark:border-white/5">
     <table class="w-full text-sm text-left align-middle border-collapse">
-        <thead class="text-xs text-slate-400 uppercase bg-black/20 border-b border-white/10 select-none cursor-pointer">
+        <thead
+            class="text-[10px] text-slate-500 dark:text-slate-400 uppercase bg-slate-50 dark:bg-black/20 border-b border-slate-200 dark:border-white/10 select-none cursor-pointer">
             <tr>
-                <th scope="col" class="px-3 py-3 font-semibold hover:text-white transition-colors text-left"
+                <th scope="col" class="sticky left-0 bg-slate-50 dark:bg-[#1a1a1a] px-3 py-3 font-black text-left z-10"
                     (click)="sortBy('name')">
-                    Jugador <span class="material-symbols-outlined text-[14px] align-middle"
-                        *ngIf="sortColumn === 'name'">{{ sortAsc ? 'arrow_drop_up' : 'arrow_drop_down' }}</span>
+                    Jugador
                 </th>
-                <th scope="col" class="px-2 py-3 font-semibold text-center hover:text-white transition-colors"
-                    (click)="sortBy('points')">
-                    PTS <span class="material-symbols-outlined text-[14px] align-middle"
-                        *ngIf="sortColumn === 'points'">{{ sortAsc ? 'arrow_drop_up' : 'arrow_drop_down' }}</span>
-                </th>
-                <th scope="col"
-                    class="hidden sm:table-cell px-2 py-3 font-semibold text-center hover:text-white transition-colors"
-                    (click)="sortBy('assists')">
-                    AST <span class="material-symbols-outlined text-[14px] align-middle"
-                        *ngIf="sortColumn === 'assists'">{{ sortAsc ? 'arrow_drop_up' : 'arrow_drop_down' }}</span>
-                </th>
-                <th scope="col"
-                    class="hidden sm:table-cell px-2 py-3 font-semibold text-center hover:text-white transition-colors"
-                    (click)="sortBy('rebounds')">
-                    REB <span class="material-symbols-outlined text-[14px] align-middle"
-                        *ngIf="sortColumn === 'rebounds'">{{ sortAsc ? 'arrow_drop_up' : 'arrow_drop_down' }}</span>
-                </th>
-                <th scope="col"
-                    class="hidden sm:table-cell px-2 py-3 font-semibold text-center hover:text-white transition-colors"
-                    (click)="sortBy('steals')">
-                    ROB <span class="material-symbols-outlined text-[14px] align-middle"
-                        *ngIf="sortColumn === 'steals'">{{ sortAsc ? 'arrow_drop_up' : 'arrow_drop_down' }}</span>
-                </th>
-                <th scope="col"
-                    class="hidden sm:table-cell px-2 py-3 font-semibold text-center hover:text-white transition-colors"
-                    (click)="sortBy('blocks')">
-                    TAP <span class="material-symbols-outlined text-[14px] align-middle"
-                        *ngIf="sortColumn === 'blocks'">{{ sortAsc ? 'arrow_drop_up' : 'arrow_drop_down' }}</span>
-                </th>
-                <th scope="col" class="px-2 py-3 font-semibold text-center hover:text-white transition-colors"
-                    (click)="sortBy('fouls')">
-                    F <span class="material-symbols-outlined text-[14px] align-middle" *ngIf="sortColumn === 'fouls'">{{
-                        sortAsc ? 'arrow_drop_up' : 'arrow_drop_down' }}</span>
-                </th>
-                <th scope="col"
-                    class="hidden sm:table-cell px-2 py-3 font-semibold text-center hover:text-white transition-colors"
-                    (click)="sortBy('plusMinus')">
-                    +/- <span class="material-symbols-outlined text-[14px] align-middle"
-                        *ngIf="sortColumn === 'plusMinus'">{{ sortAsc ? 'arrow_drop_up' : 'arrow_drop_down' }}</span>
-                </th>
-                <th scope="col" class="px-3 py-3 font-semibold text-center hover:text-white transition-colors"
-                    (click)="sortBy('valoracion')">
-                    VAL <span class="material-symbols-outlined text-[14px] align-middle"
-                        *ngIf="sortColumn === 'valoracion'">{{ sortAsc ? 'arrow_drop_up' : 'arrow_drop_down' }}</span>
-                </th>
+                <th scope="col" class="px-2 py-3 font-black text-center" (click)="sortBy('points')">PTS</th>
+                <th scope="col" class="px-2 py-3 font-black text-center" (click)="sortBy('t1m')">T1</th>
+                <th scope="col" class="px-2 py-3 font-black text-center" (click)="sortBy('t2m')">T2</th>
+                <th scope="col" class="px-2 py-3 font-black text-center" (click)="sortBy('t3m')">T3</th>
+                <th scope="col" class="px-2 py-3 font-black text-center" (click)="sortBy('rebounds')">REB</th>
+                <th scope="col" class="px-2 py-3 font-black text-center" (click)="sortBy('assists')">AST</th>
+                <th scope="col" class="px-2 py-3 font-black text-center" (click)="sortBy('steals')">ROB</th>
+                <th scope="col" class="px-2 py-3 font-black text-center" (click)="sortBy('blocks')">TAP</th>
+                <th scope="col" class="px-2 py-3 font-black text-center" (click)="sortBy('fouls')">F</th>
+                <th scope="col" class="px-2 py-3 font-black text-center" (click)="sortBy('plusMinus')">+/-</th>
+                <th scope="col" class="px-3 py-3 font-black text-center" (click)="sortBy('valoracion')">VAL</th>
+                <th scope="col" *ngIf="showFantasy" class="px-3 py-3 font-black text-center"
+                    (click)="sortBy('fantasy')">FAN</th>
             </tr>
         </thead>
         <tbody>
-            <tr *ngFor="let row of rows"
-                class="border-b border-white/5 bg-background-dark/50 hover:bg-white/5 transition-colors">
-                <td class="px-3 py-2.5 whitespace-nowrap text-left" [title]="row.player.name">
-                    <span class="text-slate-400 font-bold mr-1.5 w-5 inline-block text-right">{{ row.player.dorsal
-                        }}</span>
-                    <span class="text-white font-medium">{{ row.player.name }}</span>
+            <tr *ngFor="let row of rows; let last = last"
+                [ngClass]="{'border-b border-slate-100 dark:border-white/5': !last}"
+                class="bg-white dark:bg-background-dark/50 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                <!-- Name Sticky -->
+                <td
+                    class="sticky left-0 bg-white dark:bg-[#121212] px-3 py-2.5 whitespace-nowrap text-left z-10 border-r border-slate-100 dark:border-white/5">
+                    <span class="text-slate-400 dark:text-slate-500 font-bold mr-1.5 w-4 inline-block text-right">{{
+                        row.player.dorsal }}</span>
+                    <span class="text-slate-800 dark:text-white font-bold">{{ row.player.name.split(' ')[0] }}</span>
                 </td>
-                <td class="px-2 py-2.5 text-center font-bold text-white">{{ row.stats.points }}</td>
-                <td class="hidden sm:table-cell px-2 py-2.5 text-center text-slate-300">{{ row.stats.assists }}</td>
-                <td class="hidden sm:table-cell px-2 py-2.5 text-center text-slate-300">{{ row.stats.rebounds }}</td>
-                <td class="hidden sm:table-cell px-2 py-2.5 text-center text-slate-300">{{ row.stats.steals }}</td>
-                <td class="hidden sm:table-cell px-2 py-2.5 text-center text-slate-300">{{ row.stats.blocks }}</td>
-                <td class="px-2 py-2.5 text-center text-slate-300">{{ row.stats.fouls }}</td>
-                <td class="hidden sm:table-cell px-2 py-2.5 text-center font-medium"
-                    [ngClass]="{'text-green-400': row.stats.plusMinus && row.stats.plusMinus > 0, 'text-red-400': row.stats.plusMinus && row.stats.plusMinus < 0}">
+
+                <!-- PTS -->
+                <td class="px-2 py-2.5 text-center font-bold"
+                    [ngClass]="{'text-primary font-black scale-110': (row.stats.points || 0) >= 10, 'text-slate-900 dark:text-white': (row.stats.points || 0) < 10}">
+                    {{ row.stats.points }}
+                </td>
+
+                <!-- T1 -->
+                <td class="px-2 py-2.5 text-center text-[11px] font-medium text-slate-600 dark:text-slate-400">
+                    {{ row.stats.t1m || 0 }}/{{ row.stats.t1i || 0 }}
+                    <span class="block text-[9px] opacity-70" *ngIf="row.stats.t1i > 0">
+                        {{ ((row.stats.t1m || 0) / (row.stats.t1i || 1) * 100) | number:'1.0-0' }}%
+                    </span>
+                </td>
+
+                <!-- T2 -->
+                <td class="px-2 py-2.5 text-center text-[11px] font-medium text-slate-600 dark:text-slate-400">
+                    {{ row.stats.t2m || 0 }}/{{ row.stats.t2i || 0 }}
+                    <span class="block text-[9px] opacity-70" *ngIf="row.stats.t2i > 0">
+                        {{ ((row.stats.t2m || 0) / (row.stats.t2i || 1) * 100) | number:'1.0-0' }}%
+                    </span>
+                </td>
+
+                <!-- T3 -->
+                <td class="px-2 py-2.5 text-center text-[11px] font-medium text-slate-600 dark:text-slate-400">
+                    {{ row.stats.t3m || 0 }}/{{ row.stats.t3i || 0 }}
+                    <span class="block text-[9px] opacity-70" *ngIf="row.stats.t3i > 0">
+                        {{ ((row.stats.t3m || 0) / (row.stats.t3i || 1) * 100) | number:'1.0-0' }}%
+                    </span>
+                </td>
+
+                <!-- REB -->
+                <td class="px-2 py-2.5 text-center font-bold"
+                    [ngClass]="{'text-primary font-black scale-110': (row.stats.rebounds || 0) >= 10, 'text-slate-600 dark:text-slate-400': (row.stats.rebounds || 0) < 10}">
+                    {{ row.stats.rebounds }}
+                </td>
+
+                <!-- AST -->
+                <td class="px-2 py-2.5 text-center font-bold"
+                    [ngClass]="{'text-primary font-black scale-110': (row.stats.assists || 0) >= 10, 'text-slate-600 dark:text-slate-400': (row.stats.assists || 0) < 10}">
+                    {{ row.stats.assists }}
+                </td>
+
+                <!-- ROB -->
+                <td class="px-2 py-2.5 text-center font-bold"
+                    [ngClass]="{'text-primary font-black scale-110': (row.stats.steals || 0) >= 10, 'text-slate-600 dark:text-slate-400': (row.stats.steals || 0) < 10}">
+                    {{ row.stats.steals }}
+                </td>
+
+                <!-- TAP -->
+                <td class="px-2 py-2.5 text-center font-bold"
+                    [ngClass]="{'text-primary font-black scale-110': (row.stats.blocks || 0) >= 10, 'text-slate-600 dark:text-slate-400': (row.stats.blocks || 0) < 10}">
+                    {{ row.stats.blocks }}
+                </td>
+
+                <!-- Fouls -->
+                <td class="px-2 py-2.5 text-center font-bold"
+                    [ngClass]="{'text-red-500': (row.stats.fouls || 0) >= 4, 'text-slate-500': (row.stats.fouls || 0) < 4}">
+                    {{ row.stats.fouls }}
+                </td>
+
+                <!-- +/- -->
+                <td class="px-2 py-2.5 text-center font-bold"
+                    [ngClass]="{'text-green-500': (row.stats.plusMinus || 0) > 0, 'text-red-500': (row.stats.plusMinus || 0) < 0, 'text-slate-400': (row.stats.plusMinus || 0) === 0}">
                     {{ (row.stats.plusMinus || 0) > 0 ? '+' : '' }}{{ row.stats.plusMinus || 0 }}
                 </td>
-                <td class="px-3 py-2.5 text-center font-bold"
-                    [ngClass]="{'text-primary': (row.stats.valoracion || 0) >= 10, 'text-slate-300': (row.stats.valoracion || 0) > 0 && (row.stats.valoracion || 0) < 10, 'text-red-400': (row.stats.valoracion || 0) < 0}">
-                    {{ row.stats.valoracion }}
+
+                <!-- VAL -->
+                <td class="px-3 py-2.5 text-center font-black"
+                    [ngClass]="{'text-primary': (row.stats.valoracion || 0) >= 10, 'text-slate-800 dark:text-white': (row.stats.valoracion || 0) >= 0 && (row.stats.valoracion || 0) < 10, 'text-red-500': (row.stats.valoracion || 0) < 0}">
+                    {{ row.stats.valoracion ?? 0 }}
+                </td>
+
+                <!-- FAN -->
+                <td *ngIf="showFantasy" class="px-3 py-2.5 text-center font-black text-amber-500">
+                    {{ row.stats.fantasy ?? 0 }}
+                </td>
+            </tr>
+            <tr *ngIf="rows.length === 0">
+                <td [attr.colspan]="showFantasy ? 13 : 12" class="px-3 py-8 text-center text-slate-500">
+                    <span class="material-symbols-outlined text-4xl mb-2 opacity-20">bar_chart</span>
+                    <p class="text-xs">No hay estadísticas disponibles.</p>
                 </td>
             </tr>
         </tbody>

@@ -51,6 +51,30 @@ export class MatchService implements OnDestroy {
             this.matchSub = this.matchRepo.subscribeToMatch(id, (update) => {
                 this.ngZone.run(() => this.handleRealtimeUpdate(update));
             });
+
+            // Sync timer and derived data on load
+            const eventsArr = Object.values(match.events || {});
+            if (eventsArr.length > 0) {
+                // Timer sync
+                const sortedEvents = [...eventsArr].sort((a, b) => {
+                    if (b.quarter !== a.quarter) return b.quarter - a.quarter;
+                    return a.secondsRemaining - b.secondsRemaining;
+                });
+                match.timerState.remainingSeconds = sortedEvents[0].secondsRemaining;
+
+                // Stats & Score sync (Crucial for Public View)
+                const scores = this.matchEngine.recalculateScore(match.events);
+                match.scoreLocal = scores.local;
+                match.scoreVisitor = scores.visitor;
+
+                const allPlayerIds = new Set([
+                    ...Object.keys(match.convocados || {}),
+                    ...Object.keys(match.stats || {}),
+                    ...Object.keys(match.roster || {})
+                ]);
+                match.stats = this.matchEngine.getReconstructedStats(match.events, Array.from(allPlayerIds));
+            }
+            this.currentMatchSubject.next({ ...match });
         }
     }
 
@@ -80,18 +104,17 @@ export class MatchService implements OnDestroy {
             current.scoreVisitor = current.isLocal ? payload.new.rival_score : payload.new.team_score;
             current.state = payload.new.state;
             if (payload.new.live_state) {
-                current.currentQuarter = payload.new.live_state.currentQuarter ?? current.currentQuarter;
+                current.currentQuarter = payload.new.live_state.currentQuarter ?? payload.new.live_state.parteActual ?? current.currentQuarter;
                 current.playersOnCourt = payload.new.live_state.jugadoresEnPista ?? current.playersOnCourt;
             }
         } else if (type === 'event' && payload.eventType === 'INSERT' && payload.new) {
             const ev = payload.new;
-            // If we already have it optimistically, don't re-add
             if (!current.events[ev.id]) {
                 current.events = {
                     ...current.events,
                     [ev.id]: {
                         id: ev.id,
-                        type: ev.event_type_id || ev.event_type,
+                        type: (ev.event_type_id || ev.type || ev.event_type) as any,
                         quarter: ev.quarter || 1,
                         secondsRemaining: ev.timestamp,
                         playerId: ev.player_id || -2,
@@ -99,6 +122,18 @@ export class MatchService implements OnDestroy {
                         detail: ev.properties
                     }
                 };
+
+                // Re-calculate everything on new event
+                const scores = this.matchEngine.recalculateScore(current.events);
+                current.scoreLocal = scores.local;
+                current.scoreVisitor = scores.visitor;
+
+                const allPlayerIds = new Set([
+                    ...Object.keys(current.convocados || {}),
+                    ...Object.keys(current.stats || {}),
+                    ...Object.keys(current.roster || {})
+                ]);
+                current.stats = this.matchEngine.getReconstructedStats(current.events, Array.from(allPlayerIds));
             }
         }
 
@@ -110,7 +145,7 @@ export class MatchService implements OnDestroy {
     /**
      * Adds a statistic event to a player/team and syncs with repository.
      */
-    async addStat(playerId: string | -2, type: EventType, value: number = 1): Promise<void> {
+    async addStat(playerId: string | number, type: EventType, value: number = 1): Promise<void> {
         const match = this.currentMatchSubject.getValue();
         if (!match) return;
 
@@ -142,24 +177,65 @@ export class MatchService implements OnDestroy {
         match.scoreLocal = newScore.local;
         match.scoreVisitor = newScore.visitor;
 
-        // Update basic local stats instantly so UI feels snappy
-        if (playerId !== -2 && match.stats[playerId]) {
-            if (type === EventType.POINTS) match.stats[playerId].points += value;
-            if (type === EventType.FOULS) match.stats[playerId].fouls += value;
-            if (type === EventType.ASSISTS) match.stats[playerId].assists += value;
-            if (type === EventType.REBOUNDS) match.stats[playerId].rebounds += value;
-            if (type === EventType.STEALS) match.stats[playerId].steals += value;
-            if (type === EventType.BLOCKS) match.stats[playerId].blocks += value;
+        // Perform full stats reconstruction to ensure all derived stats (%, val) are perfect
+        // BUGFIX: Use all potential player IDs (convocados + any one already in stats)
+        const allPlayerIds = new Set([
+            ...Object.keys(match.convocados || {}),
+            ...Object.keys(match.stats || {})
+        ]);
+        if (allPlayerIds.size > 0) {
+            match.stats = this.matchEngine.getReconstructedStats(events, Array.from(allPlayerIds));
+        }
 
-            // Re-calculate valoracion
-            const st = match.stats[playerId];
-            st.valoracion = st.points + st.rebounds + st.assists + st.steals + st.blocks - st.fouls;
+        // Auto-start timer if paused
+        if (!this.timerInterval && match.state !== 'finalizado') {
+            this.toggleTimer();
         }
 
         this.currentMatchSubject.next({ ...match });
 
         // Persist (pass the extended properties event to the Repo)
         await this.matchRepo.appendMatchEvent(match.id, events[newEvent.id]);
+        await this.matchRepo.saveMatchState(match.id, match);
+    }
+
+    /**
+     * Adds a timeout event and pauses the timer.
+     */
+    async addTimeout(isLocal: boolean): Promise<void> {
+        const match = this.currentMatchSubject.getValue();
+        if (!match) return;
+
+        // Pause timer if running
+        if (this.timerInterval) {
+            this.toggleTimer();
+        }
+
+        await this.addStat(isLocal ? -1 : -2, EventType.TIMEOUT, 0);
+    }
+
+    /**
+     * Deletes an event and recalculates the entire match state (Score, Player Stats).
+     */
+    async deleteEvent(eventId: string): Promise<void> {
+        const match = this.currentMatchSubject.getValue();
+        if (!match || !match.events[eventId]) return;
+
+        const updatedEvents = { ...match.events };
+        delete updatedEvents[eventId];
+
+        const newScore = this.matchEngine.recalculateScore(updatedEvents);
+        const newStats = this.matchEngine.getReconstructedStats(updatedEvents, Object.keys(match.stats));
+
+        match.events = updatedEvents;
+        match.scoreLocal = newScore.local;
+        match.scoreVisitor = newScore.visitor;
+        match.stats = newStats;
+
+        this.currentMatchSubject.next({ ...match });
+
+        // Sync with DB
+        await this.matchRepo.deleteMatchEvent(match.id, eventId);
         await this.matchRepo.saveMatchState(match.id, match);
     }
 

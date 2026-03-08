@@ -5,6 +5,7 @@ import { ProfileRepository, UserProfile } from '../../core/models/data/profile.r
 import { AvatarConfigRepository, AvatarConfig } from '../../core/models/data/avatar-config.repository';
 import { AvatarEditor } from '../../shared/components/avatar-editor/avatar-editor';
 import { AuthService } from '../../core/services/auth.service';
+import { ProfileService } from '../../core/services/profile.service';
 
 
 @Component({
@@ -22,9 +23,20 @@ export class Profile implements OnInit {
     // Working copy of the avatar configuration
     currentAvatarConfig: AvatarConfig = {};
 
+    // Privacy settings
+    publicitySettings = {
+        stats: true,
+        events: true,
+        chronicle: false,
+        fantasy: false,
+        leaders: false,
+        mvp: false
+    };
+
     constructor(
         private profileRepo: ProfileRepository,
         private avatarRepo: AvatarConfigRepository,
+        private profileService: ProfileService,
         public auth: AuthService
     ) { }
 
@@ -42,6 +54,9 @@ export class Profile implements OnInit {
             if (this.profile && this.profile.avatar_configs) {
                 this.currentAvatarConfig = { ...this.profile.avatar_configs };
             }
+            if (this.profile && this.profile.publicity_settings) {
+                this.publicitySettings = { ...this.publicitySettings, ...this.profile.publicity_settings };
+            }
         } catch (e: any) {
             this.errorMsg = e.message;
         } finally {
@@ -51,6 +66,13 @@ export class Profile implements OnInit {
 
     onAvatarConfigChange(newConfig: AvatarConfig) {
         this.currentAvatarConfig = newConfig;
+
+        // Update local profile globally so changes reflect in the Header instantly
+        if (this.profile) {
+            this.profileService.updateLocalProfile({
+                avatar_configs: newConfig
+            });
+        }
     }
 
     async saveProfile() {
@@ -75,13 +97,17 @@ export class Profile implements OnInit {
 
             const success = await this.profileRepo.updateProfile(userId, {
                 display_name: this.profile.display_name,
-                avatar_config_id: this.profile.avatar_config_id
+                avatar_config_id: this.profile.avatar_config_id,
+                publicity_settings: this.publicitySettings
             });
 
             if (success) {
                 this.successMsg = 'Perfil guardado con éxito.';
-                // Refresh local cache/state if needed
-                this.profile.avatar_configs = { ...this.currentAvatarConfig };
+                if (this.profile) {
+                    this.profile.avatar_configs = { ...this.currentAvatarConfig };
+                    // Update the global profile service so changes reflect everywhere (e.g. Header)
+                    this.profileService.reloadProfile(this.profile.id);
+                }
             } else {
                 this.errorMsg = 'Error al guardar el perfil.';
             }

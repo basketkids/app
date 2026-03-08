@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
@@ -80,8 +80,10 @@ export class Equipo implements OnInit {
         private teamService: TeamService,
         private playerService: PlayerService,
         private competitionService: CompetitionService,
-        public auth: AuthService,
-        private matchRepo: MatchRepository
+        private auth: AuthService,
+        private matchRepo: MatchRepository,
+        private cdr: ChangeDetectorRef,
+        private zone: NgZone
     ) { }
 
     ngOnInit(): void {
@@ -241,13 +243,21 @@ export class Equipo implements OnInit {
         this.router.navigate(['/competicion', compId]);
     }
 
+    goToCalendar(): void {
+        this.router.navigate(['/calendario'], { queryParams: { teamId: this.teamId } });
+    }
+
     openEditTeam(): void {
-        this.editTeamData = {
-            name: this.team?.name || '',
-            coach: this.team?.coach || '',
-            jerseyColor: this.team?.jerseyColor || '5199e4'
-        };
-        this.showEditTeamModal = true;
+        this.zone.run(() => {
+            this.editTeamData = {
+                name: this.team?.name || '',
+                coach: this.team?.coach || '',
+                jerseyColor: this.team?.jerseyColor || '5199e4'
+            };
+            this.showEditTeamModal = true;
+            this.cdr.markForCheck();
+            this.cdr.detectChanges();
+        });
     }
 
     async openPlayerDetails(player: Player): Promise<void> {

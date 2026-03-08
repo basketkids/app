@@ -2,6 +2,15 @@ import { Injectable } from '@angular/core';
 import { SupabaseDataClient } from './supabase.client';
 import { AvatarConfig } from './avatar-config.repository';
 
+export interface PublicitySettings {
+    stats: boolean;
+    events: boolean;
+    chronicle: boolean;
+    fantasy: boolean;
+    leaders: boolean;
+    mvp: boolean;
+}
+
 export interface UserProfile {
     id: string; // the UUID matching auth.users
     email: string | null;
@@ -10,6 +19,7 @@ export interface UserProfile {
     is_admin: boolean;
     avatar_config_id: string | null;
     avatar_configs?: AvatarConfig | null; // Joined profile config
+    publicity_settings?: PublicitySettings | null;
     updated_at?: string;
 }
 

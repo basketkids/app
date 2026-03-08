@@ -1,3 +1,5 @@
+import { environment } from '../../../environments/environment';
+
 export class DicebearUtil {
     /**
      * Generates the DiceBear avatar URL
@@ -11,7 +13,7 @@ export class DicebearUtil {
         config?: Record<string, string | number | boolean> | null,
         teamJerseyColor: string = '5199e4'
     ): string {
-        const baseUrl = `https://api.dicebear.com/9.x/avataaars/svg?seed=${seed}`;
+        const baseUrl = `${environment.dicebearApiUrl}?seed=${seed}`;
         const params: string[] = [];
 
         // Apply user config or defaults
@@ -23,9 +25,9 @@ export class DicebearUtil {
                 if (key === 'skin_color') newKey = 'skinColor';
                 if (key === 'hair_color') newKey = 'hairColor';
                 if (key === 'hat_color') newKey = 'hatColor';
-                if (key === 'facial_hair_type') newKey = 'facialHairType';
+                if (key === 'facial_hair_type') newKey = 'facialHair';
                 if (key === 'facial_hair_color') newKey = 'facialHairColor';
-                if (key === 'accessories_type') newKey = 'accessoriesType';
+                if (key === 'accessories_type') newKey = 'accessories';
                 if (key === 'accessories_color') newKey = 'accessoriesColor';
                 if (key === 'clothes_color') newKey = 'clothesColor';
                 if (key === 'clothing_graphic') newKey = 'clothingGraphic';
@@ -44,7 +46,13 @@ export class DicebearUtil {
                 }
 
                 const value = mappedConfig[key];
-                if (value === null || value === undefined || value === 'null') {
+                if (
+                    value === null ||
+                    value === undefined ||
+                    value === 'null' ||
+                    value === 'none' ||
+                    value === ''
+                ) {
                     return;
                 }
 
@@ -54,12 +62,13 @@ export class DicebearUtil {
             // Handle facial hair
             if (
                 mappedConfig['hasFacialHair'] ||
-                (mappedConfig['facialHairType'] &&
-                    mappedConfig['facialHairType'] !== 'none' &&
-                    mappedConfig['facialHairType'] !== 'null')
+                (mappedConfig['facialHair'] &&
+                    mappedConfig['facialHair'] !== 'none' &&
+                    mappedConfig['facialHair'] !== 'null' &&
+                    mappedConfig['facialHair'] !== '')
             ) {
-                if (!mappedConfig['facialHairType']) {
-                    params.push('facialHairType=beardMajestic');
+                if (!mappedConfig['facialHair'] || mappedConfig['facialHair'] === 'none') {
+                    params.push('facialHair=beardMajestic');
                 }
                 params.push('facialHairProbability=100');
             } else {
@@ -69,12 +78,13 @@ export class DicebearUtil {
             // Handle accessories
             if (
                 mappedConfig['hasAccessories'] ||
-                (mappedConfig['accessoriesType'] &&
-                    mappedConfig['accessoriesType'] !== 'none' &&
-                    mappedConfig['accessoriesType'] !== 'null')
+                (mappedConfig['accessories'] &&
+                    mappedConfig['accessories'] !== 'none' &&
+                    mappedConfig['accessories'] !== 'null' &&
+                    mappedConfig['accessories'] !== '')
             ) {
-                if (!mappedConfig['accessoriesType']) {
-                    params.push('accessoriesType=round');
+                if (!mappedConfig['accessories'] || mappedConfig['accessories'] === 'none') {
+                    params.push('accessories=round');
                 }
                 params.push('accessoriesProbability=100');
             } else {
@@ -105,17 +115,16 @@ export class DicebearUtil {
             params.push('clothing=shirtScoopNeck');
         }
 
-        // Always force team jersey color unless explicitly handled differently
-        // Usually team app implies team jersey.
-        // Replace existing clothesColor if any.
-        const filteredParams = params.filter((p) => !p.startsWith('clothesColor='));
-        filteredParams.push(`clothesColor=${teamJerseyColor.replace('#', '')}`);
+        // Only add team jersey color if no custom clothesColor is provided in config
+        if (!hasClothesColor) {
+            params.push(`clothesColor=${teamJerseyColor.replace('#', '')}`);
+        }
 
         // Ensure top (hair/hat) always appears with 100% probability for determinism
-        filteredParams.push('topProbability=100');
+        params.push('topProbability=100');
 
-        return filteredParams.length
-            ? `${baseUrl}&${filteredParams.join('&')}`
+        return params.length
+            ? `${baseUrl}&${params.join('&')}`
             : baseUrl;
     }
 }

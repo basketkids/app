@@ -11,10 +11,17 @@ xl:max-w-[1400px] mx-auto border-x border-gray-200 dark:border-white/10 bg-white
             class="sticky top-0 z-20 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md border-b border-gray-200 dark:border-white/10 pb-0">
             <div class="flex items-center justify-between px-4 pt-6 pb-4">
                 <h1 class="text-3xl font-bold tracking-tight text-slate-800 dark:text-white">{{ team?.name }}</h1>
-                <button (click)="openEditTeam()"
-                    class="h-10 w-10 flex items-center justify-center rounded-full text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-                    <span class="material-symbols-outlined pb-2">settings</span>
-                </button>
+                <div class="flex items-center gap-2">
+                    <button (click)="goToCalendar()"
+                        class="h-10 w-10 flex items-center justify-center rounded-full text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                        title="Ver calendario completo del equipo">
+                        <span class="material-symbols-outlined">calendar_month</span>
+                    </button>
+                    <button (click)="openEditTeam()"
+                        class="h-10 w-10 flex items-center justify-center rounded-full text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer">
+                        <span class="material-symbols-outlined">settings</span>
+                    </button>
+                </div>
             </div>
 
             <!-- Tabs -->
@@ -129,8 +136,8 @@ xl:max-w-[1400px] mx-auto border-x border-gray-200 dark:border-white/10 bg-white
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 dark:divide-white/5">
-                                <tr *ngFor="let p of players" (click)="openPlayerDetails(p)"
-                                    class="group hover:bg-slate-50 dark:hover:bg-white/5 transition-colors cursor-pointer">
+                                <tr *ngFor="let p of players"
+                                    class="group hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                                     <td class="px-4 py-3 whitespace-nowrap">
                                         <div class="flex items-center gap-3">
                                             <span
@@ -177,6 +184,10 @@ xl:max-w-[1400px] mx-auto border-x border-gray-200 dark:border-white/10 bg-white
                                     <td class="px-3 py-3 text-right whitespace-nowrap">
                                         <div
                                             class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button (click)="openPlayerDetails(p)" title="Estadísticas"
+                                                class="h-7 w-7 rounded-full flex items-center justify-center text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
+                                                <span class="material-symbols-outlined text-[16px]">monitoring</span>
+                                            </button>
                                             <button (click)="openEditPlayer(p)"
                                                 class="h-7 w-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
                                                 <span class="material-symbols-outlined text-[16px]">edit</span>
@@ -384,209 +395,225 @@ xl:max-w-[1400px] mx-auto border-x border-gray-200 dark:border-white/10 bg-white
                 </div>
             </section>
         </div>
-    </ng-container>
 
 
-    <!-- Modal: Add Player -->
-    <div *ngIf="showAddPlayerModal"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-        <div
-            class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+
+        <!-- Modal: Add Player -->
+        <div *ngIf="showAddPlayerModal"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <div
-                class="px-5 py-4 border-b border-gray-200 dark:border-white/5 flex justify-between items-center bg-slate-50 dark:bg-white/5">
-                <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Añadir Jugador/a</h3>
-                <button (click)="showAddPlayerModal = false"
-                    class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors">
-                    <span class="material-symbols-outlined">close</span>
-                </button>
-            </div>
-
-            <div class="p-5 space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Nombre</label>
-                    <input type="text" [(ngModel)]="newPlayer.name" placeholder="Ej. Marc"
-                        class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Dorsal</label>
-                    <input type="text" [(ngModel)]="newPlayer.dorsal" placeholder="00, 1-99" maxlength="2"
-                        class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
-                </div>
-            </div>
-
-            <div
-                class="px-5 py-4 border-t border-gray-200 dark:border-white/5 flex justify-end gap-3 bg-slate-50 dark:bg-white/5">
-                <button (click)="showAddPlayerModal = false"
-                    class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors">Cancelar</button>
-                <button (click)="addPlayer()" [disabled]="!newPlayer.name.trim() || !newPlayer.dorsal.trim()"
-                    class="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                    Guardar
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Edit Player -->
-    <div *ngIf="showEditPlayerModal && editingPlayer"
-        class="fixed inset-0 z-50 flex items-center justify-center p-2 bg-black/60 backdrop-blur-sm overflow-y-auto">
-        <div
-            class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-2xl shadow-xl w-full max-w-md my-auto flex flex-col animate-in fade-in zoom-in duration-200">
-            <div
-                class="px-5 py-4 border-b border-gray-200 dark:border-white/5 flex justify-between items-center bg-slate-50 dark:bg-white/5 sticky top-0 z-10">
-                <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Editar Jugador/a</h3>
-                <button (click)="showEditPlayerModal = false"
-                    class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors">
-                    <span class="material-symbols-outlined">close</span>
-                </button>
-            </div>
-
-            <div class="p-5 overflow-y-auto" style="max-height: calc(100vh - 160px);">
-                <div class="flex gap-4 mb-6">
-                    <div class="flex-1">
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Nombre</label>
-                        <input type="text" [(ngModel)]="editingPlayer.name"
-                            class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
-                    </div>
-                    <div class="w-24">
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Dorsal</label>
-                        <input type="text" [(ngModel)]="editingPlayer.dorsal" maxlength="2"
-                            class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
-                    </div>
+                class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+                <div
+                    class="px-5 py-4 border-b border-gray-200 dark:border-white/5 flex justify-between items-center bg-slate-50 dark:bg-white/5">
+                    <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Añadir Jugador/a</h3>
+                    <button (click)="showAddPlayerModal = false"
+                        class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
                 </div>
 
-                <h6
-                    class="border-b border-gray-200 dark:border-white/10 pb-2 mb-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    Personalizar Avatar</h6>
-                <app-avatar-editor [seed]="editingPlayer.id" [initialConfig]="editingAvatarConfig"
-                    [jerseyColor]="team?.jerseyColor || '5199e4'" (configChange)="onAvatarConfigChange($event)">
-                </app-avatar-editor>
-            </div>
-
-            <div
-                class="px-5 py-4 border-t border-gray-200 dark:border-white/5 flex justify-end gap-3 bg-slate-50 dark:bg-white/5 sticky bottom-0">
-                <button (click)="showEditPlayerModal = false"
-                    class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors">Cancelar</button>
-                <button (click)="savePlayer()" [disabled]="!editingPlayer.name.trim() || !editingPlayer.dorsal"
-                    class="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                    Guardar cambios
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Player Match Log Details -->
-    <div *ngIf="showPlayerDetailsModal"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-        <div
-            class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
-            <!-- Header -->
-            <div
-                class="px-6 py-5 border-b border-gray-200 dark:border-white/5 flex justify-between items-center bg-slate-50 dark:bg-white/5">
-                <div class="flex items-center gap-4">
-                    <app-avatar *ngIf="selectedPlayer" [seed]="selectedPlayer.id" [config]="selectedPlayer.avatarConfig"
-                        [jerseyColor]="team?.jerseyColor || '5199e4'" [size]="48"
-                        class="flex-shrink-0 border-2 border-white dark:border-white/10 rounded-full shadow-sm"></app-avatar>
+                <div class="p-5 space-y-4">
                     <div>
-                        <h3 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                            <span class="text-primary">#{{ selectedPlayer?.dorsal }}</span> {{ selectedPlayer?.name }}
-                        </h3>
-                        <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Historial de Partidos</p>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Nombre</label>
+                        <input type="text" [(ngModel)]="newPlayer.name" placeholder="Ej. Marc"
+                            class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Dorsal</label>
+                        <input type="text" [(ngModel)]="newPlayer.dorsal" placeholder="00, 1-99" maxlength="2"
+                            class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
                     </div>
                 </div>
-                <button (click)="showPlayerDetailsModal = false"
-                    class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full p-2">
-                    <span class="material-symbols-outlined">close</span>
-                </button>
+
+                <div
+                    class="px-5 py-4 border-t border-gray-200 dark:border-white/5 flex justify-end gap-3 bg-slate-50 dark:bg-white/5">
+                    <button (click)="showAddPlayerModal = false"
+                        class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors">Cancelar</button>
+                    <button (click)="addPlayer()" [disabled]="!newPlayer.name.trim() || !newPlayer.dorsal.trim()"
+                        class="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        Guardar
+                    </button>
+                </div>
             </div>
+        </div>
 
-            <!-- Body -->
-            <div class="p-0 overflow-y-auto flex-1">
-                <div *ngIf="playerDetailsLoading" class="p-12 flex justify-center items-center">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <!-- Modal: Edit Player -->
+        <div *ngIf="showEditPlayerModal && editingPlayer"
+            class="fixed inset-0 z-50 flex items-center justify-center p-2 bg-black/60 backdrop-blur-sm overflow-y-auto">
+            <div
+                class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-2xl shadow-xl w-full max-w-md my-auto flex flex-col animate-in fade-in zoom-in duration-200">
+                <div
+                    class="px-5 py-4 border-b border-gray-200 dark:border-white/5 flex justify-between items-center bg-slate-50 dark:bg-white/5 sticky top-0 z-10">
+                    <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Editar Jugador/a</h3>
+                    <button (click)="showEditPlayerModal = false"
+                        class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
                 </div>
 
-                <div *ngIf="!playerDetailsLoading && selectedPlayerMatchLog.length === 0"
-                    class="p-12 text-center text-slate-500 dark:text-slate-400">
-                    <span class="material-symbols-outlined text-4xl mb-3 opacity-50">history_toggle_off</span>
-                    <p>No hay registro de partidos para este jugador.</p>
-                </div>
-
-                <div *ngIf="!playerDetailsLoading && selectedPlayerMatchLog.length > 0">
-                    <!-- Sparkline charts -->
-                    <div class="px-5 pt-5 pb-4 border-b border-slate-100 dark:border-white/5">
-                        <h4
-                            class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">
-                            Evolución por partido</h4>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <app-player-sparkline [series]="playerSparklineSeries"></app-player-sparkline>
+                <div class="p-5 overflow-y-auto" style="max-height: calc(100vh - 160px);">
+                    <div class="flex gap-4 mb-6">
+                        <div class="flex-1">
+                            <label
+                                class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Nombre</label>
+                            <input type="text" [(ngModel)]="editingPlayer.name"
+                                class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
+                        </div>
+                        <div class="w-24">
+                            <label
+                                class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Dorsal</label>
+                            <input type="text" [(ngModel)]="editingPlayer.dorsal" maxlength="2"
+                                class="w-full bg-slate-50 dark:bg-background-dark border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
                         </div>
                     </div>
-                    <!-- Match log table -->
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm whitespace-nowrap">
-                            <thead
-                                class="bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-white/5 text-xs uppercase tracking-wider sticky top-0">
-                                <tr>
-                                    <th class="px-4 py-3 font-semibold">Fecha</th>
-                                    <th class="px-4 py-3 font-semibold text-center hidden sm:table-cell">Comp</th>
-                                    <th class="px-4 py-3 font-semibold">Partido</th>
-                                    <th class="px-3 py-3 font-semibold text-center text-primary">PTS</th>
-                                    <th class="px-2 py-3 font-semibold text-center">REB</th>
-                                    <th class="px-2 py-3 font-semibold text-center">AST</th>
-                                    <th class="px-2 py-3 font-semibold text-center">ROB</th>
-                                    <th class="px-2 py-3 font-semibold text-center">TAP</th>
-                                    <th class="px-2 py-3 font-semibold text-center text-red-400">FLT</th>
-                                    <th class="px-4 py-3 font-bold text-center text-slate-800 dark:text-white">VAL</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100 dark:divide-white/5">
-                                <tr *ngFor="let m of selectedPlayerMatchLog"
-                                    class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                                    <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ m.dateStr }}</td>
-                                    <td class="px-4 py-3 text-center hidden sm:table-cell">
-                                        <span
-                                            class="text-[10px] bg-slate-100 dark:bg-white/10 text-slate-500 px-2 py-1 rounded truncate max-w-[80px] inline-block"
-                                            [title]="getCompetitionName(m.competitionId)">{{
-                                            getCompetitionName(m.competitionId) }}</span>
-                                    </td>
-                                    <td class="px-4 py-3 font-medium">
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-slate-800 dark:text-white">{{ team?.name }}</span>
-                                            <span class="px-1.5 py-0.5 rounded textxs font-bold"
-                                                [ngClass]="m.ourScore > m.rivalScore ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : (m.ourScore < m.rivalScore ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-300')">{{
-                                                m.ourScore }} - {{ m.rivalScore }}</span>
-                                            <span class="text-slate-500 dark:text-slate-400">{{ m.rivalName }}</span>
-                                        </div>
-                                    </td>
-                                    <td
-                                        class="px-3 py-3 text-center font-bold text-slate-800 dark:text-white tabular-nums">
-                                        {{ m.points }}</td>
-                                    <td class="px-2 py-3 text-center text-slate-600 dark:text-slate-300 tabular-nums">{{
-                                        m.rebounds }}</td>
-                                    <td class="px-2 py-3 text-center text-slate-600 dark:text-slate-300 tabular-nums">{{
-                                        m.assists }}</td>
-                                    <td class="px-2 py-3 text-center text-slate-600 dark:text-slate-300 tabular-nums">{{
-                                        m.steals }}</td>
-                                    <td class="px-2 py-3 text-center text-slate-600 dark:text-slate-300 tabular-nums">{{
-                                        m.blocks }}</td>
-                                    <td class="px-2 py-3 text-center text-red-400/80 tabular-nums">{{ m.fouls }}</td>
-                                    <td
-                                        class="px-4 py-3 text-center font-bold bg-slate-50 dark:bg-white/5 text-slate-800 dark:text-white tabular-nums">
-                                        {{ m.valoracion }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+
+                    <h6
+                        class="border-b border-gray-200 dark:border-white/10 pb-2 mb-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        Personalizar Avatar</h6>
+                    <app-avatar-editor [seed]="editingPlayer.id" [initialConfig]="editingAvatarConfig"
+                        [jerseyColor]="team?.jerseyColor || '5199e4'" (configChange)="onAvatarConfigChange($event)">
+                    </app-avatar-editor>
                 </div>
 
-                <!-- Footer -->
                 <div
-                    class="px-6 py-4 border-t border-gray-200 dark:border-white/5 bg-slate-50 dark:bg-white/5 flex justify-end">
-                    <button (click)="showPlayerDetailsModal = false"
-                        class="px-5 py-2.5 rounded-xl font-semibold bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors shadow-sm">
-                        Cerrar
+                    class="px-5 py-4 border-t border-gray-200 dark:border-white/5 flex justify-end gap-3 bg-slate-50 dark:bg-white/5 sticky bottom-0">
+                    <button (click)="showEditPlayerModal = false"
+                        class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors">Cancelar</button>
+                    <button (click)="savePlayer()" [disabled]="!editingPlayer.name.trim() || !editingPlayer.dorsal"
+                        class="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        Guardar cambios
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Player Match Log Details -->
+        <div *ngIf="showPlayerDetailsModal"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div
+                class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+                <!-- Header -->
+                <div
+                    class="px-6 py-5 border-b border-gray-200 dark:border-white/5 flex justify-between items-center bg-slate-50 dark:bg-white/5">
+                    <div class="flex items-center gap-4">
+                        <app-avatar *ngIf="selectedPlayer" [seed]="selectedPlayer.id"
+                            [config]="selectedPlayer.avatarConfig" [jerseyColor]="team?.jerseyColor || '5199e4'"
+                            [size]="48"
+                            class="flex-shrink-0 border-2 border-white dark:border-white/10 rounded-full shadow-sm"></app-avatar>
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                <span class="text-primary">#{{ selectedPlayer?.dorsal }}</span> {{ selectedPlayer?.name
+                                }}
+                            </h3>
+                            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Historial de Partidos</p>
+                        </div>
+                    </div>
+                    <button (click)="showPlayerDetailsModal = false"
+                        class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full p-2">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+
+                <!-- Body -->
+                <div class="p-0 overflow-y-auto flex-1">
+                    <div *ngIf="playerDetailsLoading" class="p-12 flex justify-center items-center">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+
+                    <div *ngIf="!playerDetailsLoading && selectedPlayerMatchLog.length === 0"
+                        class="p-12 text-center text-slate-500 dark:text-slate-400">
+                        <span class="material-symbols-outlined text-4xl mb-3 opacity-50">history_toggle_off</span>
+                        <p>No hay registro de partidos para este jugador.</p>
+                    </div>
+
+                    <div *ngIf="!playerDetailsLoading && selectedPlayerMatchLog.length > 0">
+                        <!-- Sparkline charts -->
+                        <div class="px-5 pt-5 pb-4 border-b border-slate-100 dark:border-white/5">
+                            <h4
+                                class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">
+                                Evolución por partido</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <app-player-sparkline [series]="playerSparklineSeries"></app-player-sparkline>
+                            </div>
+                        </div>
+                        <!-- Match log table -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm whitespace-nowrap">
+                                <thead
+                                    class="bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-white/5 text-xs uppercase tracking-wider sticky top-0">
+                                    <tr>
+                                        <th class="px-4 py-3 font-semibold">Fecha</th>
+                                        <th class="px-4 py-3 font-semibold text-center hidden sm:table-cell">Comp</th>
+                                        <th class="px-4 py-3 font-semibold">Partido</th>
+                                        <th class="px-3 py-3 font-semibold text-center text-primary">PTS</th>
+                                        <th class="px-2 py-3 font-semibold text-center">REB</th>
+                                        <th class="px-2 py-3 font-semibold text-center">AST</th>
+                                        <th class="px-2 py-3 font-semibold text-center">ROB</th>
+                                        <th class="px-2 py-3 font-semibold text-center">TAP</th>
+                                        <th class="px-2 py-3 font-semibold text-center text-red-400">FLT</th>
+                                        <th class="px-4 py-3 font-bold text-center text-slate-800 dark:text-white">VAL
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-white/5">
+                                    <tr *ngFor="let m of selectedPlayerMatchLog"
+                                        class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                                        <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ m.dateStr }}</td>
+                                        <td class="px-4 py-3 text-center hidden sm:table-cell">
+                                            <span
+                                                class="text-[10px] bg-slate-100 dark:bg-white/10 text-slate-500 px-2 py-1 rounded truncate max-w-[80px] inline-block"
+                                                [title]="getCompetitionName(m.competitionId)">{{
+                                                getCompetitionName(m.competitionId) }}</span>
+                                        </td>
+                                        <td class="px-4 py-3 font-medium">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-slate-800 dark:text-white">{{ team?.name }}</span>
+                                                <span class="px-1.5 py-0.5 rounded textxs font-bold"
+                                                    [ngClass]="m.ourScore > m.rivalScore ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : (m.ourScore < m.rivalScore ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-300')">{{
+                                                    m.ourScore }} - {{ m.rivalScore }}</span>
+                                                <span class="text-slate-500 dark:text-slate-400">{{ m.rivalName
+                                                    }}</span>
+                                            </div>
+                                        </td>
+                                        <td
+                                            class="px-3 py-3 text-center font-bold text-slate-800 dark:text-white tabular-nums">
+                                            {{ m.points }}</td>
+                                        <td
+                                            class="px-2 py-3 text-center text-slate-600 dark:text-slate-300 tabular-nums">
+                                            {{
+                                            m.rebounds }}</td>
+                                        <td
+                                            class="px-2 py-3 text-center text-slate-600 dark:text-slate-300 tabular-nums">
+                                            {{
+                                            m.assists }}</td>
+                                        <td
+                                            class="px-2 py-3 text-center text-slate-600 dark:text-slate-300 tabular-nums">
+                                            {{
+                                            m.steals }}</td>
+                                        <td
+                                            class="px-2 py-3 text-center text-slate-600 dark:text-slate-300 tabular-nums">
+                                            {{
+                                            m.blocks }}</td>
+                                        <td class="px-2 py-3 text-center text-red-400/80 tabular-nums">{{ m.fouls }}
+                                        </td>
+                                        <td
+                                            class="px-4 py-3 text-center font-bold bg-slate-50 dark:bg-white/5 text-slate-800 dark:text-white tabular-nums">
+                                            {{ m.valoracion }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div
+                        class="px-6 py-4 border-t border-gray-200 dark:border-white/5 bg-slate-50 dark:bg-white/5 flex justify-end">
+                        <button (click)="showPlayerDetailsModal = false"
+                            class="px-5 py-2.5 rounded-xl font-semibold bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors shadow-sm">
+                            Cerrar
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -601,7 +628,8 @@ xl:max-w-[1400px] mx-auto border-x border-gray-200 dark:border-white/10 bg-white
                     <span class="material-symbols-outlined text-[32px]">warning</span>
                 </div>
                 <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">¿Borrar jugador/a?</h3>
-                <p class="text-slate-600 dark:text-slate-400 text-sm mb-6">Esta acción no se puede deshacer y borrará
+                <p class="text-slate-600 dark:text-slate-400 text-sm mb-6">Esta acción no se puede deshacer y
+                    borrará
                     sus
                     estadísticas en los
                     partidos no finalizados.</p>
@@ -700,4 +728,5 @@ xl:max-w-[1400px] mx-auto border-x border-gray-200 dark:border-white/10 bg-white
                 </div>
             </div>
         </div>
-    </div>
+    </ng-container>
+</div>

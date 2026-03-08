@@ -1,5 +1,5 @@
-<div class="relative flex h-full min-h-screen w-full flex-col overflow-hidden max-w-md md:max-w-3xl lg:max-w-4xl xl:max-w-5xl
-mx-auto border-x border-gray-200 dark:border-white/10 bg-white dark:bg-background-dark">
+<div
+    class="relative flex h-full min-h-screen w-full flex-col overflow-hidden max-w-md md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto border-x border-gray-200 dark:border-white/10 bg-white dark:bg-background-dark">
     <ng-container *ngIf="match; else loading">
         <!-- Header -->
         <div
@@ -15,9 +15,22 @@ mx-auto border-x border-gray-200 dark:border-white/10 bg-white dark:bg-backgroun
                         match.localTeamName }} vs {{
                         match.visitorTeamName }}</h1>
                 </div>
-                <div class="flex gap-1" *ngIf="activeTab === 'pista'">
+                <div class="flex gap-1.5 items-center" *ngIf="activeTab === 'pista'">
+                    <!-- Quarter Control -->
+                    <button (click)="advanceQuarter()"
+                        class="h-8 px-3 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 text-[10px] font-bold uppercase tracking-wider transition-colors border border-slate-200 dark:border-white/5"
+                        title="Siguiente Cuarto">
+                        Q+
+                    </button>
+                    <!-- End Match Control -->
+                    <button (click)="endMatch()"
+                        class="h-8 px-3 flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/10 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20 text-[10px] font-bold uppercase tracking-wider transition-colors border border-red-100 dark:border-red-900/20"
+                        title="Finalizar Partido">
+                        FIN
+                    </button>
+                    <!-- Timer Control -->
                     <button
-                        class="h-8 w-8 flex items-center justify-center rounded-full bg-primary/20 text-primary hover:bg-primary hover:text-white transition-colors"
+                        class="h-8 w-8 flex items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary-dark transition-all transform active:scale-95 ml-1"
                         title="Pausar / Reanudar" (click)="toggleTimer()">
                         <span class="material-symbols-outlined text-[18px]">{{ match.timerState.active ? 'pause' :
                             'play_arrow' }}</span>
@@ -27,15 +40,22 @@ mx-auto border-x border-gray-200 dark:border-white/10 bg-white dark:bg-backgroun
 
             <!-- Glass Scoreboard -->
             <div class="px-2 pb-2">
-                <app-scoreboard [localScore]="match.scoreLocal" [visitorScore]="match.scoreVisitor"
-                    [localName]="match.localTeamName" [visitorName]="match.visitorTeamName"
-                    [quarter]="match.currentQuarter" [timerState]="match.timerState">
+                <app-scoreboard [localScore]="match.scoreLocal || 0" [visitorScore]="match.scoreVisitor || 0"
+                    [localName]="match.localTeamName || ''" [visitorName]="match.visitorTeamName || ''"
+                    [quarter]="match.currentQuarter || 1"
+                    [timerState]="match.timerState || { active: false, remainingSeconds: 600 }"
+                    [localFouls]="localFouls" [visitorFouls]="visitorFouls">
                 </app-scoreboard>
             </div>
 
             <!-- Tabs -->
             <div
                 class="flex overflow-x-auto no-scrollbar border-t border-gray-100 dark:border-white/5 px-2 bg-slate-50/50 dark:bg-background-dark/50">
+                <button (click)="activeTab = 'convocados'"
+                    [ngClass]="{'border-primary text-primary': activeTab === 'convocados', 'border-transparent text-slate-500 dark:text-slate-400': activeTab !== 'convocados'}"
+                    class="whitespace-nowrap flex-1 py-3 px-1 border-b-2 font-medium text-sm text-center transition-colors">
+                    Estadísticas
+                </button>
                 <button (click)="activeTab = 'pista'"
                     [ngClass]="{'border-primary text-primary': activeTab === 'pista', 'border-transparent text-slate-500 dark:text-slate-400': activeTab !== 'pista'}"
                     class="whitespace-nowrap flex-1 py-3 px-1 border-b-2 font-medium text-sm text-center transition-colors">
@@ -46,10 +66,10 @@ mx-auto border-x border-gray-200 dark:border-white/10 bg-white dark:bg-backgroun
                     class="whitespace-nowrap flex-1 py-3 px-1 border-b-2 font-medium text-sm text-center transition-colors">
                     Jugadas
                 </button>
-                <button (click)="activeTab = 'convocados'"
-                    [ngClass]="{'border-primary text-primary': activeTab === 'convocados', 'border-transparent text-slate-500 dark:text-slate-400': activeTab !== 'convocados'}"
+                <button (click)="activeTab = 'analisis'"
+                    [ngClass]="{'border-primary text-primary': activeTab === 'analisis', 'border-transparent text-slate-500 dark:text-slate-400': activeTab !== 'analisis'}"
                     class="whitespace-nowrap flex-1 py-3 px-1 border-b-2 font-medium text-sm text-center transition-colors">
-                    Estadísticas
+                    Análisis
                 </button>
                 <button (click)="activeTab = 'cronica'"
                     [ngClass]="{'border-primary text-primary': activeTab === 'cronica', 'border-transparent text-slate-500 dark:text-slate-400': activeTab !== 'cronica'}"
@@ -78,23 +98,45 @@ mx-auto border-x border-gray-200 dark:border-white/10 bg-white dark:bg-backgroun
 
                     <div class="grid grid-cols-5 gap-2">
                         <ng-container
-                            *ngIf="match.playersOnCourt && Object.keys(match.playersOnCourt).length > 0; else noPlayers">
-                            <button *ngFor="let pid of Object.keys(match.playersOnCourt)"
-                                class="aspect-[4/5] flex flex-col items-center justify-center gap-1 rounded-xl transition-all relative overflow-hidden group"
-                                [ngClass]="{'bg-primary text-white shadow-lg shadow-primary/20 ring-2 ring-primary ring-offset-2 ring-offset-white dark:ring-offset-[#121212]': selectedPlayerId === pid, 'bg-slate-100 dark:bg-surface-light text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 border border-slate-200 dark:border-white/5': selectedPlayerId !== pid}"
+                            *ngIf="match.playersOnCourt && Object.keys(match.playersOnCourt || {}).length > 0; else noPlayers">
+                            <button *ngFor="let pid of Object.keys(match.playersOnCourt || {})"
+                                class="aspect-[4/5] flex flex-col items-center justify-between py-2 rounded-xl transition-all relative overflow-hidden border-2"
+                                [ngClass]="selectedPlayerId === pid ? 'bg-primary/5 border-primary shadow-lg shadow-primary/10' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10'"
                                 (click)="selectPlayer(pid)">
-                                <span class="text-xl font-bold" [ngClass]="{'text-white': selectedPlayerId === pid}">{{
-                                    match.plantilla[pid]?.dorsal || match.roster[pid]?.dorsal || '-' }}</span>
-                                <span class="text-[9px] font-bold uppercase truncate w-full px-1 text-center"
-                                    [ngClass]="{'text-white font-black tracking-wide': selectedPlayerId === pid, 'text-slate-500 dark:text-slate-400': selectedPlayerId !== pid}">{{
-                                    (match.plantilla[pid]?.name || match.roster[pid]?.name || '?').split(' ')[0]
-                                    }}</span>
-                                <!-- Small indicators overlay -->
-                                <div class="absolute top-0 right-0 flex gap-0.5 p-0.5"
-                                    *ngIf="(match.stats[pid]?.fouls || 0) > 0">
-                                    <div class="w-1.5 h-1.5 rounded-full"
-                                        [ngClass]="(match.stats[pid]?.fouls || 0) >= 4 ? 'bg-red-500' : 'bg-yellow-500'">
+                                <!-- Player Avatar -->
+                                <app-avatar [playerId]="pid" [size]="32"
+                                    class="mt-1 transform transition-transform group-hover:scale-110"></app-avatar>
+
+                                <div class="flex flex-col items-center w-full px-1">
+                                    <span class="text-xs font-bold leading-none mb-0.5"
+                                        [ngClass]="selectedPlayerId === pid ? 'text-primary' : 'text-slate-800 dark:text-white'">{{
+                                        match.plantilla[pid]?.dorsal || match.roster[pid]?.dorsal || '-' }}</span>
+                                    <span
+                                        class="text-[8px] font-bold uppercase truncate w-full text-center opacity-60">{{
+                                        (match.plantilla[pid]?.name || match.roster[pid]?.name || '?').split(' ')[0]
+                                        }}</span>
+                                </div>
+
+                                <!-- Quick Stats Overlays -->
+                                <div class="absolute top-1 left-1 flex flex-col gap-0.5">
+                                    <div class="px-1 py-0.5 rounded bg-primary text-white text-[8px] font-black leading-none min-w-[14px] text-center shadow-sm"
+                                        *ngIf="(match.stats[pid]?.points || 0) > 0">
+                                        {{ match.stats[pid]?.points }}
                                     </div>
+                                </div>
+
+                                <div class="absolute top-1 right-1 flex flex-col gap-0.5">
+                                    <div class="px-1 py-0.5 rounded text-white text-[8px] font-black leading-none min-w-[14px] text-center shadow-sm"
+                                        *ngIf="(match.stats[pid]?.fouls || 0) > 0"
+                                        [ngClass]="(match.stats[pid]?.fouls || 0) >= 4 ? 'bg-red-500 animate-pulse' : 'bg-yellow-500 text-slate-900'">
+                                        {{ match.stats[pid]?.fouls }}
+                                    </div>
+                                </div>
+
+                                <!-- Selected Checkmark -->
+                                <div *ngIf="selectedPlayerId === pid"
+                                    class="absolute -bottom-1 -right-1 bg-primary text-white p-0.5 rounded-tl-lg scale-75">
+                                    <span class="material-symbols-outlined text-[14px]">check</span>
                                 </div>
                             </button>
                         </ng-container>
@@ -111,22 +153,22 @@ mx-auto border-x border-gray-200 dark:border-white/10 bg-white dark:bg-backgroun
                 </div>
 
                 <!-- Action Buttons Grid -->
-                <div class="flex-1 grid grid-cols-3 gap-3 content-start mt-2">
+                <div class="grid grid-cols-3 gap-3 content-start mt-2">
                     <!-- Points -->
                     <button (click)="addTeamPoints(1)"
-                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-surface-light hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
+                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
                         <span
                             class="text-2xl font-bold text-slate-800 dark:text-white group-active:scale-95 transition-transform">+1</span>
                         <span class="text-[10px] uppercase font-bold text-slate-500 mt-1">Tiro Libre</span>
                     </button>
                     <button (click)="addTeamPoints(2)"
-                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-surface-light hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
+                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
                         <span
                             class="text-2xl font-bold text-slate-800 dark:text-white group-active:scale-95 transition-transform">+2</span>
                         <span class="text-[10px] uppercase font-bold text-slate-500 mt-1">Campo</span>
                     </button>
                     <button (click)="addTeamPoints(3)"
-                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-surface-light hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
+                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
                         <span
                             class="text-2xl font-bold text-slate-800 dark:text-white group-active:scale-95 transition-transform">+3</span>
                         <span class="text-[10px] uppercase font-bold text-slate-500 mt-1">Triple</span>
@@ -134,20 +176,20 @@ mx-auto border-x border-gray-200 dark:border-white/10 bg-white dark:bg-backgroun
 
                     <!-- Positive Stats -->
                     <button (click)="addStat(EventTypes.REBOUNDS, 1)"
-                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-surface-light hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
+                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
                         <span
                             class="material-symbols-outlined text-green-500 dark:text-green-400 mb-1 group-active:scale-95 transition-transform text-[28px]">sports_basketball</span>
                         <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Rebote</span>
                     </button>
                     <button (click)="addStat(EventTypes.ASSISTS, 1)"
-                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-surface-light hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
+                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
                         <span
                             class="material-symbols-outlined text-blue-500 dark:text-blue-400 mb-1 group-active:scale-95 transition-transform text-[28px]">handshake</span>
                         <span
                             class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Asistencia</span>
                     </button>
                     <button (click)="addStat(EventTypes.STEALS, 1)"
-                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-surface-light hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
+                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
                         <span
                             class="material-symbols-outlined text-yellow-500 dark:text-yellow-400 mb-1 group-active:scale-95 transition-transform text-[28px]">lock</span>
                         <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Robo</span>
@@ -155,13 +197,13 @@ mx-auto border-x border-gray-200 dark:border-white/10 bg-white dark:bg-backgroun
 
                     <!-- Negative Stats -->
                     <button (click)="addStat(EventTypes.BLOCKS, 1)"
-                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-surface-light hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
+                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
                         <span
                             class="material-symbols-outlined text-indigo-500 dark:text-indigo-400 mb-1 group-active:scale-95 transition-transform text-[28px]">back_hand</span>
                         <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Tapón</span>
                     </button>
                     <button (click)="addStat(EventTypes.MISS, 1)"
-                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-surface-light hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
+                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
                         <span
                             class="material-symbols-outlined text-orange-500 dark:text-orange-400 mb-1 group-active:scale-95 transition-transform text-[28px]">error</span>
                         <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Fallo</span>
@@ -172,42 +214,47 @@ mx-auto border-x border-gray-200 dark:border-white/10 bg-white dark:bg-backgroun
                             class="material-symbols-outlined text-red-500 mb-1 group-active:scale-95 transition-transform text-[28px]">gavel</span>
                         <span class="text-[10px] uppercase font-bold text-red-600 dark:text-red-400">Falta</span>
                     </button>
+                    <!-- Timeout Local -->
+                    <button (click)="addTimeout(true)"
+                        class="flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-[#333] active:bg-slate-300 dark:active:bg-[#444] border border-slate-200 dark:border-white/5 transition-all py-3 group">
+                        <span
+                            class="material-symbols-outlined text-primary mb-1 group-active:scale-95 transition-transform text-[28px]">timer</span>
+                        <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">T.
+                            Muerto</span>
+                    </button>
                 </div>
 
                 <!-- Opponent Section (Footer) -->
-                <div class="mt-auto pt-3 border-t border-white/10 shrink-0">
+                <div class="mt-auto pt-3 border-t border-gray-100 dark:border-white/10 shrink-0">
                     <div class="flex items-center justify-between mb-2 px-1">
                         <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Anotar Rival</h3>
-                        <div class="flex gap-1">
-                            <button
-                                class="px-2 py-0.5 text-[10px] font-bold text-slate-400 bg-surface-dark rounded hover:bg-slate-700 transition"
-                                (click)="advanceQuarter()">Finalizar Cuarto</button>
-                            <button
-                                class="px-2 py-0.5 text-[10px] font-bold text-red-400 bg-red-900/20 rounded hover:bg-red-900/40 transition"
-                                (click)="endMatch()">Finalizar Partido</button>
-                        </div>
                     </div>
 
                     <div class="grid grid-cols-4 gap-2">
                         <button (click)="addRivalPoints(1)"
-                            class="flex items-center justify-center gap-1 rounded-lg bg-red-900/10 border border-red-900/30 hover:bg-red-900/20 active:bg-red-900/30 transition-all h-10 group">
+                            class="flex items-center justify-center gap-1 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/20 active:bg-red-200 dark:active:bg-red-900/30 transition-all h-10 group">
                             <span
-                                class="text-xs font-bold text-red-400 group-active:scale-95 transition-transform">+1</span>
+                                class="text-xs font-bold text-red-500 dark:text-red-400 group-active:scale-95 transition-transform">+1</span>
                         </button>
                         <button (click)="addRivalPoints(2)"
-                            class="flex items-center justify-center gap-1 rounded-lg bg-red-900/10 border border-red-900/30 hover:bg-red-900/20 active:bg-red-900/30 transition-all h-10 group">
+                            class="flex items-center justify-center gap-1 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/20 active:bg-red-200 dark:active:bg-red-900/30 transition-all h-10 group">
                             <span
-                                class="text-xs font-bold text-red-400 group-active:scale-95 transition-transform">+2</span>
+                                class="text-xs font-bold text-red-500 dark:text-red-400 group-active:scale-95 transition-transform">+2</span>
                         </button>
                         <button (click)="addRivalPoints(3)"
-                            class="flex items-center justify-center gap-1 rounded-lg bg-red-900/10 border border-red-900/30 hover:bg-red-900/20 active:bg-red-900/30 transition-all h-10 group">
+                            class="flex items-center justify-center gap-1 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/20 active:bg-red-200 dark:active:bg-red-900/30 transition-all h-10 group">
                             <span
-                                class="text-xs font-bold text-red-400 group-active:scale-95 transition-transform">+3</span>
+                                class="text-xs font-bold text-red-500 dark:text-red-400 group-active:scale-95 transition-transform">+3</span>
                         </button>
                         <button (click)="addRivalFoul()"
-                            class="flex items-center justify-center gap-1 rounded-lg bg-red-900/10 border border-red-900/30 hover:bg-red-900/20 active:bg-red-900/30 transition-all h-10 group">
+                            class="flex items-center justify-center gap-1 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/20 active:bg-red-200 dark:active:bg-red-900/30 transition-all h-10 group">
                             <span
                                 class="material-symbols-outlined text-[16px] text-red-500 group-active:scale-95 transition-transform">gavel</span>
+                        </button>
+                        <button (click)="addTimeout(false)"
+                            class="flex items-center justify-center gap-1 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/20 active:bg-red-200 dark:active:bg-red-900/30 transition-all h-10 group">
+                            <span
+                                class="material-symbols-outlined text-[16px] text-red-500 group-active:scale-95 transition-transform">timer</span>
                         </button>
                     </div>
                 </div>
@@ -215,7 +262,8 @@ mx-auto border-x border-gray-200 dark:border-white/10 bg-white dark:bg-backgroun
 
             <!-- TAB: Jugadas (En Vivo) -->
             <div *ngIf="activeTab === 'en-vivo'" class="flex-1 p-4 animate-in fade-in duration-300 overflow-y-auto">
-                <app-live-events [events]="match.events" [roster]="match.roster"></app-live-events>
+                <app-live-events [events]="match.events || {}" [roster]="match.convocados || {}" [adminMode]="true"
+                    (onDelete)="deleteEvent($event)"></app-live-events>
             </div>
 
             <!-- TAB: Estadísticas -->
@@ -230,11 +278,53 @@ mx-auto border-x border-gray-200 dark:border-white/10 bg-white dark:bg-backgroun
                 </div>
                 <div id="tablaEstadisticasContainer"
                     class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm">
-                    <app-statistics-grid [stats]="match.stats" [roster]="match.convocados"></app-statistics-grid>
+                    <app-statistics-grid [stats]="match.stats || {}"
+                        [roster]="match.convocados || {}"></app-statistics-grid>
                 </div>
             </div>
 
-            <!-- TAB: Crónica -->
+            <!-- TAB: Análisis -->
+            <div *ngIf="activeTab === 'analisis'"
+                class="flex-1 p-4 animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-8 overflow-y-auto">
+                <app-match-progression [progression]="progression" [partials]="partials"></app-match-progression>
+
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="material-symbols-outlined text-primary text-[20px]">strategy</span>
+                        <h3 class="text-xs font-black uppercase tracking-widest text-slate-400">Mejores Quintetos
+                            Ofensivos</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <app-lineup-board *ngFor="let l of bestLineups; let i = index" [players]="l.players" [stats]="l"
+                            [title]="(i+1) + '.º Quinteto (+/-)'" [jerseyColor]="match.teamJerseyColor || '5199e4'">
+                        </app-lineup-board>
+                        <div *ngIf="bestLineups.length === 0"
+                            class="col-span-full py-12 text-center text-slate-500 border border-dashed border-gray-200 dark:border-white/10 rounded-2xl">
+                            <p class="text-xs font-medium">No hay quintetos con balance positivo aún.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4 pb-8">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="material-symbols-outlined text-emerald-500 text-[20px]">shield</span>
+                        <h3 class="text-xs font-black uppercase tracking-widest text-slate-400">Mejores Quintetos
+                            Defensivos</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <app-lineup-board *ngFor="let l of bestDefensiveLineups; let i = index" [players]="l.players"
+                            [stats]="l" [title]="(i+1) + '.º Quinteto (Defensa)'"
+                            [jerseyColor]="match.teamJerseyColor || '5199e4'">
+                        </app-lineup-board>
+                        <div *ngIf="bestDefensiveLineups.length === 0"
+                            class="col-span-full py-12 text-center text-slate-500 border border-dashed border-gray-200 dark:border-white/10 rounded-2xl">
+                            <p class="text-xs font-medium">No hay datos defensivos suficientes.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pre-existing Tab: Cronica -->
             <div *ngIf="activeTab === 'cronica'" class="flex-1 p-4 animate-in fade-in duration-300 overflow-y-auto">
                 <div
                     class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-xl shadow-sm p-4">
@@ -269,117 +359,144 @@ mx-auto border-x border-gray-200 dark:border-white/10 bg-white dark:bg-backgroun
                     </div>
                 </div>
             </div>
-
-        </div>
-
-        <!-- Substitutions Modal -->
-        <div *ngIf="showSubsModal"
-            class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div
-                class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-300 max-h-[85vh]">
-                <div
-                    class="px-5 py-4 border-b border-gray-200 dark:border-white/5 flex justify-between items-center bg-slate-50 dark:bg-white/5 sticky top-0 z-10">
-                    <h3 class="text-base font-bold text-slate-800 dark:text-white">Configurar 5 en Pista</h3>
-                    <button (click)="closeSubsModal()"
-                        class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors h-8 w-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-surface-dark">
-                        <span class="material-symbols-outlined text-[18px]">close</span>
-                    </button>
-                </div>
-
-                <div class="p-2 overflow-y-auto">
-                    <div class="grid grid-cols-1 gap-1">
-                        <button *ngFor="let pid of Object.keys(match.convocados || {})" (click)="togglePlayerSub(pid)"
-                            class="flex items-center justify-between p-3 rounded-xl border transition-all text-left"
-                            [ngClass]="tempSelectedCourtIds.has(pid) ? 'bg-primary/10 border-primary/30' : 'bg-slate-50 dark:bg-background-dark border-transparent hover:bg-slate-100 dark:hover:bg-surface-light'">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0"
-                                    [ngClass]="tempSelectedCourtIds.has(pid) ? 'bg-primary text-white' : 'bg-white dark:bg-surface-dark text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/5'">
-                                    {{ match.convocados[pid].dorsal }}
-                                </div>
-                                <span class="font-medium text-[15px]"
-                                    [ngClass]="tempSelectedCourtIds.has(pid) ? 'text-slate-800 dark:text-white' : 'text-slate-600 dark:text-slate-300'">{{
-                                    match.convocados[pid].name }}</span>
-                            </div>
-                            <span class="material-symbols-outlined"
-                                [ngClass]="tempSelectedCourtIds.has(pid) ? 'text-primary' : 'text-slate-400 dark:text-slate-600'">
-                                {{ tempSelectedCourtIds.has(pid) ? 'check_circle' : 'radio_button_unchecked' }}
-                            </span>
-                        </button>
-                    </div>
-                </div>
-
-                <div
-                    class="px-5 py-4 border-t border-gray-200 dark:border-white/5 bg-slate-50 dark:bg-background-dark sticky bottom-0 z-10">
-                    <div class="flex justify-between items-center mb-4">
-                        <span
-                            class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest">En
-                            Pista</span>
-                        <span class="text-sm font-bold"
-                            [ngClass]="tempSelectedCourtIds.size === 5 ? 'text-green-500 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'">{{
-                            tempSelectedCourtIds.size }} / 5</span>
-                    </div>
-                    <button (click)="saveSubstitutions()"
-                        class="w-full py-2.5 rounded-xl font-bold bg-primary text-white shadow-lg shadow-primary/20 hover:bg-orange-600 active:scale-[0.98] transition-all">
-                        Confirmar Cambios
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Convocados Modal -->
-        <div *ngIf="showConvocatoriaModal"
-            class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div
-                class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-300 max-h-[85vh]">
-                <div
-                    class="px-5 py-4 border-b border-gray-200 dark:border-white/5 flex justify-between items-center bg-slate-50 dark:bg-white/5 sticky top-0 z-10">
-                    <h3 class="text-base font-bold text-slate-800 dark:text-white">Convocados al Partido</h3>
-                    <button (click)="closeConvocatoriaModal()"
-                        class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors h-8 w-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-surface-dark">
-                        <span class="material-symbols-outlined text-[18px]">close</span>
-                    </button>
-                </div>
-
-                <div class="p-2 overflow-y-auto">
-                    <div class="grid grid-cols-1 gap-1">
-                        <button *ngFor="let pid of Object.keys(match.plantilla || {})"
-                            (click)="toggleConvocatoriaSub(pid)"
-                            class="flex items-center justify-between p-3 rounded-xl border transition-all text-left"
-                            [ngClass]="tempSelectedCourtIds.has(pid) ? 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/30' : 'bg-slate-50 dark:bg-background-dark border-transparent hover:bg-slate-100 dark:hover:bg-surface-light'">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0"
-                                    [ngClass]="tempSelectedCourtIds.has(pid) ? 'bg-indigo-500 text-white' : 'bg-white dark:bg-surface-dark text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/5'">
-                                    {{ match.plantilla[pid].dorsal }}
-                                </div>
-                                <span class="font-medium text-[15px]"
-                                    [ngClass]="tempSelectedCourtIds.has(pid) ? 'text-slate-800 dark:text-white' : 'text-slate-600 dark:text-slate-300'">{{
-                                    match.plantilla[pid].name }}</span>
-                            </div>
-                            <span class="material-symbols-outlined"
-                                [ngClass]="tempSelectedCourtIds.has(pid) ? 'text-indigo-500 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-600'">
-                                {{ tempSelectedCourtIds.has(pid) ? 'check_circle' : 'radio_button_unchecked' }}
-                            </span>
-                        </button>
-                    </div>
-                </div>
-
-                <div
-                    class="px-5 py-4 border-t border-gray-200 dark:border-white/5 bg-slate-50 dark:bg-background-dark sticky bottom-0 z-10">
-                    <div class="flex justify-between items-center mb-4">
-                        <span
-                            class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Convocados</span>
-                        <span class="text-sm font-bold text-slate-800 dark:text-white">{{ tempSelectedCourtIds.size }} /
-                            {{
-                            Object.keys(match.plantilla || {}).length }}</span>
-                    </div>
-                    <button (click)="saveConvocatoria()"
-                        class="w-full py-2.5 rounded-xl font-bold bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-600 active:scale-[0.98] transition-all">
-                        Guardar Convocados
-                    </button>
-                </div>
-            </div>
         </div>
     </ng-container>
+
+    <!-- Substitutions Modal -->
+    <div *ngIf="showSubsModal && match"
+        class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div
+            class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-300 max-h-[85vh]">
+            <div
+                class="px-5 py-4 border-b border-gray-200 dark:border-white/5 flex justify-between items-center bg-slate-50 dark:bg-white/5 sticky top-0 z-10">
+                <h3 class="text-base font-bold text-slate-800 dark:text-white">Configurar 5 en Pista</h3>
+                <button (click)="closeSubsModal()"
+                    class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors h-8 w-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-surface-dark">
+                    <span class="material-symbols-outlined text-[18px]">close</span>
+                </button>
+            </div>
+            <div class="p-2 overflow-y-auto">
+                <div class="grid grid-cols-1 gap-1">
+                    <button *ngFor="let pid of Object.keys(match.convocados || {})" (click)="togglePlayerSub(pid)"
+                        class="flex items-center justify-between p-3 rounded-xl border transition-all text-left"
+                        [ngClass]="tempSelectedCourtIds.has(pid) ? 'bg-primary/10 border-primary/30' : 'bg-slate-50 dark:bg-background-dark border-transparent hover:bg-slate-100 dark:hover:bg-slate-800'">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0"
+                                [ngClass]="tempSelectedCourtIds.has(pid) ? 'bg-primary text-white' : 'bg-white dark:bg-surface-dark text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/5'">
+                                {{ match.convocados[pid]?.dorsal }}
+                            </div>
+                            <span class="font-medium text-[15px]"
+                                [ngClass]="tempSelectedCourtIds.has(pid) ? 'text-slate-800 dark:text-white' : 'text-slate-600 dark:text-slate-300'">{{
+                                match.convocados[pid]?.name }}</span>
+                        </div>
+                        <span class="material-symbols-outlined"
+                            [ngClass]="tempSelectedCourtIds.has(pid) ? 'text-primary' : 'text-slate-400 dark:text-slate-600'">
+                            {{ tempSelectedCourtIds.has(pid) ? 'check_circle' : 'radio_button_unchecked' }}
+                        </span>
+                    </button>
+                </div>
+            </div>
+            <div
+                class="px-5 py-4 border-t border-gray-200 dark:border-white/5 bg-slate-50 dark:bg-background-dark sticky bottom-0 z-10">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest">En
+                        Pista</span>
+                    <span class="text-sm font-bold"
+                        [ngClass]="tempSelectedCourtIds.size === 5 ? 'text-green-500 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'">{{
+                        tempSelectedCourtIds.size }} / 5</span>
+                </div>
+                <button (click)="saveSubstitutions()"
+                    class="w-full py-2.5 rounded-xl font-bold bg-primary text-white shadow-lg shadow-primary/20 hover:bg-orange-600 active:scale-[0.98] transition-all">
+                    Confirmar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Convocatoria Modal -->
+    <div *ngIf="showConvocatoriaModal && match"
+        class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div
+            class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-300 max-h-[85vh]">
+            <div
+                class="px-5 py-4 border-b border-gray-200 dark:border-white/5 flex justify-between items-center bg-slate-50 dark:bg-white/5 sticky top-0 z-10">
+                <h3 class="text-base font-bold text-slate-800 dark:text-white">Convocados al Partido</h3>
+                <button (click)="closeConvocatoriaModal()"
+                    class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors h-8 w-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-surface-dark">
+                    <span class="material-symbols-outlined text-[18px]">close</span>
+                </button>
+            </div>
+            <div class="p-2 overflow-y-auto">
+                <div class="grid grid-cols-1 gap-1">
+                    <button *ngFor="let pid of Object.keys(match.plantilla || {})" (click)="toggleConvocatoriaSub(pid)"
+                        class="flex items-center justify-between p-3 rounded-xl border transition-all text-left"
+                        [ngClass]="tempSelectedCourtIds.has(pid) ? 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/30' : 'bg-slate-50 dark:bg-background-dark border-transparent hover:bg-slate-100 dark:hover:bg-slate-800'">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0"
+                                [ngClass]="tempSelectedCourtIds.has(pid) ? 'bg-indigo-500 text-white' : 'bg-white dark:bg-surface-dark text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/5'">
+                                {{ match.plantilla[pid]?.dorsal }}
+                            </div>
+                            <span class="font-medium text-[15px]"
+                                [ngClass]="tempSelectedCourtIds.has(pid) ? 'text-slate-800 dark:text-white' : 'text-slate-600 dark:text-slate-300'">{{
+                                match.plantilla[pid]?.name }}</span>
+                        </div>
+                        <span class="material-symbols-outlined"
+                            [ngClass]="tempSelectedCourtIds.has(pid) ? 'text-indigo-500 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-600'">
+                            {{ tempSelectedCourtIds.has(pid) ? 'check_circle' : 'radio_button_unchecked' }}
+                        </span>
+                    </button>
+                </div>
+            </div>
+            <div
+                class="px-5 py-4 border-t border-gray-200 dark:border-white/5 bg-slate-50 dark:bg-background-dark sticky bottom-0 z-10">
+                <div class="flex justify-between items-center mb-4">
+                    <span
+                        class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Convocados</span>
+                    <span class="text-sm font-bold text-slate-800 dark:text-white">{{ tempSelectedCourtIds.size }} / {{
+                        Object.keys(match.plantilla).length }}</span>
+                </div>
+                <button (click)="saveConvocatoria()"
+                    class="w-full py-2.5 rounded-xl font-bold bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-600 active:scale-[0.98] transition-all">
+                    Guardar Convocados
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fallo Selección Modal -->
+    <div *ngIf="showFalloModal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 px-6">
+        <div
+            class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
+            <div class="px-5 py-4 border-b border-gray-200 dark:border-white/5 bg-slate-50 dark:bg-white/5 text-center">
+                <h3 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Tipo de Fallo</h3>
+                <p class="text-[10px] text-slate-500 mt-1">¿Qué tiro se ha fallado?</p>
+            </div>
+            <div class="p-4 grid grid-cols-1 gap-2">
+                <button (click)="confirmFallo(1)"
+                    class="w-full py-3 rounded-xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex items-center justify-between px-4">
+                    <span>Tiro Libre (1 pt)</span>
+                    <span class="material-symbols-outlined text-orange-500">error</span>
+                </button>
+                <button (click)="confirmFallo(2)"
+                    class="w-full py-3 rounded-xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex items-center justify-between px-4">
+                    <span>Tiro de Campo (2 pt)</span>
+                    <span class="material-symbols-outlined text-orange-500">error</span>
+                </button>
+                <button (click)="confirmFallo(3)"
+                    class="w-full py-3 rounded-xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex items-center justify-between px-4">
+                    <span>Triple (3 pt)</span>
+                    <span class="material-symbols-outlined text-orange-500">error</span>
+                </button>
+            </div>
+            <div class="p-4 pt-0">
+                <button (click)="showFalloModal = false"
+                    class="w-full py-2 text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors">
+                    CANCELAR
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Loading State -->
     <ng-template #loading>
@@ -396,3 +513,4 @@ mx-auto border-x border-gray-200 dark:border-white/10 bg-white dark:bg-backgroun
             <p class="text-xs text-slate-500">Obteniendo datos desde Supabase</p>
         </div>
     </ng-template>
+</div>

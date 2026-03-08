@@ -1,0 +1,16 @@
+/* Base styles for the live events list */
+:host {
+    display: block;
+    height: 100%;
+    min-height: 300px;
+}
+
+/* Hide scrollbar but allow scrolling */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}

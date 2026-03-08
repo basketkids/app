@@ -5,6 +5,7 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { CompetitionService, Competition, Match, Rival, MatchState } from '../../core/services/competition.service';
 import { AuthService } from '../../core/services/auth.service';
 import { MatchRepository, MatchScore } from '../../core/models/data/match.repository';
+import { TeamRepository } from '../../core/models/data/team.repository';
 import { LeadersChartComponent } from '../../shared/components/leaders-chart/leaders-chart';
 import { PlayerStatRow } from '../../shared/components/leaders-chart/leaders-chart';
 import { EvolutionChartComponent } from '../../shared/components/evolution-chart/evolution-chart';
@@ -20,6 +21,7 @@ export class Competitions implements OnInit {
   matches: Match[] = [];
   rivals: Rival[] = [];
   activeTab: 'partidos' | 'rivales' | 'destacados' | 'evolucion' = 'partidos';
+  teamName: string = 'Nosotros';
 
   // Leaders data
   statRows: PlayerStatRow[] = [];
@@ -50,7 +52,8 @@ export class Competitions implements OnInit {
     private router: Router,
     private compService: CompetitionService,
     public auth: AuthService,
-    private matchRepo: MatchRepository
+    private matchRepo: MatchRepository,
+    private teamRepo: TeamRepository
   ) { }
 
   ngOnInit(): void {
@@ -66,6 +69,13 @@ export class Competitions implements OnInit {
         this.compService.getMatches(this.compId),
         this.compService.getRivals(this.compId)
       ]);
+
+      // Fetch team name
+      if (this.competition?.teamId) {
+        const team = await this.teamRepo.getTeamById(this.competition.teamId);
+        if (team) this.teamName = team.name;
+      }
+
       this.loadLeaders();
     } catch (e) {
       this.errorMsg = (e as Error).message;
@@ -99,8 +109,8 @@ export class Competitions implements OnInit {
   async addMatch(): Promise<void> {
     try {
       await this.compService.createMatch(this.teamId, this.compId, {
-        visitorTeamName: this.newMatch.is_local ? this.newMatch.rival_name : 'Nosotros',
-        localTeamName: this.newMatch.is_local ? 'Nosotros' : this.newMatch.rival_name,
+        visitorTeamName: this.newMatch.is_local ? this.newMatch.rival_name : this.teamName,
+        localTeamName: this.newMatch.is_local ? this.teamName : this.newMatch.rival_name,
         date: this.newMatch.date ? new Date(this.newMatch.date).toISOString() : new Date().toISOString(),
         venue: this.newMatch.venue,
         isLocal: this.newMatch.is_local,

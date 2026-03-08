@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { ProfileRepository, UserProfile } from '../../core/models/data/profile.repository';
 import { ProfileService } from '../../core/services/profile.service';
-import { SupabaseDataClient } from '../../core/models/data/supabase.client';
+import { AdminRepository } from '../../core/models/data/admin.repository';
 
 interface UserStat {
     profile: UserProfile;
@@ -33,7 +33,7 @@ export class AdminStats implements OnInit {
         private profileRepo: ProfileRepository,
         private profileService: ProfileService,
         private router: Router,
-        private supabase: SupabaseDataClient
+        private adminRepo: AdminRepository
     ) { }
 
     async ngOnInit() {
@@ -47,14 +47,7 @@ export class AdminStats implements OnInit {
     async loadStats() {
         this.loading = true;
         try {
-            const sb = this.supabase.instance;
-
-            const [{ data: profiles }, { data: teams }, { data: competitions }, { data: matches }] = await Promise.all([
-                sb.from('profiles').select('*'),
-                sb.from('teams').select('*'),
-                sb.from('competitions').select('*'),
-                sb.from('matches').select('*')
-            ]);
+            const { profiles, teams, competitions, matches } = await this.adminRepo.getGlobalStats();
 
             // Build stat map
             const statMap: { [id: string]: UserStat } = {};
@@ -129,17 +122,23 @@ export class AdminStats implements OnInit {
 
     async deleteTeam(teamId: string) {
         if (!confirm('¿Borrar este equipo? Se borrarán también sus partidos y jugadores.')) return;
-        const { error } = await this.supabase.instance.from('teams').delete().eq('id', teamId);
-        if (error) { alert('Error: ' + error.message); return; }
-        this.closeModal();
-        await this.loadStats();
+        try {
+            await this.adminRepo.deleteTeam(teamId);
+            this.closeModal();
+            await this.loadStats();
+        } catch (e: any) {
+            alert('Error: ' + e.message);
+        }
     }
 
     async deleteMatch(matchId: string) {
         if (!confirm('¿Borrar este partido?')) return;
-        const { error } = await this.supabase.instance.from('matches').delete().eq('id', matchId);
-        if (error) { alert('Error: ' + error.message); return; }
-        this.closeModal();
-        await this.loadStats();
+        try {
+            await this.adminRepo.deleteMatch(matchId);
+            this.closeModal();
+            await this.loadStats();
+        } catch (e: any) {
+            alert('Error: ' + e.message);
+        }
     }
 }

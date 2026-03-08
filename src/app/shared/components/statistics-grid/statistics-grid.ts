@@ -4,7 +4,7 @@ import { PlayerStatistic, PlayerRosterData } from '../../../core/models/player.m
 
 interface StatsRow {
   player: PlayerRosterData;
-  stats: PlayerStatistic;
+  stats: PlayerStatistic & { fantasy?: number };
 }
 
 @Component({
@@ -17,6 +17,7 @@ interface StatsRow {
 export class StatisticsGrid implements OnChanges {
   @Input() stats: Record<string, PlayerStatistic> = {};
   @Input() roster: Record<string, PlayerRosterData> = {};
+  @Input() showFantasy: boolean = false;
 
   rows: StatsRow[] = [];
 
@@ -34,7 +35,12 @@ export class StatisticsGrid implements OnChanges {
     let baseRows = Object.keys(this.roster || {}).map(playerId => {
       const player = this.roster[playerId];
       const playerStats = (this.stats ?? {})[playerId] || this.getEmptyStats();
-      return { player, stats: playerStats };
+
+      // Calculate fantasy: PTS×1 + REB×1 + AST×2 + ROB×3 + TAP×3
+      const fantasy = (playerStats.points || 0) + (playerStats.rebounds || 0) +
+        (playerStats.assists || 0) * 2 + (playerStats.steals || 0) * 3 + (playerStats.blocks || 0) * 3;
+
+      return { player, stats: { ...playerStats, fantasy } };
     });
 
     this.rows = this.sortRows(baseRows);
@@ -71,7 +77,16 @@ export class StatisticsGrid implements OnChanges {
     });
   }
 
+  getPercentage(made: number, attempted: number): string {
+    if (!attempted || attempted === 0) return '0%';
+    return Math.round((made / attempted) * 100) + '%';
+  }
+
   private getEmptyStats(): PlayerStatistic {
-    return { points: 0, fouls: 0, assists: 0, rebounds: 0, steals: 0, blocks: 0, valoracion: 0, plusMinus: 0 };
+    return {
+      points: 0, fouls: 0, assists: 0, rebounds: 0, steals: 0, blocks: 0,
+      t1m: 0, t1i: 0, t2m: 0, t2i: 0, t3m: 0, t3i: 0,
+      valoracion: 0, plusMinus: 0
+    };
   }
 }

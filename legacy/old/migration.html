@@ -486,7 +486,19 @@
                     team_score: m.puntosEquipo || 0,
                     rival_score: m.puntosRival || 0,
                     chronicle: m.cronica || null,
-                    live_state: m
+                    live_state: {
+                        ...m,
+                        currentQuarter: m.parteActual || m.currentQuarter || 1,
+                        jugadoresEnPista: (() => {
+                            const pOnCourt = m.jugadoresEnPista || {};
+                            const mapped = {};
+                            Object.keys(pOnCourt).forEach(fid => {
+                                const uuid = globalPlayerMap.get(fid) || fid;
+                                mapped[uuid] = true;
+                            });
+                            return mapped;
+                        })()
+                    }
                 }).select().single();
 
                 if (error) {
@@ -537,12 +549,13 @@
                     robos: s.robos || 0,
                     tapones: s.tapones || 0,
                     faltas: s.faltas || 0,
-                    valoracion: 0
+                    valoracion: (s.puntos || 0) + (s.rebotes || 0) + (s.asistencias || 0) + (s.robos || 0) + (s.tapones || 0) - (s.faltas || 0)
                 });
             }
 
             if (statsPayload.length > 0) {
-                const { error } = await sb.from('match_player_stats').insert(statsPayload);
+                // Use upsert to avoid duplicates on re-import
+                const { error } = await sb.from('match_player_stats').upsert(statsPayload, { onConflict: 'match_id, player_id' });
                 if (error) log(`Error stats partido: ${error.message}`, 'error');
             }
         }
@@ -568,11 +581,15 @@
                     quarter: ev.cuarto || 1,
                     timestamp: ev.tiempoSegundos || 0,
                     value: ev.cantidad || (ev.valor || 0),
-                    properties: ev
+                    properties: {
+                        ...ev,
+                        jugadoresEnPista: (ev.jugadoresEnPista || []).map(fid => globalPlayerMap.get(fid) || fid)
+                    }
                 });
             }
 
             if (eventsPayload.length > 0) {
+                // Use upsert or handle conflicts
                 const { error } = await sb.from('match_events').insert(eventsPayload);
                 if (error) log(`Error insertando eventos partido: ${error.message}`, 'error');
             }

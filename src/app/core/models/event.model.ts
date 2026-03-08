@@ -6,7 +6,8 @@ export enum EventType {
     REBOUNDS = 'rebotes',
     STEALS = 'robos',
     BLOCKS = 'tapones',
-    MISS = 'fallo'
+    MISS = 'fallo',
+    TIMEOUT = 'tiempo muerto'
 }
 
 export interface MatchEvent {
@@ -14,7 +15,7 @@ export interface MatchEvent {
     type: EventType;
     quarter: number;
     secondsRemaining: number;
-    playerId: string | -2; // -2 implies rival team
+    playerId: string | number; // -2 implies rival team, -1 local timeout
     playerName?: string;
     playerDorsal?: number;
     quantity: number | null; // e.g. 1, 2, or 3 points

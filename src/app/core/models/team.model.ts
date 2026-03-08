@@ -3,5 +3,7 @@ export interface Team {
     name: string;
     coach: string | null;
     jerseyColor: string;
+    owner_id: string;
+    logo_url?: string | null;
     createdAt: string;
 }

@@ -35,4 +35,5 @@ export interface Match {
     convocados: Record<string, PlayerRosterData>; // Players summoned to THIS match
     playersOnCourt: Record<string, boolean>; // Dictionary of IDs currently playing
     chronicle?: string | null;
+    teamJerseyColor?: string | null;
 }

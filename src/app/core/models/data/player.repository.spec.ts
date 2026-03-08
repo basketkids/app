@@ -61,8 +61,8 @@ describe('PlayerRepository Unit Tests', () => {
         it('should successfully map and return an array of players', async () => {
             const teamId = 'team-123';
             const dbData = [
-                { id: '1', name: 'Player One', number: '10', position: 'Escolta', height: '1.9', weight: '80', birth_date: '2010-01-01', avatar_config_id: 'avatar-1' },
-                { id: '2', name: 'Player Two', number: '11', position: 'Alero', height: '2.0', weight: '90', birth_date: '2009-01-01', avatar_config_id: null }
+                { id: '1', name: 'Player One', number: '10', position: 'Escolta', height: '1.9', weight: '80', birth_date: '2010-01-01', avatar_configs: [{ id: 'avatar-1' }] },
+                { id: '2', name: 'Player Two', number: '11', position: 'Alero', height: '2.0', weight: '90', birth_date: '2009-01-01', avatar_configs: null }
             ];
 
             // Wire the mock chain: from('players').select('*').eq('team_id', teamId).order(..) -> returns { data, error }
@@ -72,14 +72,14 @@ describe('PlayerRepository Unit Tests', () => {
             const result = await repo.getPlayersByTeam(teamId);
 
             expect(mockFrom).toHaveBeenCalledWith('players');
-            expect(mockSelect).toHaveBeenCalledWith('*');
+            expect(mockSelect).toHaveBeenCalledWith('*, avatar_configs(*)');
             expect(mockEq).toHaveBeenCalledWith('team_id', teamId);
 
             expect(result).toHaveLength(2);
             expect(result[0].id).toBe('1');
             expect(result[0].name).toBe('Player One');
             expect(result[0].dorsal).toBe(10);
-            expect(result[0].avatarConfig).toBe('avatar-1');
+            expect(result[0].avatarConfig).toEqual({ id: 'avatar-1' });
 
             // Check fallback logic for null
             expect(result[1].avatarConfig).toBeNull();

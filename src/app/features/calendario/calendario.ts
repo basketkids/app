@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { CalendarService, CalendarMatch } from '../../core/services/calendar.service';
+import { TeamService } from '../../core/services/team.service';
 import { AuthService } from '../../core/services/auth.service';
 import { CalendarDay, CalendarWeekView } from '../../shared/components/calendar/calendar-week-view';
 import { CalendarMonthView } from '../../shared/components/calendar/calendar-month-view';
@@ -21,6 +22,9 @@ export class Calendario implements OnInit {
     pivotOffset = 0;          // weeks shifted from today (week view)
     currentMonth = new Date();// month being displayed (month view)
 
+    selectedTeamId: string | null = null;
+    selectedTeamName: string | null = null;
+
     loading = true;
     errorMsg = '';
     totalThisPeriod = 0;
@@ -28,7 +32,9 @@ export class Calendario implements OnInit {
     constructor(
         private calService: CalendarService,
         private auth: AuthService,
-        private router: Router
+        private router: Router,
+        private route: ActivatedRoute,
+        private teamService: TeamService
     ) {
         this.currentMonth = new Date();
         this.currentMonth.setDate(1);
@@ -37,12 +43,27 @@ export class Calendario implements OnInit {
     async ngOnInit(): Promise<void> {
         const userId = this.auth.currentSession?.user?.id;
         if (!userId) { this.loading = false; return; }
+
+        this.route.queryParamMap.subscribe(async params => {
+            this.selectedTeamId = params.get('teamId');
+            if (this.selectedTeamId) {
+                try {
+                    const team = await this.teamService.getTeam(this.selectedTeamId);
+                    this.selectedTeamName = team?.name || 'Equipo';
+                } catch (e) {
+                    console.error('Error loading filtered team:', e);
+                }
+            } else {
+                this.selectedTeamName = null;
+            }
+            await this.loadMatches(userId);
+        });
+    }
+
+    async loadMatches(userId: string): Promise<void> {
+        this.loading = true;
         try {
             this.allMatches = await this.calService.getAllUserMatches(userId);
-            console.log('[Calendario] total matches loaded:', this.allMatches.length);
-            this.allMatches.forEach(m =>
-                console.log(`[Match] id=${m.id} state="${m.state}" score=${m.team_score}-${m.rival_score}`)
-            );
             this.buildView();
         } catch (e) {
             this.errorMsg = (e as Error).message;
@@ -51,8 +72,21 @@ export class Calendario implements OnInit {
         }
     }
 
+    clearFilter(): void {
+        this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { teamId: null },
+            queryParamsHandling: 'merge'
+        });
+    }
+
     buildView(): void {
-        const byDay = this.calService.groupByDay(this.allMatches);
+        let filteredMatches = this.allMatches;
+        if (this.selectedTeamId) {
+            filteredMatches = this.allMatches.filter(m => m.teamId === this.selectedTeamId);
+        }
+
+        const byDay = this.calService.groupByDay(filteredMatches);
 
         if (this.viewMode === 'week') {
             const start = this.calService.getTodayStart();

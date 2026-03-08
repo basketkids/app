@@ -11,6 +11,19 @@ xl:max-w-[1400px] mx-auto border-x border-gray-200 dark:border-white/10 bg-white
             {{ totalThisPeriod }} {{ totalThisPeriod === 1 ? 'partido' : 'partidos' }}
             {{ viewMode === 'week' ? 'en los próximos 7 días' : 'este mes' }}
         </div>
+
+        <!-- Filter banner -->
+        <div *ngIf="selectedTeamName"
+            class="mx-4 mt-3 flex items-center justify-between p-2.5 bg-primary/10 border border-primary/20 rounded-xl animate-in slide-in-from-top-2">
+            <div class="flex items-center gap-2 text-primary">
+                <span class="material-symbols-outlined text-[18px]">filter_list</span>
+                <span class="text-xs font-bold uppercase tracking-tight">Filtrando por: {{ selectedTeamName }}</span>
+            </div>
+            <button (click)="clearFilter()"
+                class="text-[10px] font-black uppercase text-primary hover:bg-white dark:hover:bg-white/10 px-2 py-1 rounded-lg transition-colors">
+                Quitar filtro
+            </button>
+        </div>
     </div>
 
     <!-- Main Content -->

@@ -31,6 +31,7 @@ export class TeamRepository {
             name: data.name,
             coach: data.coach,
             jerseyColor: data.color,
+            owner_id: data.owner_id,
             createdAt: data.created_at
         } as Team;
     }
@@ -77,6 +78,7 @@ export class TeamRepository {
             name: d.name,
             coach: d.coach,
             jerseyColor: d.color,
+            owner_id: d.owner_id,
             createdAt: d.created_at
         }));
     }
@@ -98,6 +100,7 @@ export class TeamRepository {
             name: data.name,
             coach: data.coach,
             jerseyColor: data.color,
+            owner_id: data.owner_id,
             createdAt: data.created_at
         } as Team;
     }

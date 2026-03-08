@@ -56,11 +56,78 @@ border-x border-gray-200 dark:border-white/10 bg-white dark:bg-background-dark">
 
                     <h5
                         class="text-xs font-bold uppercase tracking-widest text-primary mb-4 pb-2 border-b border-gray-200 dark:border-white/10">
+                        Privacidad de Partidos</h5>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                        <label
+                            class="flex items-center gap-3 p-3 bg-slate-50 dark:bg-background-dark border border-slate-200 dark:border-white/10 rounded-xl cursor-pointer hover:border-primary/50 transition-colors">
+                            <input type="checkbox" [(ngModel)]="publicitySettings.stats" name="pub_stats"
+                                class="w-5 h-5 accent-primary">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-slate-800 dark:text-white">Estadísticas</span>
+                                <span class="text-[10px] text-slate-500">Puntos, rebotes, asistencias...</span>
+                            </div>
+                        </label>
+
+                        <label
+                            class="flex items-center gap-3 p-3 bg-slate-50 dark:bg-background-dark border border-slate-200 dark:border-white/10 rounded-xl cursor-pointer hover:border-primary/50 transition-colors">
+                            <input type="checkbox" [(ngModel)]="publicitySettings.events" name="pub_events"
+                                class="w-5 h-5 accent-primary">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-slate-800 dark:text-white">Jugadas (En Vivo)</span>
+                                <span class="text-[10px] text-slate-500">Narración minuto a minuto</span>
+                            </div>
+                        </label>
+
+                        <label
+                            class="flex items-center gap-3 p-3 bg-slate-50 dark:bg-background-dark border border-slate-200 dark:border-white/10 rounded-xl cursor-pointer hover:border-primary/50 transition-colors">
+                            <input type="checkbox" [(ngModel)]="publicitySettings.chronicle" name="pub_chronicle"
+                                class="w-5 h-5 accent-primary">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-slate-800 dark:text-white">Crónica (IA)</span>
+                                <span class="text-[10px] text-slate-500">Resumen generado del partido</span>
+                            </div>
+                        </label>
+
+                        <label
+                            class="flex items-center gap-3 p-3 bg-slate-50 dark:bg-background-dark border border-slate-200 dark:border-white/10 rounded-xl cursor-pointer hover:border-primary/50 transition-colors">
+                            <input type="checkbox" [(ngModel)]="publicitySettings.mvp" name="pub_mvp"
+                                class="w-5 h-5 accent-primary">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-slate-800 dark:text-white">MVP del Partido</span>
+                                <span class="text-[10px] text-slate-500">Destacar al mejor jugador</span>
+                            </div>
+                        </label>
+
+                        <label
+                            class="flex items-center gap-3 p-3 bg-slate-50 dark:bg-background-dark border border-slate-200 dark:border-white/10 rounded-xl cursor-pointer hover:border-primary/50 transition-colors">
+                            <input type="checkbox" [(ngModel)]="publicitySettings.fantasy" name="pub_fantasy"
+                                class="w-5 h-5 accent-primary">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-slate-800 dark:text-white">Fantasy</span>
+                                <span class="text-[10px] text-slate-500">Puntos tipo Comunio</span>
+                            </div>
+                        </label>
+
+                        <label
+                            class="flex items-center gap-3 p-3 bg-slate-50 dark:bg-background-dark border border-slate-200 dark:border-white/10 rounded-xl cursor-pointer hover:border-primary/50 transition-colors">
+                            <input type="checkbox" [(ngModel)]="publicitySettings.leaders" name="pub_leaders"
+                                class="w-5 h-5 accent-primary">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-slate-800 dark:text-white">Líderes</span>
+                                <span class="text-[10px] text-slate-500">Tops de cada estadística</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <h5
+                        class="text-xs font-bold uppercase tracking-widest text-primary mb-4 pb-2 border-b border-gray-200 dark:border-white/10">
                         Personalizar Avatar</h5>
 
                     <div class="mb-6">
                         <app-avatar-editor [seed]="profile.id" [initialConfig]="profile.avatar_configs || null"
-                            [jerseyColor]="'5199e4'" (configChange)="onAvatarConfigChange($event)">
+                            [jerseyColor]="'5199e4'" [allowClothingCustomization]="true"
+                            (configChange)="onAvatarConfigChange($event)">
                         </app-avatar-editor>
                     </div>
 

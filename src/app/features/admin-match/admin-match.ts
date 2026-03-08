@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 
@@ -8,17 +8,29 @@ import { Match, EventType } from '../../core/models/match.model';
 import { Scoreboard } from '../../shared/components/scoreboard/scoreboard';
 import { LiveEvents } from '../../shared/components/live-events/live-events';
 import { StatisticsGrid } from '../../shared/components/statistics-grid/statistics-grid';
+import { Avatar } from '../../shared/components/avatar/avatar';
+import { LineupBoard } from '../../shared/components/lineup-board/lineup-board';
+import { MatchProgression } from '../../shared/components/match-progression/match-progression';
+
+import { MatchEngineService } from '../../core/services/match-engine.service';
 
 @Component({
   selector: 'app-admin-match',
   templateUrl: './admin-match.html',
   styleUrls: ['./admin-match.css'],
-  imports: [CommonModule, RouterModule, Scoreboard, LiveEvents, StatisticsGrid]
+  imports: [CommonModule, RouterLink, Scoreboard, LiveEvents, StatisticsGrid, Avatar, LineupBoard, MatchProgression]
 })
 export class AdminMatch implements OnInit, OnDestroy {
+  matchId: string = '';
   match: Match | null = null;
-  activeTab: 'convocados' | 'pista' | 'en-vivo' | 'cronica' = 'convocados';
+  activeTab: 'pista' | 'en-vivo' | 'convocados' | 'cronica' | 'analisis' = 'convocados';
   private sub: Subscription = new Subscription();
+
+  // Analysis data
+  progression: any[] = [];
+  partials: any[] = [];
+  bestLineups: any[] = [];
+  bestDefensiveLineups: any[] = [];
 
   // Track selected player on court
   selectedPlayerId: string | null = null;
@@ -26,15 +38,17 @@ export class AdminMatch implements OnInit, OnDestroy {
   // State for substitutions modal
   showSubsModal: boolean = false;
   showConvocatoriaModal: boolean = false;
+  showFalloModal: boolean = false;
   tempSelectedCourtIds: Set<string> = new Set();
 
   // Expose EventType and Object to template
-  EventTypes = EventType;
-  Object = Object;
+  protected Object = Object;
+  protected EventTypes = EventType;
 
   constructor(
     private route: ActivatedRoute,
-    private matchService: MatchService
+    private matchService: MatchService,
+    private matchEngine: MatchEngineService
   ) { }
 
   ngOnInit(): void {
@@ -43,11 +57,14 @@ export class AdminMatch implements OnInit, OnDestroy {
     this.sub.add(
       this.matchService.currentMatch$.subscribe(m => {
         this.match = m;
-        // Auto-select first player on court if none selected
-        if (m && m.playersOnCourt && !this.selectedPlayerId) {
-          const players = Object.keys(m.playersOnCourt);
-          if (players.length > 0) {
-            this.selectedPlayerId = players[0];
+        if (m) {
+          this.calculateAnalysis(m);
+          // Auto-select first player on court if none selected
+          if (m.playersOnCourt && !this.selectedPlayerId) {
+            const players = Object.keys(m.playersOnCourt);
+            if (players.length > 0) {
+              this.selectedPlayerId = players[0];
+            }
           }
         }
       })
@@ -63,6 +80,38 @@ export class AdminMatch implements OnInit, OnDestroy {
     this.matchService.clearMatch();
   }
 
+  // -- Getters for Template --
+  get localFouls(): number {
+    if (!this.match) return 0;
+    return this.matchEngine.getTeamFouls(this.match.events, this.match.currentQuarter, true);
+  }
+
+  get visitorFouls(): number {
+    if (!this.match) return 0;
+    return this.matchEngine.getTeamFouls(this.match.events, this.match.currentQuarter, false);
+  }
+
+  private calculateAnalysis(m: Match) {
+    if (!m.events) return;
+    this.progression = this.matchEngine.getMatchProgression(m.events);
+    this.partials = this.matchEngine.getQuarterPartials(m.events);
+
+    const initialIds = Object.keys(m.playersOnCourt || {}).filter(id => m.playersOnCourt[id]);
+    const performance = this.matchEngine.getLineupPerformance(m.events, initialIds);
+
+    const combinedRoster = { ...m.plantilla, ...m.roster, ...m.convocados };
+
+    const processLineup = (l: any) => {
+      return {
+        ...l,
+        players: l.lineup.map((pid: string) => combinedRoster[pid] || { name: 'Player', id: pid, dorsal: '?' })
+      };
+    };
+
+    this.bestLineups = performance.filter(l => l.diff > 0).slice(0, 3).map(processLineup);
+    this.bestDefensiveLineups = [...performance].sort((a, b) => a.pointsAgainst - b.pointsAgainst).slice(0, 3).map(processLineup);
+  }
+
   // -- Selection Logic --
   selectPlayer(playerId: string): void {
     this.selectedPlayerId = playerId;
@@ -74,7 +123,24 @@ export class AdminMatch implements OnInit, OnDestroy {
       alert('Por favor, selecciona un jugador de la pista primero.');
       return;
     }
+
+    if (type === EventType.MISS) {
+      this.showFalloModal = true;
+      return;
+    }
+
     this.matchService.addStat(this.selectedPlayerId, type, value);
+  }
+
+  confirmFallo(points: number): void {
+    if (this.selectedPlayerId) {
+      this.matchService.addStat(this.selectedPlayerId, EventType.MISS, points);
+    }
+    this.showFalloModal = false;
+  }
+
+  deleteEvent(id: string): void {
+    this.matchService.deleteEvent(id);
   }
 
   addTeamPoints(points: number): void {
@@ -87,6 +153,10 @@ export class AdminMatch implements OnInit, OnDestroy {
 
   addRivalFoul(): void {
     this.matchService.addStat(-2, EventType.FOULS, 1);
+  }
+
+  addTimeout(isLocal: boolean): void {
+    this.matchService.addTimeout(isLocal);
   }
 
   // -- Convocatoria Logic --

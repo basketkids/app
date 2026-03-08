@@ -1,84 +1,93 @@
-class="relative flex h-full min-h-screen w-full flex-col overflow-hidden max-w-md md:max-w-4xl lg:max-w-6xl
-xl:max-w-[1400px] mx-auto border-x border-white/10 bg-background-dark">
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-hidden max-w-md md:max-w-4xl lg:max-w-6xl
+xl:max-w-[1400px] mx-auto border-x border-gray-200 dark:border-white/10 bg-white dark:bg-background-dark">
 
-<div class="sticky top-0 z-20 bg-surface-dark border-b border-white/10 shrink-0">
-    <div class="flex items-center justify-between px-4 py-4">
-        <h1 class="text-xl font-bold tracking-tight text-white flex-1 text-center">Partidos Públicos</h1>
-    </div>
-</div>
-
-<div class="flex-1 overflow-y-auto pb-24 space-y-4 p-4">
-
-    <div *ngIf="loading" class="flex flex-col justify-center items-center py-12 text-slate-400">
-        <span class="material-symbols-outlined animate-spin text-primary text-[32px] mb-2">progress_activity</span>
-        <span class="text-sm">Cargando partidos...</span>
-    </div>
-
-    <div *ngIf="errorMsg" class="p-3 text-sm text-red-400 bg-red-900/20 border border-red-900/50 rounded-lg">
-        {{ errorMsg }}
+    <!-- Header -->
+    <div
+        class="sticky top-0 z-20 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md border-b border-gray-200 dark:border-white/10 pb-4">
+        <div class="flex items-center justify-between px-4 pt-6 pb-2">
+            <h1 class="text-3xl font-bold tracking-tight text-slate-800 dark:text-white">Partidos Públicos</h1>
+        </div>
+        <div class="px-4 text-sm text-slate-500 dark:text-slate-400">
+            {{ totalThisPeriod }} {{ totalThisPeriod === 1 ? 'partido' : 'partidos' }}
+            {{ viewMode === 'week' ? 'en los próximos 7 días' : 'este mes' }}
+        </div>
     </div>
 
-    <div *ngIf="!loading && matches.length === 0"
-        class="flex flex-col items-center justify-center py-16 text-slate-500 bg-surface-dark border border-white/5 border-dashed rounded-xl">
-        <span class="material-symbols-outlined text-4xl mb-3 opacity-50">event_busy</span>
-        <span class="text-sm font-medium">No hay partidos disponibles</span>
-    </div>
+    <!-- Main Content -->
+    <div class="flex-1 overflow-y-auto pb-24 space-y-4">
 
-    <div *ngIf="!loading && matches.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div *ngFor="let m of matches" (click)="goToMatch(m.id)"
-            class="group bg-surface-dark border border-white/5 rounded-2xl p-4 hover:border-primary/30 transition-colors cursor-pointer shadow-sm">
-            <div class="flex items-center justify-between mb-3">
-                <span
-                    class="text-[11px] font-bold text-slate-400 bg-background-dark px-2 py-0.5 rounded border border-white/5 flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[12px]">calendar_today</span> {{ formatDate(m.date
-                    || '') }}
-                </span>
+        <!-- Controls Layout -->
+        <div class="px-4 pt-4 flex flex-col gap-4">
 
-                <span *ngIf="m.state === MatchState.FINISHED"
-                    class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold ring-1 ring-inset"
-                    [ngClass]="m.scoreLocal > m.scoreVisitor ? 'bg-green-500/10 text-green-500 ring-green-500/20' : (m.scoreLocal < m.scoreVisitor ? 'bg-red-500/10 text-red-500 ring-red-500/20' : 'bg-slate-500/10 text-slate-400 ring-slate-500/20')">
-                    FINAL
-                </span>
-                <span *ngIf="m.state !== MatchState.FINISHED"
-                    class="inline-flex items-center rounded-md bg-white/5 px-2 py-0.5 text-[10px] font-bold text-slate-300 uppercase tracking-wide border border-white/10 shadow-inner">
-                    <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse mr-1.5"
-                        *ngIf="m.state === MatchState.IN_PROGRESS"></span>
-                    {{ m.state === MatchState.IN_PROGRESS ? 'EN JUEGO' : 'PENDIENTE' }}
-                </span>
+            <!-- View Toggle -->
+            <div
+                class="flex bg-slate-100 dark:bg-surface-dark border border-slate-200 dark:border-white/10 rounded-xl p-1 w-full max-w-[200px]">
+                <button
+                    [ngClass]="{'bg-primary text-white shadow-sm': viewMode === 'week', 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white': viewMode !== 'week'}"
+                    (click)="setView('week')"
+                    class="flex-1 flex items-center justify-center gap-1 py-1.5 text-sm font-medium rounded-lg transition-all">
+                    <span class="material-symbols-outlined text-[18px]">calendar_view_week</span> Semana
+                </button>
+                <button
+                    [ngClass]="{'bg-primary text-white shadow-sm': viewMode === 'month', 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white': viewMode !== 'month'}"
+                    (click)="setView('month')"
+                    class="flex-1 flex items-center justify-center gap-1 py-1.5 text-sm font-medium rounded-lg transition-all">
+                    <span class="material-symbols-outlined text-[18px]">calendar_month</span> Mes
+                </button>
             </div>
 
-            <div class="flex flex-col gap-2">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="w-2 h-2 rounded-full" [ngClass]="m.isLocal ? 'bg-primary' : 'bg-slate-600'">
-                        </div>
-                        <span class="text-white font-semibold text-base"
-                            [ngClass]="{'opacity-60': m.state === MatchState.FINISHED && m.scoreLocal < m.scoreVisitor}">{{
-                            m.localTeamName }}</span>
-                    </div>
-                    <span class="text-xl font-bold font-mono"
-                        [ngClass]="{'text-white': m.state !== MatchState.FINISHED || m.scoreLocal > m.scoreVisitor, 'text-slate-500': m.state === MatchState.FINISHED && m.scoreLocal <= m.scoreVisitor}">{{
-                        m.scoreLocal !== null ? m.scoreLocal : '-' }}</span>
+            <!-- Period Navigation -->
+            <div
+                class="flex items-center justify-between bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-xl p-2 shadow-sm">
+                <button (click)="prevPeriod()"
+                    class="h-10 w-10 flex items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-800 dark:hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">chevron_left</span>
+                </button>
+
+                <div class="flex flex-col items-center flex-1">
+                    <span class="text-sm font-semibold text-slate-800 dark:text-white tracking-wide uppercase">{{
+                        periodLabel }}</span>
+                    <button (click)="goToday()"
+                        class="text-xs font-medium text-primary hover:text-orange-400 transition-colors mt-0.5">Volver a
+                        Hoy</button>
                 </div>
 
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="w-2 h-2 rounded-full" [ngClass]="!m.isLocal ? 'bg-primary' : 'bg-slate-600'">
-                        </div>
-                        <span class="text-white font-semibold text-base"
-                            [ngClass]="{'opacity-60': m.state === MatchState.FINISHED && m.scoreVisitor < m.scoreLocal}">{{
-                            m.visitorTeamName }}</span>
-                    </div>
-                    <span class="text-xl font-bold font-mono"
-                        [ngClass]="{'text-white': m.state !== MatchState.FINISHED || m.scoreVisitor > m.scoreLocal, 'text-slate-500': m.state === MatchState.FINISHED && m.scoreVisitor <= m.scoreLocal}">{{
-                        m.scoreVisitor !== null ? m.scoreVisitor : '-' }}</span>
-                </div>
-            </div>
-
-            <div *ngIf="m.venue"
-                class="mt-3 pt-2 border-t border-white/5 text-[11px] text-slate-500 flex items-center gap-1.5 truncate">
-                <span class="material-symbols-outlined text-[14px]">location_on</span> {{ m.venue }}
+                <button (click)="nextPeriod()"
+                    class="h-10 w-10 flex items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-800 dark:hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">chevron_right</span>
+                </button>
             </div>
         </div>
+
+
+        <div *ngIf="loading" class="flex flex-col justify-center items-center py-12 text-slate-500 dark:text-slate-400">
+            <span class="material-symbols-outlined animate-spin text-primary text-[32px] mb-2">progress_activity</span>
+            <span class="text-sm">Cargando partidos...</span>
+        </div>
+
+        <div *ngIf="errorMsg"
+            class="mx-4 p-3 text-sm text-red-500 bg-red-50 border border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-900/50 rounded-lg">
+            {{ errorMsg }}
+        </div>
+
+        <!-- Calendar Views -->
+        <div class="px-4" *ngIf="!loading">
+            <!-- Empty state -->
+            <div *ngIf="totalThisPeriod === 0"
+                class="flex flex-col items-center justify-center py-16 text-slate-500 dark:text-slate-500 bg-slate-50 dark:bg-surface-dark/50 rounded-2xl border border-slate-200 dark:border-white/5 border-dashed">
+                <span class="material-symbols-outlined text-4xl mb-3 opacity-50">event_busy</span>
+                <span class="text-sm font-medium">No hay partidos en este período</span>
+            </div>
+
+            <!-- Subcomponents -->
+            <app-calendar-week-view *ngIf="viewMode === 'week' && totalThisPeriod > 0" [days]="calDays"
+                (matchClick)="goToMatch($event)">
+            </app-calendar-week-view>
+
+            <app-calendar-month-view *ngIf="viewMode === 'month' && totalThisPeriod > 0" [days]="calDays"
+                (matchClick)="goToMatch($event)">
+            </app-calendar-month-view>
+        </div>
+
     </div>
 </div>
